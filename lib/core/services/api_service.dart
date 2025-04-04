@@ -1,59 +1,63 @@
-import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import '../providers/cart_provider.dart'; // Asegúrate de que esta ruta sea correcta
+import 'dart:convert';
+import 'package:http/http.dart' as http;
 
-class ServicesScreen extends StatelessWidget {
-  const ServicesScreen({super.key});
+class ApiService {
+  final String baseUrl;
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Servicios ✂️', style: TextStyle(color: Colors.amber)),
-        backgroundColor: Colors.black,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.shopping_cart, color: Colors.amber),
-            onPressed: () => Navigator.pushNamed(context, '/cart'),
-          ),
-        ],
-      ),
-      body: ListView(
-        children: [
-          _buildServiceCard(context, 'Corte de Cabello', '\$250', Icons.cut),
-          _buildServiceCard(context, 'Afeitado Clásico', '\$180', Icons.face),
-          _buildServiceCard(context, 'Masaje Relajante', '\$400', Icons.spa),
-          _buildServiceCard(context, 'Tratamiento Facial', '\$350', Icons.face),
-        ],
-      ),
-    );
+  ApiService({this.baseUrl = 'https://api.example.com/v1'});
+
+  Future<Map<String, dynamic>> get(String endpoint) async {
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl/$endpoint'),
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        return json.decode(response.body);
+      } else {
+        throw Exception('Error en la solicitud: ${response.statusCode}');
+      }
+    } catch (e) {
+      throw Exception('Error en la conexión: $e');
+    }
   }
 
-  Widget _buildServiceCard(BuildContext context, String title, String price, IconData icon) {
-    return Card(
-      margin: const EdgeInsets.all(8),
-      color: Colors.grey[900],
-      child: ListTile(
-        leading: Icon(icon, color: Colors.amber),
-        title: Text(title, style: const TextStyle(color: Colors.white)),
-        subtitle: Text(price, style: const TextStyle(color: Colors.amber)),
-        trailing: IconButton(
-          icon: const Icon(Icons.add_shopping_cart, color: Colors.amber),
-          onPressed: () {
-            // Agrega el servicio al carrito
-            Provider.of<CartProvider>(context, listen: false).addItem(title, price);
+  Future<Map<String, dynamic>> post(String endpoint, Map<String, dynamic> data) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/$endpoint'),
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: json.encode(data),
+      );
 
-            // Muestra un mensaje de confirmación
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text('$title agregado al carrito'),
-                duration: const Duration(seconds: 1),
-                behavior: SnackBarBehavior.floating,
-              ),
-            );
-          },
-        ),
-      ),
-    );
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        return json.decode(response.body);
+      } else {
+        throw Exception('Error en la solicitud: ${response.statusCode}');
+      }
+    } catch (e) {
+      throw Exception('Error en la conexión: $e');
+    }
+  }
+
+  // Método para obtener servicios disponibles
+  Future<List<Map<String, dynamic>>> getServices() async {
+    try {
+      final response = await get('services');
+      return List<Map<String, dynamic>>.from(response['data']);
+    } catch (e) {
+      // Si la API falla, devolvemos datos demo
+      return [
+        {'id': 1, 'name': 'Corte de Cabello', 'price': '250', 'icon': 'cut'},
+        {'id': 2, 'name': 'Afeitado Clásico', 'price': '180', 'icon': 'face'},
+        {'id': 3, 'name': 'Masaje Relajante', 'price': '400', 'icon': 'spa'},
+        {'id': 4, 'name': 'Tratamiento Facial', 'price': '350', 'icon': 'face'},
+      ];
+    }
   }
 }

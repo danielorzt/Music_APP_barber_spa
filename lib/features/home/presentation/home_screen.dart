@@ -20,7 +20,7 @@ class _HomeScreenState extends State<HomeScreen> {
     const _HomeContent(),
     const ServicesPreview(),
     const OffersSection(),
-    const ProfilePlaceholder(),
+    const ProfileScreen(),
   ];
 
   @override
@@ -195,8 +195,6 @@ class _HomeContent extends StatefulWidget {
 
 class __HomeContentState extends State<_HomeContent> {
   late VideoPlayerController _videoController;
-
-
 
   @override
   void initState() {
@@ -377,7 +375,7 @@ class __HomeContentState extends State<_HomeContent> {
   }
 }
 
-// Widgets adicionales (simplificados para el ejemplo)
+// Widgets adicionales
 class ServicesPreview extends StatelessWidget {
   const ServicesPreview({super.key});
 
@@ -395,13 +393,3 @@ class OffersSection extends StatelessWidget {
     return const Center(child: Text('Sección de promociones'));
   }
 }
-
-class ProfilePlaceholder extends StatelessWidget {
-  const ProfilePlaceholder({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return const ProfileScreen(); // Cambia esto
-  }
-}
-

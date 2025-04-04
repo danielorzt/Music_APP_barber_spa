@@ -239,6 +239,22 @@ class ProfileScreen extends StatelessWidget {
     );
   }
 
+  // Añadimos el método faltante _buildSwitchListTile
+  Widget _buildSwitchListTile(BuildContext context, {
+    required IconData icon,
+    required String title,
+    required bool value,
+    required ValueChanged<bool> onChanged
+  }) {
+    return SwitchListTile(
+      secondary: Icon(icon, color: Theme.of(context).colorScheme.primary),
+      title: Text(title, style: TextStyle(color: Theme.of(context).colorScheme.onSurface)),
+      value: value,
+      onChanged: onChanged,
+      activeColor: Theme.of(context).colorScheme.primary,
+    );
+  }
+
   Widget _buildDivider() {
     return Divider(height: 1, indent: 16, endIndent: 16, color: Colors.grey.withOpacity(0.1));
   }

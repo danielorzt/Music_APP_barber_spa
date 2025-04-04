@@ -1,16 +1,40 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:music_app/providers/theme_provider.dart';
-import 'package:music_app/providers/cart_provider.dart';
+import 'package:music_app/core/theme/theme_provider.dart';
+import 'package:music_app/features/cart/providers/cart_provider.dart';
+import 'package:music_app/core/services/api_service.dart'; // Añadir esta importación
 import 'package:music_app/home.dart';
-import 'package:music_app/services.dart';
-import 'package:music_app/screens/cart.dart';
-import 'screens/profile.dart';
+import 'package:music_app/features/services/presentation/services_screen.dart'; // Corregir esta importación
+import 'package:music_app/features/cart/presentation/cart_screen.dart';
+import 'package:music_app/features/profile/presentation/profile_screen.dart';
+
+import 'package:music_app/features/services/repositories/services_repository.dart';
+import 'package:music_app/features/cart/repositories/cart_repository.dart';
+import 'package:music_app/features/profile/repositories/user_repository.dart';
+import 'package:music_app/features/promotions/repositories/promotions_repository.dart';
 
 void main() {
   runApp(
     MultiProvider(
       providers: [
+        // Core providers
+        Provider(create: (_) => ApiService()),
+
+        // Repositorios
+        Provider(
+          create: (context) => ServicesRepository(context.read<ApiService>()),
+        ),
+        Provider(
+          create: (_) => CartRepository(),
+        ),
+        Provider(
+          create: (context) => UserRepository(context.read<ApiService>()),
+        ),
+        Provider(
+          create: (context) => PromotionsRepository(context.read<ApiService>()),
+        ),
+
+        // Proveedores de estado
         ChangeNotifierProvider(create: (_) => ThemeProvider()),
         ChangeNotifierProvider(create: (_) => CartProvider()),
       ],
@@ -18,7 +42,6 @@ void main() {
     ),
   );
 }
-
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
