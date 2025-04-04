@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:music_app/features/cart/models/cart_item_model.dart';
 import 'package:music_app/features/cart/providers/cart_provider.dart';
-import 'package:music_app/core/services/api_service.dart';
+import 'package:music_app/features/services/models/service_model.dart';
+import 'package:music_app/features/services/repositories/services_repository.dart';
 
 class ServicesScreen extends StatelessWidget {
   const ServicesScreen({super.key});
@@ -9,6 +11,7 @@ class ServicesScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
+    final servicesRepository = Provider.of<ServicesRepository>(context, listen: false);
 
     return Scaffold(
       appBar: AppBar(
@@ -22,8 +25,8 @@ class ServicesScreen extends StatelessWidget {
           ),
         ],
       ),
-      body: FutureBuilder<List<Map<String, dynamic>>>(
-          future: Provider.of<ApiService>(context, listen: false).getServices(),
+      body: FutureBuilder<List<Service>>(
+          future: servicesRepository.getServices(),
           builder: (context, snapshot) {
             if (snapshot.connectionState == ConnectionState.waiting) {
               return Center(
@@ -41,14 +44,15 @@ class ServicesScreen extends StatelessWidget {
               );
             }
 
+            final services = snapshot.data!;
             return ListView.builder(
-              itemCount: snapshot.data!.length,
+              itemCount: services.length,
               itemBuilder: (context, index) {
-                final service = snapshot.data![index];
+                final service = services[index];
                 IconData icon;
 
                 // Mapeo de strings a IconData
-                switch(service['icon']) {
+                switch(service.icon) {
                   case 'cut': icon = Icons.cut; break;
                   case 'face': icon = Icons.face; break;
                   case 'spa': icon = Icons.spa; break;
@@ -57,8 +61,7 @@ class ServicesScreen extends StatelessWidget {
 
                 return _buildServiceCard(
                     context,
-                    service['name'],
-                    '\$${service['price']}',
+                    service,
                     icon
                 );
               },
@@ -68,8 +71,9 @@ class ServicesScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildServiceCard(BuildContext context, String title, String price, IconData icon) {
+  Widget _buildServiceCard(BuildContext context, Service service, IconData icon) {
     final colorScheme = Theme.of(context).colorScheme;
+    final cartProvider = Provider.of<CartProvider>(context, listen: false);
 
     return Card(
       margin: const EdgeInsets.all(8),
@@ -79,22 +83,44 @@ class ServicesScreen extends StatelessWidget {
       ),
       child: ListTile(
         leading: Icon(icon, color: colorScheme.primary),
-        title: Text(title, style: TextStyle(color: colorScheme.onSurfaceVariant)),
-        subtitle: Text(price, style: TextStyle(color: colorScheme.primary)),
+        title: Text(service.name, style: TextStyle(color: colorScheme.onSurfaceVariant)),
+        subtitle: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('\$${service.price}',
+                style: TextStyle(color: colorScheme.primary, fontWeight: FontWeight.bold)),
+            if (service.description.isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.only(top: 4),
+                child: Text(service.description,
+                    style: TextStyle(color: colorScheme.onSurfaceVariant.withOpacity(0.7))),
+              ),
+          ],
+        ),
+        isThreeLine: service.description.isNotEmpty,
         trailing: IconButton(
           icon: Icon(Icons.add_shopping_cart, color: colorScheme.primary),
           onPressed: () {
-            // Agrega el servicio al carrito
-            Provider.of<CartProvider>(context, listen: false).addItem(title, price);
+            // Crear item del carrito a partir del servicio
+            final cartItem = CartItem(
+              id: DateTime.now().millisecondsSinceEpoch,
+              name: service.name,
+              price: service.price,
+              type: CartItemType.service,
+              serviceId: service.id,
+            );
 
-            // Muestra un mensaje de confirmación
+            // Añadir al carrito
+            cartProvider.addItem(cartItem);
+
+            // Mostrar mensaje de confirmación
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
                 duration: const Duration(seconds: 1),
                 behavior: SnackBarBehavior.floating,
                 backgroundColor: colorScheme.primaryContainer,
                 content: Text(
-                  '$title agregado al carrito',
+                  '${service.name} agregado al carrito',
                   style: TextStyle(color: colorScheme.onPrimaryContainer),
                 ),
               ),

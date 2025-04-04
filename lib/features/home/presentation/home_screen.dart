@@ -124,6 +124,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Widget _buildDrawer(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
 
     return Drawer(
       backgroundColor: colorScheme.surface,
@@ -140,10 +141,25 @@ class _HomeScreenState extends State<HomeScreen> {
                   backgroundColor: colorScheme.primary,
                 ),
                 const SizedBox(height: 10),
-                Text('¡Bienvenido!',
-                    style: TextStyle(
+                Consumer<AuthProvider>(
+                  builder: (context, authProvider, _) {
+                    return authProvider.currentUser != null
+                        ? Text(
+                      '¡Hola, ${authProvider.currentUser!.name}!',
+                      style: TextStyle(
                         color: colorScheme.onPrimaryContainer,
-                        fontSize: 18)),
+                        fontSize: 18,
+                      ),
+                    )
+                        : Text(
+                      '¡Bienvenido!',
+                      style: TextStyle(
+                        color: colorScheme.onPrimaryContainer,
+                        fontSize: 18,
+                      ),
+                    );
+                  },
+                ),
               ],
             ),
           ),
@@ -152,9 +168,43 @@ class _HomeScreenState extends State<HomeScreen> {
           _buildDrawerItem(Icons.local_offer, 'Promociones', () => setState(() => _currentIndex = 2)),
           _buildDrawerItem(Icons.person, 'Mi Perfil', () => setState(() => _currentIndex = 3)),
           const Divider(),
-          _buildDrawerItem(Icons.login, 'Iniciar Sesión',
-                  () => Navigator.pushNamed(context, '/login')),
+
+          // Sección de autenticación
+          Consumer<AuthProvider>(
+            builder: (context, authProvider, _) {
+              if (authProvider.isAuthenticated) {
+                // Usuario autenticado: mostrar opción de cerrar sesión
+                return _buildDrawerItem(
+                  Icons.logout,
+                  'Cerrar Sesión',
+                      () async {
+                    await authProvider.logout();
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: const Text('Sesión cerrada correctamente'),
+                        backgroundColor: colorScheme.primary,
+                      ),
+                    );
+                    Navigator.of(context).pop(); // Cerrar el drawer
+                  },
+                );
+              } else {
+                // Usuario no autenticado: mostrar opción de iniciar sesión
+                return _buildDrawerItem(
+                  Icons.login,
+                  'Iniciar Sesión',
+                      () {
+                    Navigator.of(context).pop(); // Cerrar el drawer
+                    Navigator.pushNamed(context, '/login');
+                  },
+                );
+              }
+            },
+          ),
+
           const Divider(),
+
+          // Configuración del tema
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8),
             child: Row(

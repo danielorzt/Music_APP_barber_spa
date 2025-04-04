@@ -1,17 +1,24 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:music_app/core/theme/theme_provider.dart';
+import 'package:music_app/core/services/api_service.dart';
 import 'package:music_app/features/cart/providers/cart_provider.dart';
-import 'package:music_app/core/services/api_service.dart'; // Añadir esta importación
 import 'package:music_app/home.dart';
-import 'package:music_app/features/services/presentation/services_screen.dart'; // Corregir esta importación
+import 'package:music_app/features/services/presentation/services_screen.dart';
 import 'package:music_app/features/cart/presentation/cart_screen.dart';
 import 'package:music_app/features/profile/presentation/profile_screen.dart';
+import 'package:music_app/features/auth/presentation/login_screen.dart';
+import 'package:music_app/features/auth/presentation/register_screen.dart';
 
+// Importar repositorios
 import 'package:music_app/features/services/repositories/services_repository.dart';
 import 'package:music_app/features/cart/repositories/cart_repository.dart';
 import 'package:music_app/features/profile/repositories/user_repository.dart';
 import 'package:music_app/features/promotions/repositories/promotions_repository.dart';
+import 'package:music_app/features/auth/repositories/auth_repository.dart';
+
+// Importar providers
+import 'package:music_app/features/auth/providers/auth_provider.dart';
 
 void main() {
   runApp(
@@ -33,15 +40,27 @@ void main() {
         Provider(
           create: (context) => PromotionsRepository(context.read<ApiService>()),
         ),
+        Provider(
+          create: (context) => AuthRepository(context.read<ApiService>()),
+        ),
 
         // Proveedores de estado
         ChangeNotifierProvider(create: (_) => ThemeProvider()),
-        ChangeNotifierProvider(create: (_) => CartProvider()),
+        ChangeNotifierProvider(
+          create: (context) => CartProvider(context.read<CartRepository>()),
+        ),
+        ChangeNotifierProvider(
+          create: (context) => AuthProvider(
+            context.read<AuthRepository>(),
+            context.read<UserRepository>(),
+          ),
+        ),
       ],
       child: const MyApp(),
     ),
   );
 }
+
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
@@ -55,11 +74,14 @@ class MyApp extends StatelessWidget {
       theme: _buildLightTheme(),
       darkTheme: _buildDarkTheme(),
       themeMode: themeProvider.themeMode,
-      home: const HomeScreen(),
+      initialRoute: '/',
       routes: {
+        '/': (context) => const HomeScreen(),
         '/services': (context) => const ServicesScreen(),
         '/cart': (context) => const CartScreen(),
         '/profile': (context) => const ProfileScreen(),
+        '/login': (context) => const LoginScreen(),
+        '/register': (context) => const RegisterScreen(),
       },
     );
   }
@@ -87,7 +109,7 @@ class MyApp extends StatelessWidget {
         elevation: 2,
         margin: const EdgeInsets.all(8),
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12), // This should work
+          borderRadius: BorderRadius.circular(12),
         ),
       ),
     );

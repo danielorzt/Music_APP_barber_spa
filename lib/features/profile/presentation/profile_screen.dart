@@ -1,8 +1,29 @@
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:provider/provider.dart';
+import 'package:music_app/features/profile/models/user_model.dart';
+import 'package:music_app/features/profile/repositories/user_repository.dart';
 
-class ProfileScreen extends StatelessWidget {
+class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
+
+  @override
+  State<ProfileScreen> createState() => _ProfileScreenState();
+}
+
+class _ProfileScreenState extends State<ProfileScreen> {
+  late Future<User?> _userFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadUser();
+  }
+
+  void _loadUser() {
+    final userRepository = Provider.of<UserRepository>(context, listen: false);
+    _userFuture = userRepository.getCurrentUser();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -14,29 +35,96 @@ class ProfileScreen extends StatelessWidget {
         backgroundColor: colorScheme.surface,
         elevation: 0,
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _buildUserInfoSection(context),
-            const SizedBox(height: 24),
-            _buildPlanSection(context),
-            const SizedBox(height: 24),
-            _buildAccountSection(context),
-            const SizedBox(height: 24),
-            _buildPersonalizationSection(context),
-            const SizedBox(height: 24),
-            _buildSettingsSection(context),
-            const SizedBox(height: 24),
-            _buildHelpSection(context),
-          ],
-        ),
+      body: FutureBuilder<User?>(
+        future: _userFuture,
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          }
+
+          // Si no hay usuario, mostrar pantalla de login/registro
+          if (snapshot.data == null) {
+            return _buildLoginPrompt(context);
+          }
+
+          // Si hay usuario, mostrar perfil
+          final user = snapshot.data!;
+          return SingleChildScrollView(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _buildUserInfoSection(context, user),
+                const SizedBox(height: 24),
+                _buildPlanSection(context, user),
+                const SizedBox(height: 24),
+                _buildAccountSection(context),
+                const SizedBox(height: 24),
+                _buildPersonalizationSection(context),
+                const SizedBox(height: 24),
+                _buildSettingsSection(context),
+                const SizedBox(height: 24),
+                _buildHelpSection(context),
+              ],
+            ),
+          );
+        },
       ),
     );
   }
 
-  Widget _buildUserInfoSection(BuildContext context) {
+  // lib/features/profile/presentation/profile_screen.dart
+// Actualizar la función _buildLoginPrompt
+
+  Widget _buildLoginPrompt(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            Icons.account_circle,
+            size: 100,
+            color: colorScheme.primary.withOpacity(0.5),
+          ),
+          const SizedBox(height: 24),
+          const Text(
+            'Inicia sesión para ver tu perfil',
+            style: TextStyle(fontSize: 18),
+          ),
+          const SizedBox(height: 24),
+          ElevatedButton.icon(
+            icon: const Icon(Icons.login),
+            label: const Text('Iniciar Sesión'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: colorScheme.primary,
+              foregroundColor: colorScheme.onPrimary,
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+            ),
+            onPressed: () {
+              Navigator.pushNamed(context, '/login');
+            },
+          ),
+          const SizedBox(height: 16),
+          TextButton(
+            onPressed: () {
+              Navigator.pushNamed(context, '/register');
+            },
+            child: Text(
+              'Crear una cuenta',
+              style: TextStyle(
+                color: colorScheme.primary,
+                decoration: TextDecoration.underline,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildUserInfoSection(BuildContext context, User user) {
     final colorScheme = Theme.of(context).colorScheme;
 
     return Row(
@@ -44,14 +132,17 @@ class ProfileScreen extends StatelessWidget {
         CircleAvatar(
           radius: 40,
           backgroundColor: colorScheme.primary.withOpacity(0.2),
-          child: Icon(Icons.person, size: 40, color: colorScheme.primary),
+          backgroundImage: user.imageUrl.isNotEmpty ? NetworkImage(user.imageUrl) : null,
+          child: user.imageUrl.isEmpty
+              ? Icon(Icons.person, size: 40, color: colorScheme.primary)
+              : null,
         ),
         const SizedBox(width: 16),
         Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Hola, Sepide',
+              'Hola, ${user.name}',
               style: TextStyle(
                 fontSize: 20,
                 fontWeight: FontWeight.bold,
@@ -59,7 +150,7 @@ class ProfileScreen extends StatelessWidget {
               ),
             ),
             Text(
-              'thefutterway@gmail.com',
+              user.email,
               style: TextStyle(
                 color: colorScheme.onSurface.withOpacity(0.7),
               ),
@@ -70,7 +161,7 @@ class ProfileScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildPlanSection(BuildContext context) {
+  Widget _buildPlanSection(BuildContext context, User user) {
     return Card(
       elevation: 2,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -91,24 +182,47 @@ class ProfileScreen extends StatelessWidget {
                   ),
                 ),
                 Chip(
-                  label: const Text('Premium'),
-                  backgroundColor: Theme.of(context).colorScheme.primaryContainer,
-                  labelStyle: TextStyle(color: Theme.of(context).colorScheme.onPrimary),
+                  label: Text(user.isPremium ? 'Premium' : 'Básico'),
+                  backgroundColor: user.isPremium
+                      ? Theme.of(context).colorScheme.primaryContainer
+                      : Theme.of(context).colorScheme.surfaceVariant,
+                  labelStyle: TextStyle(
+                      color: user.isPremium
+                          ? Theme.of(context).colorScheme.onPrimaryContainer
+                          : Theme.of(context).colorScheme.onSurfaceVariant),
                 ),
               ],
             ),
             const SizedBox(height: 8),
             Text(
-              'Todas las funciones desbloqueadas',
+              user.isPremium
+                  ? 'Todas las funciones desbloqueadas'
+                  : 'Mejora a Premium para más beneficios',
               style: TextStyle(
                 color: Theme.of(context).colorScheme.onSurface.withOpacity(0.8),
               ),
             ),
+            if (!user.isPremium) ...[
+              const SizedBox(height: 12),
+              ElevatedButton(
+                onPressed: () {
+                  // Lógica para actualizar a premium
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Theme.of(context).colorScheme.primary,
+                  foregroundColor: Theme.of(context).colorScheme.onPrimary,
+                ),
+                child: const Text('Actualizar a Premium'),
+              ),
+            ],
           ],
         ),
       ),
     );
   }
+
+  // El resto de los métodos son iguales a los de la versión anterior
+  // _buildAccountSection, _buildPersonalizationSection, etc.
 
   Widget _buildAccountSection(BuildContext context) {
     return Column(
@@ -201,6 +315,8 @@ class ProfileScreen extends StatelessWidget {
   }
 
   Widget _buildHelpSection(BuildContext context) {
+    final userRepository = Provider.of<UserRepository>(context, listen: false);
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -222,7 +338,20 @@ class ProfileScreen extends StatelessWidget {
               _buildDivider(),
               _buildListTile(context, icon: Icons.question_answer, title: 'Preguntas frecuentes', onTap: () {}),
               _buildDivider(),
-              _buildListTile(context, icon: Icons.logout, title: 'Cerrar sesión', onTap: () {}, textColor: Colors.red),
+              // Reemplazar el _buildListTile para cerrar sesión
+              _buildListTile(
+                  context,
+                  icon: Icons.logout,
+                  title: 'Cerrar sesión',
+                  onTap: () async {
+                    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+                    await authProvider.logout();
+                    setState(() {
+                      _loadUser();
+                    });
+                  },
+                  textColor: Colors.red
+              ),
             ],
           ),
         ),
@@ -239,7 +368,6 @@ class ProfileScreen extends StatelessWidget {
     );
   }
 
-  // Añadimos el método faltante _buildSwitchListTile
   Widget _buildSwitchListTile(BuildContext context, {
     required IconData icon,
     required String title,
