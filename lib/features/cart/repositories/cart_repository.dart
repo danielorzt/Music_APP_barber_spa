@@ -1,14 +1,22 @@
 // lib/features/cart/repositories/cart_repository.dart
-
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:music_app/features/cart/models/cart_item_model.dart';
+import '../../../core/services/api_service.dart';
+import '../models/cart_item_model.dart';
 
 class CartRepository {
-  static const String _cartKey = 'user_cart';
+  final ApiService _apiService = ApiService();
+  static const String _cartKey = 'cart_items';
 
-  // Obtener items del carrito desde almacenamiento local
-  Future<List<CartItem>> getCartItems() async {
+  // Guardar carrito localmente
+  Future<void> saveCartToLocal(List<CartItem> cartItems) async {
+    final prefs = await SharedPreferences.getInstance();
+    final cartJson = cartItems.map((item) => item.toJson()).toList();
+    await prefs.setString(_cartKey, jsonEncode(cartJson));
+  }
+
+  // Obtener carrito local
+  Future<List<CartItem>> getCartFromLocal() async {
     try {
       final prefs = await SharedPreferences.getInstance();
       final cartString = prefs.getString(_cartKey);
@@ -17,62 +25,50 @@ class CartRepository {
         return [];
       }
 
-      final List<dynamic> cartData = jsonDecode(cartString);
-      return cartData.map((item) => CartItem.fromJson(item)).toList();
+      final List<dynamic> cartJson = jsonDecode(cartString);
+      return cartJson.map((item) => CartItem.fromJson(item)).toList();
     } catch (e) {
-      print('Error al obtener carrito: $e');
       return [];
     }
   }
 
-  // Guardar items en el carrito
-  Future<bool> saveCartItems(List<CartItem> items) async {
+  // Crear orden con carrito actual
+  Future<Map<String, dynamic>> createOrder(List<CartItem> cartItems, int userId) async {
     try {
-      final prefs = await SharedPreferences.getInstance();
-      final cartData = items.map((item) => item.toJson()).toList();
+      final data = {
+        'items': cartItems.map((item) => item.toJson()).toList(),
+        'userId': userId,
+      };
 
-      return await prefs.setString(_cartKey, jsonEncode(cartData));
+      final response = await _apiService.post('/saveOrder', data: data);
+      return response;
     } catch (e) {
-      print('Error al guardar carrito: $e');
-      return false;
+      rethrow;
     }
   }
 
-  // Añadir item al carrito
-  Future<bool> addCartItem(CartItem item) async {
-    final items = await getCartItems();
-    items.add(item);
-    return saveCartItems(items);
-  }
-
-  // Eliminar item del carrito
-  Future<bool> removeCartItem(int itemId) async {
-    final items = await getCartItems();
-    items.removeWhere((item) => item.id == itemId);
-    return saveCartItems(items);
-  }
-
-  // Actualizar cantidad de un item
-  Future<bool> updateCartItemQuantity(int itemId, int quantity) async {
-    final items = await getCartItems();
-    final index = items.indexWhere((item) => item.id == itemId);
-
-    if (index >= 0) {
-      items[index] = items[index].copyWith(quantity: quantity);
-      return saveCartItems(items);
-    }
-
-    return false;
-  }
-
-  // Limpiar carrito
-  Future<bool> clearCart() async {
+  // Procesar pago con PayPal
+  Future<String> processPayPalPayment(int orderId) async {
     try {
-      final prefs = await SharedPreferences.getInstance();
-      return await prefs.remove(_cartKey);
+      final response = await _apiService.post('/paypal/create', data: {'orderId': orderId});
+      return response['approval_url'];
     } catch (e) {
-      print('Error al limpiar carrito: $e');
-      return false;
+      rethrow;
+    }
+  }
+
+  // Procesar pago con MercadoPago
+  Future<String> processMercadoPagoPayment(int orderId, double amount) async {
+    try {
+      final response = await _apiService.post('/mercadopago/process_payment',
+          data: {
+            'order_id': orderId,
+            'transaction_amount': amount
+          }
+      );
+      return response['status'];
+    } catch (e) {
+      rethrow;
     }
   }
 }

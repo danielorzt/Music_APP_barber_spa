@@ -1,446 +1,379 @@
+// lib/features/home/presentation/home_screen.dart
 import 'package:flutter/material.dart';
-import 'package:font_awesome_flutter/font_awesome_flutter.dart';
-import 'package:video_player/video_player.dart';
 import 'package:provider/provider.dart';
-import 'package:music_app/core/theme/theme_provider.dart';
-import 'package:music_app/features/profile/presentation/profile_screen.dart';
-import 'package:music_app/features/auth/providers/auth_provider.dart';
+import '../../products/providers/products_provider.dart';
+import '../../services/providers/services_provider.dart';
+import '../../auth/providers/auth_provider.dart';
 
 class HomeScreen extends StatefulWidget {
-  const HomeScreen({super.key});
+  const HomeScreen({Key? key}) : super(key: key);
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  int _currentIndex = 0;
-  late VideoPlayerController _videoController;
-
-  final List<Widget> _screens = [
-    const _HomeContent(),
-    const ServicesPreview(),
-    const OffersSection(),
-    const ProfileScreen(),
-  ];
-
   @override
   void initState() {
     super.initState();
-    _initializeVideo();
-  }
-
-  Future<void> _initializeVideo() async {
-    _videoController = VideoPlayerController.asset('assets/videos/banner_home.mp4')
-      ..initialize().then((_) {
-        _videoController.setLooping(true);
-        _videoController.play();
-        _videoController.setVolume(0); // Mute por defecto
-        setState(() {});
-      });
-  }
-
-  @override
-  void dispose() {
-    _videoController.dispose();
-    super.dispose();
+    // Cargar datos al iniciar
+    Future.microtask(() {
+      Provider.of<ProductsProvider>(context, listen: false).fetchProducts();
+      Provider.of<ServicesProvider>(context, listen: false).fetchServices();
+    });
   }
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    final authProvider = Provider.of<AuthProvider>(context);
+    final productsProvider = Provider.of<ProductsProvider>(context);
+    final servicesProvider = Provider.of<ServicesProvider>(context);
 
     return Scaffold(
       appBar: AppBar(
-        title: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(FontAwesomeIcons.music, color: colorScheme.primary),
-            const SizedBox(width: 8),
-            Text('BarberMusic', style: TextStyle(color: colorScheme.primary)),
-            Text('&Spa', style: TextStyle(color: colorScheme.onSurface)),
-          ],
-        ),
-        backgroundColor: isDarkMode ? Colors.black : colorScheme.surface,
+        title: const Text('BarberMusic & Spa'),
         actions: [
           IconButton(
-            icon: Badge(
-              label: const Text('3'),
-              child: Icon(Icons.notifications, color: colorScheme.primary),
-            ),
-            onPressed: () {},
-          ),
-          IconButton(
-            icon: Badge(
-              label: const Text('1'),
-              child: Icon(Icons.shopping_cart, color: colorScheme.primary),
-            ),
+            icon: const Icon(Icons.shopping_cart),
             onPressed: () => Navigator.pushNamed(context, '/cart'),
           ),
           IconButton(
-            icon: Icon(
-              Provider.of<ThemeProvider>(context, listen: true).themeMode == ThemeMode.dark
-                  ? Icons.light_mode
-                  : Icons.dark_mode,
-            ),
-            onPressed: () {
-              final provider = Provider.of<ThemeProvider>(context, listen: false);
-              provider.toggleTheme(provider.themeMode != ThemeMode.dark);
-            },
-          )
-        ],
-      ),
-      body: _screens[_currentIndex],
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: _currentIndex,
-        onDestinationSelected: (index) => setState(() => _currentIndex = index),
-        backgroundColor: isDarkMode ? Colors.black : colorScheme.surface,
-        destinations: const [
-          NavigationDestination(
-            icon: Icon(Icons.home_outlined),
-            selectedIcon: Icon(Icons.home),
-            label: 'Inicio',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.cut_outlined),
-            selectedIcon: Icon(Icons.cut),
-            label: 'Servicios',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.local_offer_outlined),
-            selectedIcon: Icon(Icons.local_offer),
-            label: 'Promos',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.person_outlined),
-            selectedIcon: Icon(Icons.person),
-            label: 'Perfil',
+            icon: const Icon(Icons.person),
+            onPressed: () => Navigator.pushNamed(context, '/profile'),
           ),
         ],
       ),
-      drawer: _buildDrawer(context),
-    );
-  }
-
-  Widget _buildDrawer(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-    final authProvider = Provider.of<AuthProvider>(context, listen: false);
-
-    return Drawer(
-      backgroundColor: colorScheme.surface,
-      child: ListView(
-        children: [
-          DrawerHeader(
-            decoration: BoxDecoration(color: colorScheme.primaryContainer),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                CircleAvatar(
-                  radius: 30,
-                  backgroundImage: const AssetImage('assets/logo.png'),
-                  backgroundColor: colorScheme.primary,
-                ),
-                const SizedBox(height: 10),
-                Consumer<AuthProvider>(
-                  builder: (context, authProvider, _) {
-                    return authProvider.currentUser != null
-                        ? Text(
-                      '¡Hola, ${authProvider.currentUser!.name}!',
-                      style: TextStyle(
-                        color: colorScheme.onPrimaryContainer,
-                        fontSize: 18,
-                      ),
-                    )
-                        : Text(
-                      '¡Bienvenido!',
-                      style: TextStyle(
-                        color: colorScheme.onPrimaryContainer,
-                        fontSize: 18,
-                      ),
-                    );
-                  },
-                ),
-              ],
-            ),
-          ),
-          _buildDrawerItem(Icons.home, 'Inicio', () => setState(() => _currentIndex = 0)),
-          _buildDrawerItem(Icons.cut, 'Servicios', () => setState(() => _currentIndex = 1)),
-          _buildDrawerItem(Icons.local_offer, 'Promociones', () => setState(() => _currentIndex = 2)),
-          _buildDrawerItem(Icons.person, 'Mi Perfil', () => setState(() => _currentIndex = 3)),
-          const Divider(),
-
-          // Sección de autenticación
-          Consumer<AuthProvider>(
-            builder: (context, authProvider, _) {
-              if (authProvider.isAuthenticated) {
-                // Usuario autenticado: mostrar opción de cerrar sesión
-                return _buildDrawerItem(
-                  Icons.logout,
-                  'Cerrar Sesión',
-                      () async {
-                    await authProvider.logout();
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: const Text('Sesión cerrada correctamente'),
-                        backgroundColor: colorScheme.primary,
-                      ),
-                    );
-                    Navigator.of(context).pop(); // Cerrar el drawer
-                  },
-                );
-              } else {
-                // Usuario no autenticado: mostrar opción de iniciar sesión
-                return _buildDrawerItem(
-                  Icons.login,
-                  'Iniciar Sesión',
-                      () {
-                    Navigator.of(context).pop(); // Cerrar el drawer
-                    Navigator.pushNamed(context, '/login');
-                  },
-                );
-              }
-            },
-          ),
-
-          const Divider(),
-
-          // Configuración del tema
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8),
-            child: Row(
-              children: [
-                const Text('Modo Oscuro'),
-                const Spacer(),
-                Switch(
-                  value: Theme.of(context).brightness == Brightness.dark,
-                  onChanged: (value) {
-                    Provider.of<ThemeProvider>(context, listen: false)
-                        .toggleTheme(value);
-                  },
-                  activeColor: colorScheme.tertiary,
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  ListTile _buildDrawerItem(IconData icon, String title, VoidCallback onTap) {
-    return ListTile(
-      leading: Icon(icon, color: Theme.of(context).colorScheme.primary),
-      title: Text(title, style: TextStyle(color: Theme.of(context).colorScheme.onSurface)),
-      onTap: onTap,
-    );
-  }
-}
-
-class _HomeContent extends StatefulWidget {
-  const _HomeContent();
-
-  @override
-  __HomeContentState createState() => __HomeContentState();
-}
-
-class __HomeContentState extends State<_HomeContent> {
-  late VideoPlayerController _videoController;
-
-  @override
-  void initState() {
-    super.initState();
-    _videoController = VideoPlayerController.asset('assets/videos/banner_home.mp4')
-      ..initialize().then((_) {
-        setState(() {
-          _videoController.setLooping(true);
-          _videoController.play();
-          _videoController.setVolume(0);
-        });
-      });
-  }
-
-  @override
-  void dispose() {
-    _videoController.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-    final textTheme = Theme.of(context).textTheme;
-
-    return CustomScrollView(
-      slivers: [
-        SliverToBoxAdapter(
-          child: AspectRatio(
-            aspectRatio: 16 / 9,
-            child: _videoController.value.isInitialized
-                ? VideoPlayer(_videoController)
-                : Container(
-              color: colorScheme.surfaceVariant,
-              child: Center(
-                  child: CircularProgressIndicator(
-                      color: colorScheme.primary)),
-            ),
-          ),
-        ),
-        SliverPadding(
-          padding: const EdgeInsets.all(16),
-          sliver: SliverList(
-            delegate: SliverChildListDelegate([
-              Column(
+      drawer: Drawer(
+        child: ListView(
+          padding: EdgeInsets.zero,
+          children: [
+            DrawerHeader(
+              decoration: BoxDecoration(
+                color: Theme.of(context).primaryColor,
+              ),
+              child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  const CircleAvatar(
+                    radius: 30,
+                    backgroundColor: Colors.white,
+                    child: Icon(Icons.person, size: 40, color: Colors.black54),
+                  ),
+                  const SizedBox(height: 10),
                   Text(
-                    'Bienvenido a BarberMusic&Spa',
-                    style: textTheme.headlineSmall?.copyWith(
-                      color: colorScheme.primary,
-                      fontWeight: FontWeight.bold,
+                    authProvider.currentUser?.nombre ?? 'Invitado',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 18,
                     ),
                   ),
-                  const SizedBox(height: 8),
                   Text(
-                    'Somos un centro de spa estético y barbería en México. '
-                        'Disfruta de una experiencia única con nuestros servicios profesionales.',
-                    style: textTheme.bodyLarge?.copyWith(
-                      color: colorScheme.onSurface,
+                    authProvider.currentUser?.email ?? 'Inicia sesión',
+                    style: const TextStyle(
+                      color: Colors.white70,
+                      fontSize: 14,
                     ),
                   ),
-                  const SizedBox(height: 24),
-                  Wrap(
-                    spacing: 12,
-                    runSpacing: 12,
-                    children: [
-                      _buildActionChip(
-                        context,
-                        icon: Icons.calendar_today,
-                        label: 'Reservar',
-                        onTap: () => Navigator.pushNamed(context, '/services'),
-                      ),
-                      _buildActionChip(
-                        context,
-                        icon: Icons.local_offer,
-                        label: 'Promociones',
-                        onTap: () {},
-                      ),
-                      _buildActionChip(
-                        context,
-                        icon: Icons.map,
-                        label: 'Ubicación',
-                        onTap: () {},
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 24),
-                  Text(
-                    'Servicios Destacados',
-                    style: textTheme.titleLarge?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const SizedBox(height: 12),
                 ],
               ),
-            ]),
-          ),
-        ),
-        SliverToBoxAdapter(
-          child: SizedBox(
-            height: 180,
-            child: ListView.builder(
-              scrollDirection: Axis.horizontal,
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              itemCount: 3,
-              itemBuilder: (context, index) {
-                final services = [
-                  {'title': 'Corte Premium', 'price': '\$300', 'icon': Icons.cut},
-                  {'title': 'Masaje Completo', 'price': '\$450', 'icon': Icons.spa},
-                  {'title': 'Tratamiento Facial', 'price': '\$350', 'icon': Icons.face},
-                ];
-                return Padding(
-                  padding: const EdgeInsets.only(right: 16),
-                  child: _buildServiceCard(
-                    context,
-                    services[index]['title'] as String,
-                    services[index]['price'] as String,
-                    services[index]['icon'] as IconData,
-                  ),
-                );
+            ),
+            ListTile(
+              leading: const Icon(Icons.home),
+              title: const Text('Inicio'),
+              onTap: () {
+                Navigator.pop(context);
               },
             ),
-          ),
-        ),
-        const SliverPadding(padding: EdgeInsets.only(bottom: 32)),
-      ],
-    );
-  }
-
-  Widget _buildActionChip(
-      BuildContext context, {
-        required IconData icon,
-        required String label,
-        required VoidCallback onTap,
-      }) {
-    return ActionChip(
-      avatar: Icon(icon, size: 18),
-      label: Text(label),
-      onPressed: onTap,
-      backgroundColor: Theme.of(context).colorScheme.primaryContainer,
-      labelStyle: TextStyle(
-          color: Theme.of(context).colorScheme.onPrimaryContainer),
-    );
-  }
-
-  Widget _buildServiceCard(
-      BuildContext context, String title, String price, IconData icon) {
-    final colorScheme = Theme.of(context).colorScheme;
-
-    return Container(
-      width: 160,
-      decoration: BoxDecoration(
-        color: colorScheme.surfaceVariant,
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(icon, size: 40, color: colorScheme.primary),
-            const SizedBox(height: 12),
-            Text(title,
-                style: TextStyle(
-                    color: colorScheme.onSurfaceVariant,
-                    fontWeight: FontWeight.bold)),
-            const SizedBox(height: 4),
-            Text(price,
-                style: TextStyle(
-                    color: colorScheme.primary,
-                    fontWeight: FontWeight.bold)),
+            ListTile(
+              leading: const Icon(Icons.shopping_bag),
+              title: const Text('Productos'),
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.pushNamed(context, '/products');
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.spa),
+              title: const Text('Servicios'),
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.pushNamed(context, '/services');
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.calendar_today),
+              title: const Text('Mis Citas'),
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.pushNamed(context, '/appointments');
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.shopping_cart),
+              title: const Text('Carrito'),
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.pushNamed(context, '/cart');
+              },
+            ),
+            const Divider(),
+            if (authProvider.isAuthenticated)
+              ListTile(
+                leading: const Icon(Icons.exit_to_app),
+                title: const Text('Cerrar Sesión'),
+                onTap: () async {
+                  await authProvider.logout();
+                  Navigator.pop(context);
+                },
+              )
+            else
+              ListTile(
+                leading: const Icon(Icons.login),
+                title: const Text('Iniciar Sesión'),
+                onTap: () {
+                  Navigator.pop(context);
+                  Navigator.pushNamed(context, '/login');
+                },
+              ),
           ],
         ),
       ),
+      body: RefreshIndicator(
+        onRefresh: () async {
+          await productsProvider.fetchProducts();
+          await servicesProvider.fetchServices();
+        },
+        child: SingleChildScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Banner
+              Container(
+                height: 200,
+                width: double.infinity,
+                decoration: BoxDecoration(
+                  color: Theme.of(context).primaryColor.withOpacity(0.8),
+                ),
+                child: const Center(
+                  child: Text(
+                    'Bienvenido a BarberMusic & Spa',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ),
+
+              // Sección de Productos Destacados
+              Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text(
+                          'Productos Destacados',
+                          style: TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        TextButton(
+                          onPressed: () => Navigator.pushNamed(context, '/products'),
+                          child: const Text('Ver Todos'),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    productsProvider.isLoading
+                        ? const Center(child: CircularProgressIndicator())
+                        : productsProvider.error != null
+                        ? Center(child: Text('Error: ${productsProvider.error}'))
+                        : SizedBox(
+                      height: 220,
+                      child: ListView.builder(
+                        scrollDirection: Axis.horizontal,
+                        itemCount: productsProvider.products.length > 5
+                            ? 5
+                            : productsProvider.products.length,
+                        itemBuilder: (context, index) {
+                          final product = productsProvider.products[index];
+                          return GestureDetector(
+                            onTap: () {
+                              Navigator.pushNamed(
+                                context,
+                                '/product-detail',
+                                arguments: product.id,
+                              );
+                            },
+                            child: Container(
+                              width: 160,
+                              margin: const EdgeInsets.only(right: 16),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Container(
+                                    height: 120,
+                                    decoration: BoxDecoration(
+                                      color: Colors.grey[200],
+                                      borderRadius: BorderRadius.circular(8),
+                                      image: product.imagen != null
+                                          ? DecorationImage(
+                                        image: NetworkImage(
+                                          'http://192.168.1.X:63106/images/${product.imagen}',
+                                        ),
+                                        fit: BoxFit.cover,
+                                      )
+                                          : null,
+                                    ),
+                                    child: product.imagen == null
+                                        ? const Center(
+                                      child: Icon(Icons.image_not_supported),
+                                    )
+                                        : null,
+                                  ),
+                                  const SizedBox(height: 8),
+                                  Text(
+                                    product.nombreproducto,
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    '\$${product.precio.toStringAsFixed(2)}',
+                                    style: TextStyle(
+                                      color: Theme.of(context).primaryColor,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              // Sección de Servicios
+              Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text(
+                          'Nuestros Servicios',
+                          style: TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        TextButton(
+                          onPressed: () => Navigator.pushNamed(context, '/services'),
+                          child: const Text('Ver Todos'),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    servicesProvider.isLoading
+                        ? const Center(child: CircularProgressIndicator())
+                        : servicesProvider.error != null
+                        ? Center(child: Text('Error: ${servicesProvider.error}'))
+                        : SizedBox(
+                      height: 220,
+                      child: ListView.builder(
+                        scrollDirection: Axis.horizontal,
+                        itemCount: servicesProvider.services.length > 5
+                            ? 5
+                            : servicesProvider.services.length,
+                        itemBuilder: (context, index) {
+                          final service = servicesProvider.services[index];
+                          return GestureDetector(
+                            onTap: () {
+                              Navigator.pushNamed(
+                                context,
+                                '/service-detail',
+                                arguments: service.id,
+                              );
+                            },
+                            child: Container(
+                              width: 160,
+                              margin: const EdgeInsets.only(right: 16),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Container(
+                                    height: 120,
+                                    decoration: BoxDecoration(
+                                      color: Colors.grey[200],
+                                      borderRadius: BorderRadius.circular(8),
+                                      image: service.imagen != null
+                                          ? DecorationImage(
+                                        image: NetworkImage(
+                                          'http://192.168.1.X:63106/images/${service.imagen}',
+                                        ),
+                                        fit: BoxFit.cover,
+                                      )
+                                          : null,
+                                    ),
+                                    child: service.imagen == null
+                                        ? const Center(
+                                      child: Icon(Icons.image_not_supported),
+                                    )
+                                        : null,
+                                  ),
+                                  const SizedBox(height: 8),
+                                  Text(
+                                    service.nombre,
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    '\$${service.precio.toStringAsFixed(2)}',
+                                    style: TextStyle(
+                                      color: Theme.of(context).primaryColor,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    'Duración: ${service.duracion} min',
+                                    style: const TextStyle(
+                                      fontSize: 12,
+                                      color: Colors.grey,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
-  }
-}
-
-// Widgets adicionales
-class ServicesPreview extends StatelessWidget {
-  const ServicesPreview({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return const Center(child: Text('Vista previa de servicios'));
-  }
-}
-
-class OffersSection extends StatelessWidget {
-  const OffersSection({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return const Center(child: Text('Sección de promociones'));
   }
 }
