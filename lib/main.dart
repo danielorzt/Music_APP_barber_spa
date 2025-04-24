@@ -3,13 +3,12 @@ import 'package:provider/provider.dart';
 import 'package:music_app/core/theme/theme_provider.dart';
 import 'package:music_app/core/services/api_service.dart';
 import 'package:music_app/features/cart/providers/cart_provider.dart';
-import 'package:music_app/home.dart';
 import 'package:music_app/features/services/presentation/services_screen.dart';
 import 'package:music_app/features/cart/presentation/cart_screen.dart';
 import 'package:music_app/features/profile/presentation/profile_screen.dart';
 import 'package:music_app/features/auth/presentation/login_screen.dart';
 import 'package:music_app/features/auth/presentation/register_screen.dart';
-
+import 'package:music_app/features/home/presentation/home_screen.dart';
 // Importar repositorios
 import 'package:music_app/features/services/repositories/services_repository.dart';
 import 'package:music_app/features/cart/repositories/cart_repository.dart';

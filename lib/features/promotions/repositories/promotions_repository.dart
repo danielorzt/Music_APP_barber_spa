@@ -42,7 +42,7 @@ class PromotionsRepository {
         Promotion(
           id: 3,
           title: 'Paquete Completo',
-          description: 'Corte + Afeitado + Masaje por solo $600',
+          description: 'Corte + Afeitado + Masaje por solo \$600',  // Agrega \ antes del $
           discount: 330,
           isPercentage: false,
           startDate: now.subtract(const Duration(days: 5)),

@@ -4,6 +4,7 @@ import 'package:video_player/video_player.dart';
 import 'package:provider/provider.dart';
 import 'package:music_app/core/theme/theme_provider.dart';
 import 'package:music_app/features/profile/presentation/profile_screen.dart';
+import 'package:music_app/features/auth/providers/auth_provider.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});

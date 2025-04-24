@@ -3,6 +3,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:music_app/features/auth/providers/auth_provider.dart';
+import 'package:flutter/foundation.dart';
+import 'package:music_app/features/auth/presentation/register_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});

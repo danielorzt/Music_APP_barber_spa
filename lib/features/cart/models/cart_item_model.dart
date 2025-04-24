@@ -1,4 +1,6 @@
 // lib/features/cart/models/cart_item_model.dart
+import 'package:music_app/features/services/models/service_model.dart';
+import 'package:music_app/features/products/models/product_model.dart';
 
 enum CartItemType { service, product }
 

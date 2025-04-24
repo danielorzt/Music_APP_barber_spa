@@ -3,6 +3,8 @@ import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:provider/provider.dart';
 import 'package:music_app/features/profile/models/user_model.dart';
 import 'package:music_app/features/profile/repositories/user_repository.dart';
+import 'package:music_app/features/auth/providers/auth_provider.dart';
+
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
