@@ -77,7 +77,7 @@ class ServicesScreen extends StatelessWidget {
 
     return Card(
       margin: const EdgeInsets.all(8),
-      color: colorScheme.surfaceVariant,
+      color: colorScheme.surfaceContainerHighest,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
       ),

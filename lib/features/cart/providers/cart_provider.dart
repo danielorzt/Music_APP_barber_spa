@@ -45,7 +45,7 @@ class CartProvider with ChangeNotifier {
     if (existingItemIndex >= 0) {
       // Actualizar cantidad si ya existe
       final existingItem = _items[existingItemIndex];
-      final newQuantity = existingItem.cantidad + quantity;
+      final newQuantity = existingItem.cantidad + quantity.toInt();
       final newTotal = product.precio * newQuantity;
 
       _items[existingItemIndex] = CartItem(
@@ -59,8 +59,9 @@ class CartProvider with ChangeNotifier {
     } else {
       // Agregar nuevo item
       _items.add(CartItem(
+        id: DateTime.now().millisecondsSinceEpoch, // Generar un id temporal
         nombre: product.nombreproducto,
-        cantidad: quantity,
+        cantidad: quantity.toInt(),
         precio: product.precio,
         total: product.precio * quantity,
         productoId: product.id!,
@@ -82,12 +83,13 @@ class CartProvider with ChangeNotifier {
 
     if (index >= 0) {
       final item = _items[index];
+      final newQuantity = quantity.toInt();
       _items[index] = CartItem(
         id: item.id,
         nombre: item.nombre,
-        cantidad: quantity,
+        cantidad: newQuantity,
         precio: item.precio,
-        total: item.precio * quantity,
+        total: item.precio * newQuantity,
         productoId: item.productoId,
       );
 

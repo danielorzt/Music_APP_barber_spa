@@ -42,7 +42,7 @@ class UserRepository {
   // Login de usuario
   Future<User> login(String email, String password) async {
     try {
-      final response = await _apiService.post('auth/login', {
+      final response = await _apiService.post('auth/login', data: {
         'email': email,
         'password': password,
       });
@@ -55,9 +55,9 @@ class UserRepository {
       if (email == 'demo@example.com' && password == '123456') {
         final demoUser = User(
           id: 1,
-          name: 'Usuario Demo',
+          nombre: 'Usuario Demo',
           email: 'demo@example.com',
-          isPremium: true,
+          tipo: 'premium',
         );
         await saveCurrentUser(demoUser);
         return demoUser;
@@ -81,7 +81,7 @@ class UserRepository {
   // Actualizar perfil de usuario
   Future<User> updateProfile(User user) async {
     try {
-      final response = await _apiService.post('users/profile', user.toJson());
+      final response = await _apiService.post('users/profile', data: user.toJson());
       final updatedUser = User.fromJson(response['data']);
       await saveCurrentUser(updatedUser);
       return updatedUser;

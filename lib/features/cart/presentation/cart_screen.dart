@@ -5,7 +5,7 @@ import '../providers/cart_provider.dart';
 import '../../auth/providers/auth_provider.dart';
 
 class CartScreen extends StatelessWidget {
-  const CartScreen({Key? key}) : super(key: key);
+  const CartScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -80,17 +80,18 @@ class CartScreen extends StatelessWidget {
                   action: SnackBarAction(
                     label: 'Deshacer',
                     onPressed: () {
-                      cartProvider.addItem(
-                        // Recrear el producto a partir del CartItem
-                        {
-                          'id': item.productoId,
-                          'nombreproducto': item.nombre,
-                          'precio': item.precio,
-                          'cantidad': 999, // Valor arbitrario alto
-                          'usuarioId': 1, // Valor por defecto
-                        },
-                        item.cantidad,
-                      );
+                      // Comentado temporalmente hasta que se implemente correctamente
+                      // cartProvider.addItem(
+                      //   // Recrear el producto a partir del CartItem
+                      //   {
+                      //     'id': item.productoId,
+                      //     'nombreproducto': item.nombre,
+                      //     'precio': item.precio,
+                      //     'cantidad': 999, // Valor arbitrario alto
+                      //     'usuarioId': 1, // Valor por defecto
+                      //   },
+                      //   item.cantidad,
+                      // );
                     },
                   ),
                 ),

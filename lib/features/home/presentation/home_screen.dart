@@ -1,12 +1,10 @@
 // lib/features/home/presentation/home_screen.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../../products/providers/products_provider.dart';
-import '../../services/providers/services_provider.dart';
 import '../../auth/providers/auth_provider.dart';
 
 class HomeScreen extends StatefulWidget {
-  const HomeScreen({Key? key}) : super(key: key);
+  const HomeScreen({super.key});
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
@@ -17,17 +15,17 @@ class _HomeScreenState extends State<HomeScreen> {
   void initState() {
     super.initState();
     // Cargar datos al iniciar
-    Future.microtask(() {
-      Provider.of<ProductsProvider>(context, listen: false).fetchProducts();
-      Provider.of<ServicesProvider>(context, listen: false).fetchServices();
-    });
+    // Future.microtask(() {
+    //   Provider.of<ProductsProvider>(context, listen: false).fetchProducts();
+    //   Provider.of<ServicesProvider>(context, listen: false).fetchServices();
+    // });
   }
 
   @override
   Widget build(BuildContext context) {
     final authProvider = Provider.of<AuthProvider>(context);
-    final productsProvider = Provider.of<ProductsProvider>(context);
-    final servicesProvider = Provider.of<ServicesProvider>(context);
+    // final productsProvider = Provider.of<ProductsProvider>(context);
+    // final servicesProvider = Provider.of<ServicesProvider>(context);
 
     return Scaffold(
       appBar: AppBar(
@@ -89,7 +87,7 @@ class _HomeScreenState extends State<HomeScreen> {
               title: const Text('Productos'),
               onTap: () {
                 Navigator.pop(context);
-                Navigator.pushNamed(context, '/products');
+                // Navigator.pushNamed(context, '/products');
               },
             ),
             ListTile(
@@ -97,7 +95,7 @@ class _HomeScreenState extends State<HomeScreen> {
               title: const Text('Servicios'),
               onTap: () {
                 Navigator.pop(context);
-                Navigator.pushNamed(context, '/services');
+                // Navigator.pushNamed(context, '/services');
               },
             ),
             ListTile(
@@ -105,7 +103,7 @@ class _HomeScreenState extends State<HomeScreen> {
               title: const Text('Mis Citas'),
               onTap: () {
                 Navigator.pop(context);
-                Navigator.pushNamed(context, '/appointments');
+                // Navigator.pushNamed(context, '/appointments');
               },
             ),
             ListTile(
@@ -140,8 +138,8 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
       body: RefreshIndicator(
         onRefresh: () async {
-          await productsProvider.fetchProducts();
-          await servicesProvider.fetchServices();
+          // await productsProvider.fetchProducts();
+          // await servicesProvider.fetchServices();
         },
         child: SingleChildScrollView(
           physics: const AlwaysScrollableScrollPhysics(),
@@ -184,188 +182,16 @@ class _HomeScreenState extends State<HomeScreen> {
                           ),
                         ),
                         TextButton(
-                          onPressed: () => Navigator.pushNamed(context, '/products'),
+                          onPressed: () {
+                            // Navigator.pushNamed(context, '/products');
+                          },
                           child: const Text('Ver Todos'),
                         ),
                       ],
                     ),
                     const SizedBox(height: 8),
-                    productsProvider.isLoading
-                        ? const Center(child: CircularProgressIndicator())
-                        : productsProvider.error != null
-                        ? Center(child: Text('Error: ${productsProvider.error}'))
-                        : SizedBox(
-                      height: 220,
-                      child: ListView.builder(
-                        scrollDirection: Axis.horizontal,
-                        itemCount: productsProvider.products.length > 5
-                            ? 5
-                            : productsProvider.products.length,
-                        itemBuilder: (context, index) {
-                          final product = productsProvider.products[index];
-                          return GestureDetector(
-                            onTap: () {
-                              Navigator.pushNamed(
-                                context,
-                                '/product-detail',
-                                arguments: product.id,
-                              );
-                            },
-                            child: Container(
-                              width: 160,
-                              margin: const EdgeInsets.only(right: 16),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Container(
-                                    height: 120,
-                                    decoration: BoxDecoration(
-                                      color: Colors.grey[200],
-                                      borderRadius: BorderRadius.circular(8),
-                                      image: product.imagen != null
-                                          ? DecorationImage(
-                                        image: NetworkImage(
-                                          'http://192.168.1.X:63106/images/${product.imagen}',
-                                        ),
-                                        fit: BoxFit.cover,
-                                      )
-                                          : null,
-                                    ),
-                                    child: product.imagen == null
-                                        ? const Center(
-                                      child: Icon(Icons.image_not_supported),
-                                    )
-                                        : null,
-                                  ),
-                                  const SizedBox(height: 8),
-                                  Text(
-                                    product.nombreproducto,
-                                    style: const TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                    maxLines: 2,
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                  const SizedBox(height: 4),
-                                  Text(
-                                    '\$${product.precio.toStringAsFixed(2)}',
-                                    style: TextStyle(
-                                      color: Theme.of(context).primaryColor,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          );
-                        },
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-
-              // Sección de Servicios
-              Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        const Text(
-                          'Nuestros Servicios',
-                          style: TextStyle(
-                            fontSize: 20,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        TextButton(
-                          onPressed: () => Navigator.pushNamed(context, '/services'),
-                          child: const Text('Ver Todos'),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 8),
-                    servicesProvider.isLoading
-                        ? const Center(child: CircularProgressIndicator())
-                        : servicesProvider.error != null
-                        ? Center(child: Text('Error: ${servicesProvider.error}'))
-                        : SizedBox(
-                      height: 220,
-                      child: ListView.builder(
-                        scrollDirection: Axis.horizontal,
-                        itemCount: servicesProvider.services.length > 5
-                            ? 5
-                            : servicesProvider.services.length,
-                        itemBuilder: (context, index) {
-                          final service = servicesProvider.services[index];
-                          return GestureDetector(
-                            onTap: () {
-                              Navigator.pushNamed(
-                                context,
-                                '/service-detail',
-                                arguments: service.id,
-                              );
-                            },
-                            child: Container(
-                              width: 160,
-                              margin: const EdgeInsets.only(right: 16),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Container(
-                                    height: 120,
-                                    decoration: BoxDecoration(
-                                      color: Colors.grey[200],
-                                      borderRadius: BorderRadius.circular(8),
-                                      image: service.imagen != null
-                                          ? DecorationImage(
-                                        image: NetworkImage(
-                                          'http://192.168.1.X:63106/images/${service.imagen}',
-                                        ),
-                                        fit: BoxFit.cover,
-                                      )
-                                          : null,
-                                    ),
-                                    child: service.imagen == null
-                                        ? const Center(
-                                      child: Icon(Icons.image_not_supported),
-                                    )
-                                        : null,
-                                  ),
-                                  const SizedBox(height: 8),
-                                  Text(
-                                    service.nombre,
-                                    style: const TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                    maxLines: 2,
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                  const SizedBox(height: 4),
-                                  Text(
-                                    '\$${service.precio.toStringAsFixed(2)}',
-                                    style: TextStyle(
-                                      color: Theme.of(context).primaryColor,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 4),
-                                  Text(
-                                    'Duración: ${service.duracion} min',
-                                    style: const TextStyle(
-                                      fontSize: 12,
-                                      color: Colors.grey,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          );
-                        },
-                      ),
+                    const Center(
+                      child: Text('Productos próximamente...'),
                     ),
                   ],
                 ),

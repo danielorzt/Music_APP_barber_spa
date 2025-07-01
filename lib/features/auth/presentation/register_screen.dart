@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:music_app/features/auth/providers/auth_provider.dart';
 import 'package:music_app/features/auth/presentation/login_screen.dart';
+import 'package:music_app/features/auth/models/auth_model.dart';
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
@@ -56,12 +57,15 @@ class _RegisterScreenState extends State<RegisterScreen> {
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
 
     try {
-      final success = await authProvider.register(
-        _nameController.text.trim(),
-        _emailController.text.trim(),
-        _passwordController.text.trim(),
-        _phoneController.text.isEmpty ? null : _phoneController.text.trim(),
+      final registerRequest = RegisterRequest(
+        nombre: _nameController.text.trim(),
+        email: _emailController.text.trim(),
+        password: _passwordController.text.trim(),
+        direccion: '', // Campo requerido pero no tenemos en el formulario
+        telefono: _phoneController.text.isEmpty ? null : _phoneController.text.trim(),
       );
+      
+      final success = await authProvider.register(registerRequest);
 
       if (success && mounted) {
         Navigator.of(context).pop(); // Volver a la pantalla anterior después del registro

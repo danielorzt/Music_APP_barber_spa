@@ -8,7 +8,7 @@ import '../../services/providers/services_provider.dart';
 import '../models/appointment_model.dart';
 
 class BookAppointmentScreen extends StatefulWidget {
-  const BookAppointmentScreen({Key? key}) : super(key: key);
+  const BookAppointmentScreen({super.key});
 
   @override
   State<BookAppointmentScreen> createState() => _BookAppointmentScreenState();

@@ -10,7 +10,6 @@ class AppThemes {
         secondary: Color(0xFF5dc1b9),
         tertiary: Color(0xFF0fe1d0),
         surface: Colors.white,
-        background: Color(0xFFf5f5f5),
         error: Color(0xFFc31c1c),
         onPrimary: Colors.black,
         onSecondary: Colors.white,
@@ -39,7 +38,6 @@ class AppThemes {
         primary: Color(0xFFee8c3a),
         secondary: Color(0xFF0fe1d0),
         surface: Color(0xFF1e1e1e),
-        background: Color(0xFF121212),
         onPrimary: Colors.white,
       ),
       cardTheme: CardTheme(

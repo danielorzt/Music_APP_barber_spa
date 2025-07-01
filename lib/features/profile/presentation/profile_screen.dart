@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import 'package:music_app/features/profile/models/user_model.dart';
 import 'package:music_app/features/profile/repositories/user_repository.dart';
 import 'package:music_app/features/auth/providers/auth_provider.dart';
+import 'package:music_app/core/theme/theme_provider.dart';
 
 
 class ProfileScreen extends StatefulWidget {
@@ -187,7 +188,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   label: Text(user.isPremium ? 'Premium' : 'Básico'),
                   backgroundColor: user.isPremium
                       ? Theme.of(context).colorScheme.primaryContainer
-                      : Theme.of(context).colorScheme.surfaceVariant,
+                      : Theme.of(context).colorScheme.surfaceContainerHighest,
                   labelStyle: TextStyle(
                       color: user.isPremium
                           ? Theme.of(context).colorScheme.onPrimaryContainer
@@ -261,30 +262,62 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Widget _buildPersonalizationSection(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'PERSONALIZACIÓN',
-          style: TextStyle(
-            color: Theme.of(context).colorScheme.primary,
-            fontWeight: FontWeight.bold,
-            letterSpacing: 1,
-          ),
+    final themeProvider = Provider.of<ThemeProvider>(context);
+    final colorScheme = Theme.of(context).colorScheme;
+    ThemeMode currentMode = themeProvider.themeMode;
+
+    return Card(
+      elevation: 2,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(Icons.color_lens, color: colorScheme.primary),
+                const SizedBox(width: 8),
+                const Text(
+                  'Personalización',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                const Icon(Icons.brightness_6),
+                const SizedBox(width: 8),
+                const Text('Tema de la app:'),
+                const SizedBox(width: 16),
+                DropdownButton<ThemeMode>(
+                  value: currentMode,
+                  items: const [
+                    DropdownMenuItem(
+                      value: ThemeMode.light,
+                      child: Text('Claro'),
+                    ),
+                    DropdownMenuItem(
+                      value: ThemeMode.dark,
+                      child: Text('Oscuro'),
+                    ),
+                    DropdownMenuItem(
+                      value: ThemeMode.system,
+                      child: Text('Sistema'),
+                    ),
+                  ],
+                  onChanged: (ThemeMode? mode) {
+                    if (mode != null) {
+                      themeProvider.setThemeMode(mode);
+                    }
+                  },
+                ),
+              ],
+            ),
+          ],
         ),
-        const SizedBox(height: 8),
-        Card(
-          elevation: 2,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-          child: Column(
-            children: [
-              _buildSwitchListTile(context, icon: Icons.notifications, title: 'Notificaciones', value: true, onChanged: (value) {}),
-              _buildDivider(),
-              _buildListTile(context, icon: Icons.settings, title: 'Preferencias', onTap: () {}),
-            ],
-          ),
-        ),
-      ],
+      ),
     );
   }
 

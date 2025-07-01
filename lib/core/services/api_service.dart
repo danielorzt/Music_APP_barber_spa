@@ -120,7 +120,7 @@ class ApiService {
             if (data is Map && data.containsKey('error')) {
               errorMessage = data['error'];
             } else {
-              errorMessage = 'Error ${statusCode}: ${error.message}';
+              errorMessage = 'Error $statusCode: ${error.message}';
             }
           }
         }

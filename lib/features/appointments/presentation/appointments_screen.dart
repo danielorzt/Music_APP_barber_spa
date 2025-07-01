@@ -7,7 +7,7 @@ import '../../auth/providers/auth_provider.dart';
 import '../models/appointment_model.dart';
 
 class AppointmentsScreen extends StatefulWidget {
-  const AppointmentsScreen({Key? key}) : super(key: key);
+  const AppointmentsScreen({super.key});
 
   @override
   State<AppointmentsScreen> createState() => _AppointmentsScreenState();
@@ -149,8 +149,8 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> {
         onPressed: () {
           Navigator.pushNamed(context, '/book-appointment');
         },
-        child: const Icon(Icons.add),
         tooltip: 'Agendar Cita',
+        child: const Icon(Icons.add),
       ),
     );
   }

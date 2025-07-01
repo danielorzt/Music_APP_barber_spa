@@ -1,9 +1,9 @@
 // lib/features/auth/models/auth_model.dart
-import 'package:json_annotation/json_annotation.dart';
+// import 'package:json_annotation/json_annotation.dart';
 
-part 'auth_model.g.dart';
+// part 'auth_model.g.dart';
 
-@JsonSerializable()
+// @JsonSerializable()
 class LoginRequest {
   final String email;
   final String password;
@@ -13,10 +13,14 @@ class LoginRequest {
     required this.password,
   });
 
-  Map<String, dynamic> toJson() => _$LoginRequestToJson(this);
+  // Map<String, dynamic> toJson() => _$LoginRequestToJson(this);
+  Map<String, dynamic> toJson() => {
+    'email': email,
+    'password': password,
+  };
 }
 
-@JsonSerializable()
+// @JsonSerializable()
 class RegisterRequest {
   final String nombre;
   final String email;
@@ -32,10 +36,17 @@ class RegisterRequest {
     this.telefono,
   });
 
-  Map<String, dynamic> toJson() => _$RegisterRequestToJson(this);
+  // Map<String, dynamic> toJson() => _$RegisterRequestToJson(this);
+  Map<String, dynamic> toJson() => {
+    'nombre': nombre,
+    'email': email,
+    'password': password,
+    'direccion': direccion,
+    'telefono': telefono,
+  };
 }
 
-@JsonSerializable()
+// @JsonSerializable()
 class AuthResponse {
   final int id;
   final String nombre;
@@ -53,5 +64,15 @@ class AuthResponse {
     this.telefono,
   });
 
-  factory AuthResponse.fromJson(Map<String, dynamic> json) => _$AuthResponseFromJson(json);
+  // factory AuthResponse.fromJson(Map<String, dynamic> json) => _$AuthResponseFromJson(json);
+  factory AuthResponse.fromJson(Map<String, dynamic> json) {
+    return AuthResponse(
+      id: json['id'] ?? 0,
+      nombre: json['nombre'] ?? '',
+      email: json['email'] ?? '',
+      tipo: json['tipo'],
+      direccion: json['direccion'],
+      telefono: json['telefono'],
+    );
+  }
 }
