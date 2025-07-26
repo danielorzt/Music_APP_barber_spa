@@ -1,0 +1,808 @@
+# 🎵 BarberMusic&Spa 💈💇‍♀️✨
+
+<div align="center">
+  <img src="https://i.imgur.com/your-logo-url-here.png" alt="Logo de BarberMusic&Spa" width="200"/> 
+  <p><strong>SPA y Barbería con un Toque Musical 🎶</strong></p>
+  
+  <p>
+    <a href="https://github.com/roddek-dev/bmspa_laravel/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
+    <a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
+    <a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
+    <a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
+  </p>
+  <p>
+    <img src="https://img.shields.io/badge/Laravel-v12.x-FF2D20?style=flat-square&logo=laravel" alt="Laravel 12">
+    <img src="https://img.shields.io/badge/PHP-8.2+-777BB4?style=flat-square&logo=php" alt="PHP 8.2+">
+    <img src="https://img.shields.io/badge/MySQL-8.0-4479A1?style=flat-square&logo=mysql" alt="MySQL 8.0">
+    <img src="https://img.shields.io/badge/TailwindCSS-3.x-06B6D4?style=flat-square&logo=tailwindcss" alt="TailwindCSS 3.x">
+    <img src="https://img.shields.io/badge/JWT-Auth-000000?style=flat-square&logo=jsonwebtokens" alt="JWT Auth">
+  </p>
+</div>
+
+## 🚀 Demo en Vivo (Próximamente)
+
+Visita nuestra aplicación: `Enlace a tu demo desplegada aquí` (¡Próximamente!)
+
+## 🌟 Descripción General [cite: 8, 9]
+
+**Music Barber & Spa** es una aplicación web integral diseñada para optimizar las operaciones diarias de una barbería/spa, mejorar la eficiencia en la administración de sus servicios y ventas, y enriquecer significativamente la experiencia de sus clientes a través de interacciones digitales ágiles y modernas[cite: 9]. La plataforma combina capacidades de reserva de citas, funcionalidad de comercio electrónico para productos y herramientas administrativas robustas para una gestión completa del negocio.
+
+Nuestra propuesta única de valor es la integración de la música y la relajación en cada servicio, proporcionando una experiencia inigualable para nuestros clientes.
+
+## ✨ Características Principales
+
+El sistema "Music Barber & Spa" ofrecerá un conjunto integral de funcionalidades para satisfacer las necesidades tanto de los clientes como de los administradores[cite: 114].
+
+### 💇‍♂️ Portal del Cliente
+
+* **Gestión de Perfil y Autenticación** 👤: Registro, inicio de sesión (local y potencialmente OAuth2), recuperación de contraseña y gestión del perfil de usuario[cite: 12, 115].
+* **Catálogo de Servicios y Productos** каталог: Visualización detallada de servicios (cortes, masajes, etc.) y productos de cuidado personal disponibles[cite: 13, 116].
+* **Agendamiento de Citas Online** 📅: Reserva fácil de servicios, seleccionando sucursal, servicio, fecha y hora según disponibilidad[cite: 14, 117].
+* **Tienda de Productos Online** 🛍️: Carrito de compras para seleccionar productos, gestionar pedidos y finalizar compras[cite: 15, 118].
+* **Procesamiento de Pagos Seguro** 💳: Integración con pasarelas de pago (ej. PayPal, MercadoPago) para transacciones seguras[cite: 16, 118].
+* **Historial de Órdenes y Citas** 📜: Consulta del historial de compras de productos y citas agendadas[cite: 17].
+* **Localizador de Sucursales** 📍: Encuentra la sucursal más cercana con información detallada.
+
+### 💼 Panel de Administración (DDD Contexts)
+
+El panel de administración proporciona una interfaz centralizada para la gestión completa del negocio, organizada bajo una arquitectura de Diseño Orientado al Dominio (DDD)[cite: 20, 120].
+
+* **Contexto `Admin`**:
+    * Gestión de Personal (`personal`): Administración de empleados, roles y asignaciones a sucursales.
+    * Gestión de Sucursales (`sucursales`): Creación y mantenimiento de la información de las diferentes sucursales[cite: 18].
+    * Gestión de Categorías (`categorias`): Administración de categorías para productos y servicios.
+    * Gestión de Especialidades (`especialidades`): Definición de especialidades del personal.
+    * Gestión de Promociones (`promociones`): Creación y administración de ofertas y descuentos.
+    * Configuración de Recordatorios (`recordatorios`): Gestión de plantillas y reglas para notificaciones[cite: 19].
+* **Contexto `Client`**:
+    * Gestión de Usuarios (`usuarios`): Administración de cuentas de clientes y administradores.
+    * Gestión de Órdenes (`ordenes`, `detalle_ordenes`): Seguimiento y administración de pedidos de productos.
+    * Gestión de Reseñas (`reseñas`): Moderación y visualización de opiniones de clientes.
+    * Preferencias Musicales (`musica_preferencias_navegacion`): Gestión de opciones de música para clientes.
+* **Contexto `Scheduling`**:
+    * Gestión de Agendamientos (`agendamientos`): Supervisión, modificación y cancelación de citas.
+    * Gestión de Horarios (`horarios_sucursal`, `excepciones_horario_sucursal`): Configuración de horarios de atención por sucursal y manejo de excepciones.
+* **Contexto `Catalog`**:
+    * Gestión de Productos (`productos`): Administración del inventario de productos, precios, descripciones e imágenes[cite: 120].
+    * Gestión de Servicios (`servicios`): Definición y mantenimiento de los servicios ofrecidos, duraciones y precios[cite: 120].
+* **Contexto `Payments`**:
+    * Gestión de Transacciones (`transacciones_pago`): Seguimiento de los pagos realizados a través de las pasarelas.
+
+## 🛠️ Detalles Técnicos
+
+BarberMusic&Spa está construido con un stack tecnológico moderno y robusto:
+
+* **Backend**: Laravel 12.x (PHP 8.2+) siguiendo una arquitectura de Diseño Orientado al Dominio (DDD).
+* **Frontend**: Blade (motor de plantillas de Laravel), TailwindCSS, Vite.js para la compilación de assets.
+* **Base de Datos**: MySQL (compatible, con migraciones para la estructura).
+* **Autenticación API**: JWT (JSON Web Tokens) mediante el paquete `php-open-source-saver/jwt-auth`.
+* **Seguridad**: Acceso basado en roles (`CLIENTE`, `EMPLEADO`, `ADMIN_GENERAL`, `ADMIN_SUCURSAL`) utilizando middleware personalizado.
+* **APIs Externas (Previstas)**: Integración con PayPal y MercadoPago para procesamiento de pagos.
+* **Notificaciones**: Sistema de correo electrónico para recordatorios y confirmaciones[cite: 170].
+
+## 📋 Requisitos del Sistema
+
+* PHP 8.2 o superior.
+* Composer.
+* Node.js y NPM (o Yarn) para la gestión de assets de frontend.
+* Servidor de base de datos compatible con Laravel (MySQL 8.0+ recomendado).
+* Servidor web (Nginx o Apache recomendado para producción).
+
+## 🚀 Instalación y Configuración
+
+Sigue estos pasos para instalar y configurar el proyecto localmente:
+
+1.  **Clonar el repositorio**:
+    ```bash
+    git clone https://github.com/tu-usuario/BMSPA_Laravel.git
+    cd BMSPA_Laravel
+    ```
+
+2.  **Instalar dependencias de PHP**:
+    ```bash
+    composer install
+    ```
+
+3.  **Instalar dependencias de Node.js**:
+    ```bash
+    npm install
+    # o si usas yarn:
+    # yarn install
+    ```
+
+4.  **Configurar el entorno**:
+    * Copia el archivo de ejemplo `.env.example` a `.env`:
+        ```bash
+        cp .env.example .env
+        ```
+    * Genera la clave de la aplicación:
+        ```bash
+        php artisan key:generate
+        ```
+    * Configura las variables de entorno en tu archivo `.env`, especialmente:
+        * `APP_NAME`, `APP_URL`
+        * Conexión a la base de datos (`DB_CONNECTION`, `DB_HOST`, `DB_PORT`, `DB_DATABASE`, `DB_USERNAME`, `DB_PASSWORD`)
+        * Credenciales de servicios de correo (`MAIL_MAILER`, `MAIL_HOST`, etc.)
+        * Genera el secreto para JWT:
+            ```bash
+            php artisan jwt:secret
+            ```
+            Y asegúrate que `JWT_SECRET` esté en tu `.env`.
+
+5.  **Ejecutar las migraciones y seeders (opcional)**:
+    * Esto creará la estructura de la base de datos.
+        ```bash
+        php artisan migrate
+        ```
+    * Si tienes seeders para datos iniciales:
+        ```bash
+        php artisan db:seed
+        ```
+
+6.  **Compilar assets de frontend**:
+    * Para desarrollo (con hot reloading):
+        ```bash
+        npm run dev
+        ```
+    * Para producción:
+        ```bash
+        npm run build
+        ```
+
+7.  **Servir la aplicación**:
+    ```bash
+    php artisan serve
+    ```
+    La aplicación estará disponible generalmente en `http://localhost:8000`.
+
+## 📸 Capturas de Pantalla (Ejemplos)
+
+<div align="center">
+  <img src="[https://i.imgur.com/screenshot1.png](https://i.imgur.com/screenshot1.png)" alt="Página Principal" width="300"/>
+  <img src="[https://i.imgur.com/screenshot2.png](https://i.imgur.com/screenshot2.png)" alt="Panel de Administración" width="300"/>
+  <br>
+  <img src="[https://i.imgur.com/screenshot3.png](https://i.imgur.com/screenshot3.png)" alt="Sistema de Reservas" width="300"/>
+  <img src="[https://i.imgur.com/screenshot4.png](https://i.imgur.com/screenshot4.png)" alt="Tienda de Productos" width="300"/>
+  <p><em>Nota: Reemplaza estas URLs con capturas reales de tu aplicación Laravel.</em></p>
+</div>
+
+## 📂 Estructura del Proyecto (DDD)
+
+El proyecto sigue una arquitectura de Diseño Orientado al Dominio (DDD) organizada en contextos y capas:
+
+## 📂 Estructura del Proyecto (DDD)
+
+El proyecto sigue una arquitectura de Diseño Orientado al Dominio (DDD) organizada en contextos y capas:
+
+src/
+├── Admin/                 # Contexto para funcionalidades administrativas generales
+│   ├── categorias/
+│   ├── especialidades/
+│   ├── personal/
+│   ├── promociones/
+│   ├── recordatorios/
+│   └── sucursales/
+├── Catalog/               # Contexto para el catálogo de productos y servicios
+│   ├── productos/
+│   └── servicios/
+├── Client/                # Contexto para funcionalidades orientadas al cliente
+│   ├── detalle_ordenes/
+│   ├── musica_preferencias_navegacion/
+│   ├── ordenes/
+│   ├── reseñas/
+│   └── usuarios/          # Incluye Autenticación y Gestión de Perfil
+├── Payments/              # Contexto para la gestión de pagos
+│   └── transacciones_pago/
+└── Scheduling/            # Contexto para agendamientos y horarios
+├── agendamientos/
+├── excepciones_horario_sucursal/
+└── horarios_sucursal/
+
+Dentro de cada módulo (ej. src/Client/usuarios/):
+├── application/       # Casos de uso, DTOs, Handlers/Services de aplicación
+├── domain/            # Entidades, Value Objects, Repositories (interfaces), Domain Services
+└── infrastructure/    # Implementaciones (Controllers, Eloquent Repositories, Providers, Rutas API)
+Adicionalmente, la estructura estándar de Laravel (`app/`, `config/`, `database/`, `routes/`, etc.) complementa la organización del código fuente en `src/`. Se utiliza un comando Artisan personalizado `make:ddd` para generar la estructura base de los módulos DDD.
+
+## 🗃️ Modelo de Base de Datos (Entidades Principales)
+
+La aplicación utiliza las siguientes tablas principales, gestionadas mediante migraciones de Laravel:
+
+* **`usuarios`**: Información de clientes y administradores, roles, preferencias.
+* **`personal`**: Detalles del personal (empleados), sucursal asignada, tipo.
+* **`sucursales`**: Información de las diferentes ubicaciones del negocio.
+* **`servicios`**: Catálogo de servicios ofrecidos (cortes, masajes, etc.).
+* **`productos`**: Catálogo de productos para la venta.
+* **`categorias`**: Para organizar productos y servicios.
+* **`especialidades`**: Especialidades que puede tener el personal.
+* **`agendamientos`**: Reservas de citas de clientes para servicios en sucursales.
+* **`ordenes`**: Pedidos de productos realizados por los clientes.
+* **`detalle_ordenes`**: Artículos individuales dentro de cada orden.
+* **`promociones`**: Códigos de descuento y ofertas especiales.
+* **`horarios_sucursal`**: Horarios regulares de atención por día de la semana para cada sucursal.
+* **`excepciones_horario_sucursal`**: Días festivos o cierres especiales.
+* **`recordatorios`**: Para gestionar notificaciones de citas.
+* **`reseñas`**: Opiniones de los clientes sobre servicios o productos.
+* **`transacciones_pago`**: Registro de las transacciones procesadas.
+* Y tablas pivot para relaciones muchos a muchos (ej. `especialidad_personal`, `promocion_servicio`, `producto_promocion`, `servicio_personal`, `servicio_sucursal`).
+
+## 🎭 Roles y Permisos
+
+El sistema define los siguientes roles de usuario:
+
+* **`CLIENTE`**: Puede registrarse, iniciar sesión, ver catálogo, agendar citas, comprar productos, gestionar su perfil y ver su historial.
+* **`EMPLEADO`**: (Alcance a definir, podría incluir gestión de sus propias citas o perfil profesional).
+* **`ADMIN_SUCURSAL`**: (Alcance a definir, podría gestionar operaciones específicas de una sucursal).
+* **`ADMIN_GENERAL`**: Acceso completo a todas las funcionalidades de administración del sistema.
+
+El acceso a las rutas API está protegido por el guard `auth:api` (JWT) y el middleware `role:{rol}` para funcionalidades específicas.
+
+## 👨‍💻 Equipo de Desarrollo (Según SRS) [cite: 22, 23, 24, 25]
+
+* Rody Esteban Ávila Bohórquez - Analista, Diseñador y Programador [cite: 22]
+* Carlos Estiven Rodríguez Niño - Analista, Diseñador y Programador [cite: 23]
+* Daniel Esteban Ortiz Pinzón - Analista, Diseñador y Programador [cite: 24]
+* Daniel Armando Gómez Chaparro - Analista, Diseñador y Programador [cite: 25]
+
+## 📜 Licencia
+
+Este proyecto está licenciado bajo la Licencia MIT. Ver el archivo `LICENSE` (o referenciar la licencia MIT estándar de Laravel).
+
+## 📧 Contacto
+
+Para consultas o soporte, por favor contáctanos en: `catcomarketing@gmail.com`
+
+---
+
+<div align="center">
+  <p>© BarberMusic&Spa - Experiencia Premium en Spa y Barbería</p>
+  <p>🎵 Donde el estilo se encuentra con la relajación 💈</p>
+</div>
+
+Directory structure:
+└── roddek-dev-bmspa_laravel/
+    ├── README.md
+    ├── artisan
+    ├── composer.json
+    ├── composer.lock
+    ├── dump-bmspa_arquitecture_hexagonal_laravel-202507181922.sql
+    ├── GEMINI.md
+    ├── index.css
+    ├── index.html
+    ├── oauth2-redirect.html
+    ├── package.json
+    ├── phpunit.xml
+    ├── swagger-initializer.js
+    ├── swagger-ui.css
+    ├── swagger-ui.js
+    ├── vite.config.js
+    ├── .editorconfig
+    ├── .env.example
+    ├── app/
+    │   ├── Console/
+    │   │   └── Commands/
+    │   │       └── DDDStructure.php
+    │   ├── Http/
+    │   │   ├── Kernel.php
+    │   │   └── Controllers/
+    │   │       └── Controller.php
+    │   └── Providers/
+    │       ├── AppServiceProvider.php
+    │       └── RouteServiceProvider.php
+    ├── bootstrap/
+    │   ├── app.php
+    │   └── providers.php
+    ├── config/
+    │   ├── app.php
+    │   ├── auth.php
+    │   ├── auth.php.save
+    │   ├── cache.php
+    │   ├── database.php
+    │   ├── filesystems.php
+    │   ├── jwt.php
+    │   ├── l5-swagger.php
+    │   ├── logging.php
+    │   ├── mail.php
+    │   ├── passport.php
+    │   ├── queue.php
+    │   ├── routes.php
+    │   ├── services.php
+    │   └── session.php
+    ├── database/
+    │   ├── factories/
+    │   │   └── UserFactory.php
+    │   ├── migrations/
+    │   │   ├── 0001_01_01_000001_create_cache_table.php
+    │   │   ├── 0001_01_01_000002_create_jobs_table.php
+    │   │   ├── 2025_05_11_124217_create_categorias_table.php
+    │   │   ├── 2025_05_11_124217_create_especialidades_table.php
+    │   │   ├── 2025_05_11_124217_create_musica_preferencias_navegacion_table.php
+    │   │   ├── 2025_05_11_124217_create_productos_table.php
+    │   │   ├── 2025_05_11_124217_create_sucursales_table.php
+    │   │   ├── 2025_05_11_124217_create_usuarios_table.php
+    │   │   ├── 2025_05_11_124218_create_horarios_sucursal_table.php
+    │   │   ├── 2025_05_11_124218_create_ordenes_table.php
+    │   │   ├── 2025_05_11_124218_create_personal_table.php
+    │   │   ├── 2025_05_11_124218_create_promociones_table.php
+    │   │   ├── 2025_05_11_124218_create_servicios_table.php
+    │   │   ├── 2025_05_11_124219_create_agendamientos_table.php
+    │   │   ├── 2025_05_11_124219_create_detalle_ordenes_table.php
+    │   │   ├── 2025_05_11_124219_create_excepciones_horario_sucursal_table.php
+    │   │   ├── 2025_05_11_124219_create_promocion_servicio_table.php
+    │   │   ├── 2025_05_11_124219_create_recordatorios_table.php
+    │   │   ├── 2025_05_11_124219_create_reseñas_table.php
+    │   │   ├── 2025_05_11_124219_create_servicio_personal_table.php
+    │   │   ├── 2025_05_11_124219_create_servicio_sucursal_table.php
+    │   │   ├── 2025_05_11_124219_create_transacciones_pago_table.php
+    │   │   ├── 2025_05_11_124220_create_especialidad_personal_table.php
+    │   │   ├── 2025_05_11_124220_create_producto_promocion_table.php
+    │   │   ├── 2025_05_16_051630_create_sessions_table.php
+    │   │   ├── 2025_05_28_044607_create_oauth_auth_codes_table.php
+    │   │   ├── 2025_05_28_044608_create_oauth_access_tokens_table.php
+    │   │   ├── 2025_05_28_044609_create_oauth_refresh_tokens_table.php
+    │   │   ├── 2025_05_28_044610_create_oauth_clients_table.php
+    │   │   ├── 2025_05_28_044611_create_oauth_device_codes_table.php
+    │   │   └── 2025_07_18_110008_create_direcciones_table.php
+    │   └── seeders/
+    │       └── DatabaseSeeder.php
+    ├── public/
+    │   ├── index.php
+    │   ├── robots.txt
+    │   └── .htaccess
+    ├── resources/
+    │   ├── css/
+    │   │   └── app.css
+    │   ├── js/
+    │   │   ├── app.js
+    │   │   └── bootstrap.js
+    │   └── views/
+    │       └── welcome.blade.php
+    ├── routes/
+    │   ├── api.php
+    │   ├── console.php
+    │   └── web.php
+    ├── src/
+    │   ├── Admin/
+    │   │   ├── categorias/
+    │   │   │   ├── application/
+    │   │   │   │   └── CategoriaService.php
+    │   │   │   ├── domain/
+    │   │   │   │   ├── Entities/
+    │   │   │   │   │   └── Categoria.php
+    │   │   │   │   └── Repositories/
+    │   │   │   │       └── CategoriaRepository.php
+    │   │   │   └── infrastructure/
+    │   │   │       ├── controllers/
+    │   │   │       │   └── ExampleGETController.php
+    │   │   │       ├── Http/
+    │   │   │       │   ├── Controllers/
+    │   │   │       │   │   └── CategoriaController.php
+    │   │   │       │   └── Requests/
+    │   │   │       │       ├── StoreCategoriaRequest.php
+    │   │   │       │       └── UpdateCategoriaRequest.php
+    │   │   │       ├── Models/
+    │   │   │       │   └── CategoriaModel.php
+    │   │   │       ├── Persistence/
+    │   │   │       │   └── EloquentCategoriaRepository.php
+    │   │   │       ├── Providers/
+    │   │   │       │   └── CategoriaServiceProvider.php
+    │   │   │       ├── routes/
+    │   │   │       │   └── api.php
+    │   │   │       └── validators/
+    │   │   │           └── ExampleValidatorRequest.php
+    │   │   ├── especialidad_personal/
+    │   │   │   └── infrastructure/
+    │   │   │       ├── controllers/
+    │   │   │       │   └── ExampleGETController.php
+    │   │   │       ├── routes/
+    │   │   │       │   └── api.php
+    │   │   │       └── validators/
+    │   │   │           └── ExampleValidatorRequest.php
+    │   │   ├── especialidades/
+    │   │   │   ├── application/
+    │   │   │   │   └── EspecialidadService.php
+    │   │   │   ├── domain/
+    │   │   │   │   ├── Entities/
+    │   │   │   │   │   └── Especialidad.php
+    │   │   │   │   └── Repositories/
+    │   │   │   │       └── EspecialidadRepositoryInterface.php
+    │   │   │   └── infrastructure/
+    │   │   │       ├── controllers/
+    │   │   │       │   └── ExampleGETController.php
+    │   │   │       ├── Http/
+    │   │   │       │   ├── Controllers/
+    │   │   │       │   │   └── EspecialidadController.php
+    │   │   │       │   └── Requests/
+    │   │   │       │       └── EspecialidadRequest.php
+    │   │   │       ├── Models/
+    │   │   │       │   └── Especialidad.php
+    │   │   │       ├── Persistence/
+    │   │   │       │   └── EloquentEspecialidadRepository.php
+    │   │   │       ├── Providers/
+    │   │   │       │   └── EspecialidadServiceProvider.php
+    │   │   │       ├── routes/
+    │   │   │       │   └── api.php
+    │   │   │       └── validators/
+    │   │   │           └── ExampleValidatorRequest.php
+    │   │   ├── personal/
+    │   │   │   ├── application/
+    │   │   │   │   └── PersonalService.php
+    │   │   │   ├── domain/
+    │   │   │   │   ├── Entities/
+    │   │   │   │   │   └── Personal.php
+    │   │   │   │   └── Repositories/
+    │   │   │   │       └── PersonalRepository.php
+    │   │   │   └── infrastructure/
+    │   │   │       ├── controllers/
+    │   │   │       │   └── ExampleGETController.php
+    │   │   │       ├── Http/
+    │   │   │       │   ├── Controllers/
+    │   │   │       │   │   └── PersonalController.php
+    │   │   │       │   └── Requests/
+    │   │   │       │       ├── StorePersonalRequest.php
+    │   │   │       │       └── UpdatePersonalRequest.php
+    │   │   │       ├── Models/
+    │   │   │       │   └── PersonalModel.php
+    │   │   │       ├── Persistence/
+    │   │   │       │   └── EloquentPersonalRepository.php
+    │   │   │       ├── Providers/
+    │   │   │       │   └── PersonalServiceProvider.php
+    │   │   │       ├── routes/
+    │   │   │       │   └── api.php
+    │   │   │       └── validators/
+    │   │   │           └── ExampleValidatorRequest.php
+    │   │   ├── producto_promocion/
+    │   │   │   └── infrastructure/
+    │   │   │       ├── controllers/
+    │   │   │       │   └── ExampleGETController.php
+    │   │   │       ├── routes/
+    │   │   │       │   └── api.php
+    │   │   │       └── validators/
+    │   │   │           └── ExampleValidatorRequest.php
+    │   │   ├── promocion_servicio/
+    │   │   │   └── infrastructure/
+    │   │   │       ├── controllers/
+    │   │   │       │   └── ExampleGETController.php
+    │   │   │       ├── routes/
+    │   │   │       │   └── api.php
+    │   │   │       └── validators/
+    │   │   │           └── ExampleValidatorRequest.php
+    │   │   ├── promociones/
+    │   │   │   └── infrastructure/
+    │   │   │       ├── controllers/
+    │   │   │       │   └── ExampleGETController.php
+    │   │   │       ├── routes/
+    │   │   │       │   └── api.php
+    │   │   │       └── validators/
+    │   │   │           └── ExampleValidatorRequest.php
+    │   │   ├── recordatorios/
+    │   │   │   └── infrastructure/
+    │   │   │       ├── controllers/
+    │   │   │       │   └── ExampleGETController.php
+    │   │   │       ├── routes/
+    │   │   │       │   └── api.php
+    │   │   │       └── validators/
+    │   │   │           └── ExampleValidatorRequest.php
+    │   │   ├── servicio_sucursal/
+    │   │   │   └── infrastructure/
+    │   │   │       ├── controllers/
+    │   │   │       │   └── ExampleGETController.php
+    │   │   │       ├── routes/
+    │   │   │       │   └── api.php
+    │   │   │       └── validators/
+    │   │   │           └── ExampleValidatorRequest.php
+    │   │   └── sucursales/
+    │   │       ├── application/
+    │   │       │   └── SucursalService.php
+    │   │       ├── domain/
+    │   │       │   ├── Entities/
+    │   │       │   │   └── Sucursal.php
+    │   │       │   └── Repositories/
+    │   │       │       └── SucursalRepository.php
+    │   │       └── infrastructure/
+    │   │           ├── Http/
+    │   │           │   ├── Controllers/
+    │   │           │   │   └── SucursalController.php
+    │   │           │   └── Requests/
+    │   │           │       └── SucursalRequest.php
+    │   │           ├── Models/
+    │   │           │   └── SucursalModel.php
+    │   │           ├── Persistence/
+    │   │           │   └── EloquentSucursalRepository.php
+    │   │           ├── Providers/
+    │   │           │   └── SucursalServiceProvider.php
+    │   │           └── routes/
+    │   │               └── api.php
+    │   ├── Catalog/
+    │   │   ├── productos/
+    │   │   │   ├── application/
+    │   │   │   │   └── ProductoService.php
+    │   │   │   ├── domain/
+    │   │   │   │   ├── Entities/
+    │   │   │   │   │   └── Producto.php
+    │   │   │   │   └── Repositories/
+    │   │   │   │       └── ProductoRepository.php
+    │   │   │   └── infrastructure/
+    │   │   │       ├── controllers/
+    │   │   │       │   └── ExampleGETController.php
+    │   │   │       ├── Http/
+    │   │   │       │   ├── Controllers/
+    │   │   │       │   │   └── ProductoController.php
+    │   │   │       │   └── Requests/
+    │   │   │       │       ├── StoreProductoRequest.php
+    │   │   │       │       └── UpdateProductoRequest.php
+    │   │   │       ├── Models/
+    │   │   │       │   └── ProductoModel.php
+    │   │   │       ├── Persistence/
+    │   │   │       │   └── EloquentProductoRepository.php
+    │   │   │       ├── Providers/
+    │   │   │       │   └── ProductoServiceProvider.php
+    │   │   │       ├── routes/
+    │   │   │       │   └── api.php
+    │   │   │       └── validators/
+    │   │   │           └── ExampleValidatorRequest.php
+    │   │   └── servicios/
+    │   │       ├── application/
+    │   │       │   └── ServicioService.php
+    │   │       ├── domain/
+    │   │       │   ├── Entities/
+    │   │       │   │   └── Servicio.php
+    │   │       │   └── Repositories/
+    │   │       │       └── ServicioRepository.php
+    │   │       └── infrastructure/
+    │   │           ├── controllers/
+    │   │           │   └── ExampleGETController.php
+    │   │           ├── Http/
+    │   │           │   ├── Controllers/
+    │   │           │   │   └── ServicioController.php
+    │   │           │   └── Requests/
+    │   │           │       ├── StoreServicioRequest.php
+    │   │           │       └── UpdateServicioRequest.php
+    │   │           ├── Models/
+    │   │           │   └── ServicioModel.php
+    │   │           ├── Persistence/
+    │   │           │   └── EloquentServicioRepository.php
+    │   │           ├── Providers/
+    │   │           │   └── ServicioServiceProvider.php
+    │   │           ├── routes/
+    │   │           │   └── api.php
+    │   │           └── validators/
+    │   │               └── ExampleValidatorRequest.php
+    │   ├── Client/
+    │   │   ├── detalle_ordenes/
+    │   │   │   └── infrastructure/
+    │   │   │       ├── controllers/
+    │   │   │       │   └── ExampleGETController.php
+    │   │   │       ├── routes/
+    │   │   │       │   └── api.php
+    │   │   │       └── validators/
+    │   │   │           └── ExampleValidatorRequest.php
+    │   │   ├── direcciones/
+    │   │   │   ├── application/
+    │   │   │   │   └── DireccionService.php
+    │   │   │   ├── domain/
+    │   │   │   │   ├── Entities/
+    │   │   │   │   │   └── Direccion.php
+    │   │   │   │   └── Repositories/
+    │   │   │   │       └── DireccionRepository.php
+    │   │   │   └── infrastructure/
+    │   │   │       ├── controllers/
+    │   │   │       │   └── ExampleGETController.php
+    │   │   │       ├── Http/
+    │   │   │       │   ├── Controllers/
+    │   │   │       │   │   └── DireccionController.php
+    │   │   │       │   └── Requests/
+    │   │   │       │       ├── StoreDireccionRequest.php
+    │   │   │       │       └── UpdateDireccionRequest.php
+    │   │   │       ├── Models/
+    │   │   │       │   └── DireccionModel.php
+    │   │   │       ├── Persistence/
+    │   │   │       │   └── EloquentDireccionRepository.php
+    │   │   │       ├── Providers/
+    │   │   │       │   └── DireccionServiceProvider.php
+    │   │   │       ├── routes/
+    │   │   │       │   └── api.php
+    │   │   │       └── validators/
+    │   │   │           └── ExampleValidatorRequest.php
+    │   │   ├── musica_preferencias_navegacion/
+    │   │   │   ├── application/
+    │   │   │   │   └── MusicaPreferenciaNavegacionService.php
+    │   │   │   ├── domain/
+    │   │   │   │   ├── Entities/
+    │   │   │   │   │   └── MusicaPreferenciaNavegacion.php
+    │   │   │   │   └── Repositories/
+    │   │   │   │       └── MusicaPreferenciaNavegacionRepository.php
+    │   │   │   └── infrastructure/
+    │   │   │       ├── controllers/
+    │   │   │       │   └── ExampleGETController.php
+    │   │   │       ├── Http/
+    │   │   │       │   ├── Controllers/
+    │   │   │       │   │   └── MusicaPreferenciaNavegacionController.php
+    │   │   │       │   └── Requests/
+    │   │   │       │       ├── StoreMusicaPreferenciaNavegacionRequest.php
+    │   │   │       │       └── UpdateMusicaPreferenciaNavegacionRequest.php
+    │   │   │       ├── Models/
+    │   │   │       │   └── MusicaPreferenciaNavegacionModel.php
+    │   │   │       ├── Persistence/
+    │   │   │       │   └── EloquentMusicaPreferenciaNavegacionRepository.php
+    │   │   │       ├── Providers/
+    │   │   │       │   └── MusicaPreferenciaNavegacionServiceProvider.php
+    │   │   │       ├── routes/
+    │   │   │       │   └── api.php
+    │   │   │       └── validators/
+    │   │   │           └── ExampleValidatorRequest.php
+    │   │   ├── ordenes/
+    │   │   │   └── infrastructure/
+    │   │   │       ├── controllers/
+    │   │   │       │   └── ExampleGETController.php
+    │   │   │       ├── routes/
+    │   │   │       │   └── api.php
+    │   │   │       └── validators/
+    │   │   │           └── ExampleValidatorRequest.php
+    │   │   ├── recordatorios/
+    │   │   │   ├── application/
+    │   │   │   │   └── RecordatorioService.php
+    │   │   │   ├── domain/
+    │   │   │   │   ├── Entities/
+    │   │   │   │   │   └── Recordatorio.php
+    │   │   │   │   └── Repositories/
+    │   │   │   │       └── RecordatorioRepository.php
+    │   │   │   └── infrastructure/
+    │   │   │       ├── Http/
+    │   │   │       │   ├── Controllers/
+    │   │   │       │   │   └── RecordatorioController.php
+    │   │   │       │   └── Requests/
+    │   │   │       │       ├── StoreRecordatorioRequest.php
+    │   │   │       │       └── UpdateRecordatorioRequest.php
+    │   │   │       ├── Models/
+    │   │   │       │   └── RecordatorioModel.php
+    │   │   │       ├── Persistence/
+    │   │   │       │   └── EloquentRecordatorioRepository.php
+    │   │   │       ├── Providers/
+    │   │   │       │   └── RecordatorioServiceProvider.php
+    │   │   │       └── routes/
+    │   │   │           └── api.php
+    │   │   ├── reseñas/
+    │   │   │   └── infrastructure/
+    │   │   │       ├── controllers/
+    │   │   │       │   └── ExampleGETController.php
+    │   │   │       ├── routes/
+    │   │   │       │   └── api.php
+    │   │   │       └── validators/
+    │   │   │           └── ExampleValidatorRequest.php
+    │   │   └── usuarios/
+    │   │       ├── application/
+    │   │       │   └── Auth/
+    │   │       │       ├── Command/
+    │   │       │       │   ├── LoginUsuarioCommand.php
+    │   │       │       │   └── RegisterUsuarioCommand.php
+    │   │       │       ├── DTO/
+    │   │       │       │   ├── AuthTokenData.php
+    │   │       │       │   └── RegisteredUsuarioData.php
+    │   │       │       └── Handler/
+    │   │       │           ├── LoginUsuarioHandler.php
+    │   │       │           └── RegisterUsuarioHandler.php
+    │   │       ├── domain/
+    │   │       │   ├── Entities/
+    │   │       │   │   └── Usuario.php
+    │   │       │   ├── Exception/
+    │   │       │   │   ├── InvalidCredentialsException.php
+    │   │       │   │   └── UsuarioNotFoundException.php
+    │   │       │   ├── Repositories/
+    │   │       │   │   └── UsuarioRepositoryInterface.php
+    │   │       │   ├── Services/
+    │   │       │   │   └── PasswordHasherInterface.php
+    │   │       │   └── ValueObjects/
+    │   │       │       ├── EmailUsuario.php
+    │   │       │       ├── NombreUsuario.php
+    │   │       │       ├── PasswordHashed.php
+    │   │       │       ├── RolUsuario.php
+    │   │       │       └── UsuarioId.php
+    │   │       └── infrastructure/
+    │   │           ├── Http/
+    │   │           │   ├── Controllers/
+    │   │           │   │   ├── AuthController.php
+    │   │           │   │   ├── OAuthController.php
+    │   │           │   │   └── TestRoleController.php
+    │   │           │   ├── Middleware/
+    │   │           │   │   └── CheckRole.php
+    │   │           │   └── Requests/
+    │   │           │       ├── LoginRequest.php
+    │   │           │       └── RegisterRequest.php
+    │   │           ├── Persistence/
+    │   │           │   └── Eloquent/
+    │   │           │       ├── EloquentUsuarioRepository.php
+    │   │           │       └── UsuarioModel.php
+    │   │           ├── Providers/
+    │   │           │   └── UsuarioDomainServiceProvider.php
+    │   │           ├── routes/
+    │   │           │   └── api.php
+    │   │           └── Services/
+    │   │               └── LaravelPasswordHasher.php
+    │   ├── Payments/
+    │   │   └── transacciones_pago/
+    │   │       └── infrastructure/
+    │   │           ├── controllers/
+    │   │           │   └── ExampleGETController.php
+    │   │           ├── routes/
+    │   │           │   └── api.php
+    │   │           └── validators/
+    │   │               └── ExampleValidatorRequest.php
+    │   └── Scheduling/
+    │       ├── agendamientos/
+    │       │   ├── application/
+    │       │   │   └── AgendamientoService.php
+    │       │   ├── domain/
+    │       │   │   ├── Entities/
+    │       │   │   │   └── Agendamiento.php
+    │       │   │   └── Repositories/
+    │       │   │       └── AgendamientoRepository.php
+    │       │   └── infrastructure/
+    │       │       ├── controllers/
+    │       │       │   └── ExampleGETController.php
+    │       │       ├── Http/
+    │       │       │   ├── Controllers/
+    │       │       │   │   └── AgendamientoController.php
+    │       │       │   └── Requests/
+    │       │       │       ├── StoreAgendamientoRequest.php
+    │       │       │       └── UpdateAgendamientoRequest.php
+    │       │       ├── Models/
+    │       │       │   └── AgendamientoModel.php
+    │       │       ├── Persistence/
+    │       │       │   └── EloquentAgendamientoRepository.php
+    │       │       ├── Providers/
+    │       │       │   └── AgendamientoServiceProvider.php
+    │       │       ├── routes/
+    │       │       │   └── api.php
+    │       │       └── validators/
+    │       │           └── ExampleValidatorRequest.php
+    │       ├── excepciones_horario_sucursal/
+    │       │   └── infrastructure/
+    │       │       ├── controllers/
+    │       │       │   └── ExampleGETController.php
+    │       │       ├── routes/
+    │       │       │   └── api.php
+    │       │       └── validators/
+    │       │           └── ExampleValidatorRequest.php
+    │       └── horarios_sucursal/
+    │           ├── application/
+    │           │   └── HorarioSucursalService.php
+    │           ├── domain/
+    │           │   ├── Entities/
+    │           │   │   └── HorarioSucursal.php
+    │           │   └── Repositories/
+    │           │       └── HorarioSucursalRepository.php
+    │           └── infrastructure/
+    │               ├── controllers/
+    │               │   └── ExampleGETController.php
+    │               ├── Http/
+    │               │   ├── Controllers/
+    │               │   │   └── HorarioSucursalController.php
+    │               │   └── Requests/
+    │               │       ├── StoreHorarioSucursalRequest.php
+    │               │       └── UpdateHorarioSucursalRequest.php
+    │               ├── Models/
+    │               │   └── HorarioSucursalModel.php
+    │               ├── Persistence/
+    │               │   └── EloquentHorarioSucursalRepository.php
+    │               ├── Providers/
+    │               │   └── HorarioSucursalServiceProvider.php
+    │               ├── routes/
+    │               │   └── api.php
+    │               └── validators/
+    │                   └── ExampleValidatorRequest.php
+    ├── storage/
+    │   └── api-docs/
+    │       └── api-docs.json
+    ├── tests/
+    │   ├── TestCase.php
+    │   ├── Feature/
+    │   │   └── ExampleTest.php
+    │   └── Unit/
+    │       └── ExampleTest.php
+    ├── .claude/
+    │   └── settings.local.json
+    └── .cursor/
+        └── rules/
+            ├── bmspa.mdc
+            └── laravel.mdc

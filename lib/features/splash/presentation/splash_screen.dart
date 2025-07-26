@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:go_router/go_router.dart';
 import '../../../features/auth/providers/auth_provider.dart';
 
 class SplashScreen extends StatefulWidget {
@@ -57,7 +58,7 @@ class _SplashScreenState extends State<SplashScreen>
 
       if (isFirstLaunch) {
         // Si es la primera vez, mostrar onboarding
-        Navigator.of(context).pushReplacementNamed('/onboarding');
+        context.go('/onboarding');
       } else {
         // Si no es la primera vez, verificar autenticación
         if (authProvider.status == AuthStatus.initial) {
@@ -65,9 +66,8 @@ class _SplashScreenState extends State<SplashScreen>
               .then((_) => authProvider.status == AuthStatus.initial));
         }
 
-        Navigator.of(context).pushReplacementNamed(
-          authProvider.isAuthenticated ? '/home' : '/home',
-        );
+        // Para modo offline, siempre ir a home
+        context.go('/home');
       }
     }
   }
@@ -128,6 +128,14 @@ class _SplashScreenState extends State<SplashScreen>
                       child: Image.asset(
                         'assets/logo.png',
                         fit: BoxFit.contain,
+                        errorBuilder: (context, error, stackTrace) {
+                          // Si no encuentra el logo, mostrar un ícono
+                          return Icon(
+                            Icons.content_cut,
+                            size: 80,
+                            color: Theme.of(context).primaryColor,
+                          );
+                        },
                       ),
                     ),
                   ),
