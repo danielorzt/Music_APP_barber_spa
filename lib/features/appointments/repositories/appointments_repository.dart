@@ -7,7 +7,7 @@ class AppointmentsRepository {
 
   Future<List<Appointment>> getUserAppointments(int userId) async {
     try {
-      final response = await _apiService.get('/agendamientos/usuario/$userId');
+      final response = await _apiService.get('/appointments/user/$userId');
       return (response as List).map((item) => Appointment.fromJson(item)).toList();
     } catch (e) {
       rethrow;
@@ -17,7 +17,7 @@ class AppointmentsRepository {
   Future<Appointment> createAppointment(Appointment appointment) async {
     try {
       final response = await _apiService.post(
-        '/agendamientos',
+        '/appointments',
         data: appointment.toJson(),
       );
       return Appointment.fromJson(response);
@@ -29,8 +29,8 @@ class AppointmentsRepository {
   Future<Appointment> updateAppointmentStatus(int appointmentId, String status) async {
     try {
       final response = await _apiService.put(
-        '/agendamientos/$appointmentId/status',
-        data: {'estado': status},
+        '/appointments/$appointmentId/status',
+        data: {'status': status},
       );
       return Appointment.fromJson(response);
     } catch (e) {

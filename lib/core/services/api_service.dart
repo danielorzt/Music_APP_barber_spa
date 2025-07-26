@@ -1,10 +1,12 @@
 // lib/core/services/api_service.dart
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
+import '../api/api_interceptors.dart';
 
 class ApiService {
   final Dio _dio = Dio();
-  final String baseUrl = 'http://192.168.1.X:63106/api/v1'; // Cambia la IP por la de tu servidor
+  final String baseUrl =
+      'http://192.168.1.10:8080/api/v1'; // Updated for Spring Boot backend
 
   // Singleton pattern
   static final ApiService _instance = ApiService._internal();
@@ -26,37 +28,22 @@ class ApiService {
       'Accept': 'application/json',
     };
 
-    // Agrega interceptores para manejo de errores y token
-    _dio.interceptors.add(InterceptorsWrapper(
-      onRequest: (options, handler) {
-        // Puedes agregar el token aquí si tienes uno
-        // final token = await secureStorage.read(key: 'token');
-        // if (token != null) {
-        //   options.headers['Authorization'] = 'Bearer $token';
-        // }
-        return handler.next(options);
-      },
-      onResponse: (response, handler) {
-        return handler.next(response);
-      },
-      onError: (DioException e, handler) {
-        debugPrint('DioError: ${e.message}');
-        // Puedes manejar errores específicos aquí
-        return handler.next(e);
-      },
-    ));
+    // Add JWT interceptor for authentication
+    _dio.interceptors.add(ApiInterceptor());
 
     // Agrega un logger en modo de desarrollo
     if (kDebugMode) {
-      _dio.interceptors.add(LogInterceptor(
-        requestBody: true,
-        responseBody: true,
-      ));
+      _dio.interceptors.add(
+        LogInterceptor(requestBody: true, responseBody: true),
+      );
     }
   }
 
   // Métodos genéricos para realizar peticiones HTTP
-  Future<dynamic> get(String path, {Map<String, dynamic>? queryParameters}) async {
+  Future<dynamic> get(
+    String path, {
+    Map<String, dynamic>? queryParameters,
+  }) async {
     try {
       final response = await _dio.get(path, queryParameters: queryParameters);
       return response.data;

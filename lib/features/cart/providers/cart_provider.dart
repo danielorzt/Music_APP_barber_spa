@@ -54,7 +54,7 @@ class CartProvider with ChangeNotifier {
         cantidad: newQuantity,
         precio: product.precio,
         total: newTotal,
-        productoId: product.id!,
+        productoId: product.id,
       );
     } else {
       // Agregar nuevo item
@@ -64,7 +64,7 @@ class CartProvider with ChangeNotifier {
         cantidad: quantity.toInt(),
         precio: product.precio,
         total: product.precio * quantity,
-        productoId: product.id!,
+        productoId: product.id,
       ));
     }
 

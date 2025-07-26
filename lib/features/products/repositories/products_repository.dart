@@ -7,7 +7,7 @@ class ProductsRepository {
 
   Future<List<Product>> getAllProducts() async {
     try {
-      final response = await _apiService.get('/productos');
+      final response = await _apiService.get('/products');
       return (response as List).map((json) => Product.fromJson(json)).toList();
     } catch (e) {
       rethrow;
@@ -16,7 +16,7 @@ class ProductsRepository {
 
   Future<Product> getProductById(int id) async {
     try {
-      final response = await _apiService.get('/productos/$id');
+      final response = await _apiService.get('/products/$id');
       return Product.fromJson(response);
     } catch (e) {
       rethrow;
@@ -26,7 +26,7 @@ class ProductsRepository {
   // Para administradores
   Future<Product> createProduct(Product product) async {
     try {
-      final response = await _apiService.post('/productos', data: product.toJson());
+      final response = await _apiService.post('/products', data: product.toJson());
       return Product.fromJson(response);
     } catch (e) {
       rethrow;
@@ -36,7 +36,7 @@ class ProductsRepository {
   // Para administradores
   Future<Product> updateProduct(Product product) async {
     try {
-      final response = await _apiService.put('/productos/${product.id}', data: product.toJson());
+      final response = await _apiService.put('/products/${product.id}', data: product.toJson());
       return Product.fromJson(response);
     } catch (e) {
       rethrow;
@@ -46,7 +46,7 @@ class ProductsRepository {
   // Para administradores
   Future<void> deleteProduct(int id) async {
     try {
-      await _apiService.delete('/productos/$id');
+      await _apiService.delete('/products/$id');
     } catch (e) {
       rethrow;
     }

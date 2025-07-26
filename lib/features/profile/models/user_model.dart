@@ -30,7 +30,14 @@ class User {
     this.tipo,
     this.estado,
     this.imagen,
-  });
+    String? name,
+    String? phone,
+  }) : 
+    _tempName = name,
+    _tempPhone = phone;
+
+  final String? _tempName;
+  final String? _tempPhone;
 
   // factory User.fromJson(Map<String, dynamic> json) => _$UserFromJson(json);
   // Map<String, dynamic> toJson() => _$UserToJson(this);

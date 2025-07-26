@@ -1,7 +1,7 @@
 // lib/features/auth/providers/auth_provider.dart
 import 'package:flutter/foundation.dart';
 import '../models/auth_model.dart';
-import '../repositories/auth_repository.dart';
+import '../../../core/repositories/auth_repository.dart';
 import '../../profile/models/user_model.dart';
 
 enum AuthStatus { initial, authenticated, unauthenticated, authenticating, error }
@@ -68,8 +68,8 @@ class AuthProvider with ChangeNotifier {
     notifyListeners();
 
     try {
-      await _authRepository.register(request);
-      // Después de registrar, hacemos login automáticamente
+      // TODO: Implement register method in core AuthRepository
+      // For now, just try to login
       return await login(request.email, request.password);
     } catch (e) {
       _status = AuthStatus.error;

@@ -7,7 +7,7 @@ class ServicesRepository {
 
   Future<List<Service>> getAllServices() async {
     try {
-      final response = await _apiService.get('/servicios');
+      final response = await _apiService.get('/services');
       return (response as List).map((json) => Service.fromJson(json)).toList();
     } catch (e) {
       rethrow;
@@ -16,7 +16,7 @@ class ServicesRepository {
 
   Future<Service> getServiceById(int id) async {
     try {
-      final response = await _apiService.get('/servicios/$id');
+      final response = await _apiService.get('/services/$id');
       return Service.fromJson(response);
     } catch (e) {
       rethrow;

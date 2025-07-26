@@ -1,0 +1,33 @@
+{
+  "name": "music_app_barber_spa",
+  "version": "1.0.0",
+  "description": "<div align=\"center\">\r   <img src=\"https://i.imgur.com/your-app-logo-here.png\" alt=\"Logo de BarberMusic&Spa Mobile\" width=\"200\"/>",
+  "main": "index.js",
+  "directories": {
+    "lib": "lib",
+    "test": "test"
+  },
+  "scripts": {
+    "start": "react-scripts start",
+    "build": "react-scripts build",
+    "test": "react-scripts test"
+  },
+
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/danielorzt/Music_APP_barber_spa.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/danielorzt/Music_APP_barber_spa/issues"
+  },
+  "homepage": "https://github.com/danielorzt/Music_APP_barber_spa#readme",
+  "dependencies": {
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "react-scripts": "5.0.1"
+  }
+}
