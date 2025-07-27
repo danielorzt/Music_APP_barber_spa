@@ -6,6 +6,8 @@ import 'package:provider/provider.dart';
 // Screens - Auth
 import '../../features/auth/presentation/login_screen.dart';
 import '../../features/auth/presentation/register_screen.dart';
+import '../../features/auth/presentation/test_login_screen.dart';
+import '../../features/auth/presentation/api_test_screen.dart';
 
 // Screens - Main
 import '../../features/splash/presentation/splash_screen.dart';
@@ -142,6 +144,14 @@ class AppRouter {
       GoRoute(
         path: '/register',
         builder: (context, state) => const RegisterScreen(),
+      ),
+      GoRoute(
+        path: '/test-login',
+        builder: (context, state) => const TestLoginScreen(),
+      ),
+      GoRoute(
+        path: '/api-test',
+        builder: (context, state) => const ApiTestScreen(),
       ),
       
       // === SERVICIOS ===

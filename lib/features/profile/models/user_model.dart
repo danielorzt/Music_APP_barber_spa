@@ -1,9 +1,4 @@
 // lib/features/profile/models/user_model.dart
-// import 'package:json_annotation/json_annotation.dart';
-
-// part 'user_model.g.dart';
-
-// @JsonSerializable()
 import 'package:equatable/equatable.dart';
 
 class User extends Equatable {
@@ -15,6 +10,9 @@ class User extends Equatable {
   final String? role; // 'client' o 'admin'
   final String? avatarUrl;
   final DateTime? fechaRegistro;
+  final DateTime? emailVerifiedAt;
+  final DateTime? createdAt;
+  final DateTime? updatedAt;
 
   const User({
     this.id,
@@ -25,6 +23,9 @@ class User extends Equatable {
     this.role = 'client',
     this.avatarUrl,
     this.fechaRegistro,
+    this.emailVerifiedAt,
+    this.createdAt,
+    this.updatedAt,
   });
 
   @override
@@ -37,23 +38,37 @@ class User extends Equatable {
         role,
         avatarUrl,
         fechaRegistro,
+        emailVerifiedAt,
+        createdAt,
+        updatedAt,
       ];
 
+  /// Constructor desde JSON (compatible con Laravel)
   factory User.fromJson(Map<String, dynamic> json) {
     return User(
       id: json['id']?.toString(),
-      nombre: json['nombre'] as String,
-      email: json['email'] as String,
-      telefono: json['telefono'] as String?,
-      direccion: json['direccion'] as String?,
-      role: json['role'] as String? ?? 'client',
-      avatarUrl: json['avatarUrl'] as String?,
-      fechaRegistro: json['fechaRegistro'] != null
-          ? DateTime.parse(json['fechaRegistro'] as String)
+      nombre: json['nombre'] ?? json['name'] ?? '',
+      email: json['email'] ?? '',
+      telefono: json['telefono'] ?? json['phone'] ?? json['telefono'],
+      direccion: json['direccion'] ?? json['address'],
+      role: json['role'] ?? json['tipo'] ?? 'client',
+      avatarUrl: json['avatarUrl'] ?? json['avatar_url'] ?? json['profile_photo_url'],
+      fechaRegistro: json['fecha_registro'] != null 
+          ? DateTime.tryParse(json['fecha_registro']) 
+          : null,
+      emailVerifiedAt: json['email_verified_at'] != null 
+          ? DateTime.tryParse(json['email_verified_at']) 
+          : null,
+      createdAt: json['created_at'] != null 
+          ? DateTime.tryParse(json['created_at']) 
+          : null,
+      updatedAt: json['updated_at'] != null 
+          ? DateTime.tryParse(json['updated_at']) 
           : null,
     );
   }
 
+  /// Convertir a JSON
   Map<String, dynamic> toJson() {
     return {
       'id': id,
@@ -63,10 +78,14 @@ class User extends Equatable {
       'direccion': direccion,
       'role': role,
       'avatarUrl': avatarUrl,
-      'fechaRegistro': fechaRegistro?.toIso8601String(),
+      'fecha_registro': fechaRegistro?.toIso8601String(),
+      'email_verified_at': emailVerifiedAt?.toIso8601String(),
+      'created_at': createdAt?.toIso8601String(),
+      'updated_at': updatedAt?.toIso8601String(),
     };
   }
 
+  /// Crear copia con cambios
   User copyWith({
     String? id,
     String? nombre,
@@ -76,6 +95,9 @@ class User extends Equatable {
     String? role,
     String? avatarUrl,
     DateTime? fechaRegistro,
+    DateTime? emailVerifiedAt,
+    DateTime? createdAt,
+    DateTime? updatedAt,
   }) {
     return User(
       id: id ?? this.id,
@@ -86,9 +108,37 @@ class User extends Equatable {
       role: role ?? this.role,
       avatarUrl: avatarUrl ?? this.avatarUrl,
       fechaRegistro: fechaRegistro ?? this.fechaRegistro,
+      emailVerifiedAt: emailVerifiedAt ?? this.emailVerifiedAt,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
     );
   }
 
-  bool get isAdmin => role == 'admin';
-  bool get isClient => role == 'client';
+  /// Verificar si el usuario tiene un rol específico
+  bool hasRole(String targetRole) {
+    return role?.toLowerCase() == targetRole.toLowerCase();
+  }
+
+  /// Verificar si es administrador
+  bool get isAdmin => hasRole('admin');
+
+  /// Verificar si es cliente
+  bool get isClient => hasRole('client');
+
+  /// Verificar si el email está verificado
+  bool get isEmailVerified => emailVerifiedAt != null;
+
+  /// Obtener iniciales del nombre
+  String get initials {
+    final words = nombre.trim().split(' ');
+    if (words.isEmpty) return '';
+    if (words.length == 1) return words.first.substring(0, 1).toUpperCase();
+    return (words.first.substring(0, 1) + words.last.substring(0, 1)).toUpperCase();
+  }
+
+  /// Representación de string para debug
+  @override
+  String toString() {
+    return 'User{id: $id, nombre: $nombre, email: $email, role: $role}';
+  }
 }

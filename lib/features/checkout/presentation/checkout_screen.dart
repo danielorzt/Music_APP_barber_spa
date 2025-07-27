@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:music_app/core/widgets/back_button_interceptor.dart';
 
 class CheckoutScreen extends StatefulWidget {
   const CheckoutScreen({super.key});
@@ -38,338 +39,372 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Finalizar Compra'),
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-      ),
-      body: Form(
-        key: _formKey,
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Información de entrega
-              _buildSection(
-                title: '📍 Información de Entrega',
-                child: _buildDeliveryForm(),
-              ),
-              
-              const SizedBox(height: 24),
-              
-              // Método de pago
-              _buildSection(
-                title: '💳 Método de Pago',
-                child: _buildPaymentMethodSection(),
-              ),
-              
-              const SizedBox(height: 24),
-              
-              // Resumen del pedido
-              _buildSection(
-                title: '📋 Resumen del Pedido',
-                child: _buildOrderSummary(),
-              ),
-              
-              const SizedBox(height: 32),
-              
-              // Botón de finalizar compra
-              _buildFinishButton(),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildSection({required String title, required Widget child}) {
-    return Container(
-      width: double.infinity,
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              title,
-              style: const TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-              ),
+    final theme = Theme.of(context);
+    
+    return BackButtonInterceptor(
+      fallbackRoute: '/carrito',
+      child: Scaffold(
+        backgroundColor: theme.colorScheme.background,
+        appBar: AppBar(
+          title: Text(
+            'Finalizar Compra',
+            style: TextStyle(
+              color: theme.colorScheme.onSurface,
+              fontWeight: FontWeight.w600,
             ),
-            const SizedBox(height: 16),
-            child,
-          ],
+          ),
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          leading: IconButton(
+            icon: Icon(Icons.arrow_back, color: theme.colorScheme.onSurface),
+            onPressed: () => context.go('/carrito'),
+          ),
         ),
+        body: Form(
+          key: _formKey,
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _buildDeliveryForm(),
+                const SizedBox(height: 24),
+                _buildPaymentMethodSection(),
+                const SizedBox(height: 24),
+                _buildOrderSummary(),
+              ],
+            ),
+          ),
+        ),
+        bottomNavigationBar: _buildFinishButton(),
       ),
     );
   }
 
-  Widget _buildDeliveryForm() {
+  Widget _buildSection(String title, Widget content) {
+    final theme = Theme.of(context);
+    
     return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Row(
-          children: [
-            Expanded(
-              child: TextFormField(
-                controller: _nombreController,
-                decoration: const InputDecoration(
-                  labelText: 'Nombre Completo',
-                  border: OutlineInputBorder(),
-                ),
-                validator: (value) => value?.isEmpty == true ? 'Campo requerido' : null,
-              ),
-            ),
-          ],
-        ),
-        
-        const SizedBox(height: 16),
-        
-        TextFormField(
-          controller: _direccionController,
-          decoration: const InputDecoration(
-            labelText: 'Dirección',
-            border: OutlineInputBorder(),
+        Text(
+          title,
+          style: TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+            color: theme.colorScheme.onSurface,
           ),
-          validator: (value) => value?.isEmpty == true ? 'Campo requerido' : null,
         ),
-        
         const SizedBox(height: 16),
-        
-        Row(
-          children: [
-            Expanded(
-              flex: 2,
-              child: TextFormField(
-                controller: _ciudadController,
-                decoration: const InputDecoration(
-                  labelText: 'Ciudad',
-                  border: OutlineInputBorder(),
-                ),
-                validator: (value) => value?.isEmpty == true ? 'Campo requerido' : null,
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: TextFormField(
-                controller: _codigoPostalController,
-                decoration: const InputDecoration(
-                  labelText: 'C.P.',
-                  border: OutlineInputBorder(),
-                ),
-                keyboardType: TextInputType.number,
-                validator: (value) => value?.isEmpty == true ? 'Campo requerido' : null,
-              ),
-            ),
-          ],
-        ),
-        
-        const SizedBox(height: 16),
-        
-        Row(
-          children: [
-            Expanded(
-              child: TextFormField(
-                controller: _telefonoController,
-                decoration: const InputDecoration(
-                  labelText: 'Teléfono',
-                  border: OutlineInputBorder(),
-                ),
-                keyboardType: TextInputType.phone,
-                validator: (value) => value?.isEmpty == true ? 'Campo requerido' : null,
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: TextFormField(
-                controller: _emailController,
-                decoration: const InputDecoration(
-                  labelText: 'Email',
-                  border: OutlineInputBorder(),
-                ),
-                keyboardType: TextInputType.emailAddress,
-                validator: (value) {
-                  if (value?.isEmpty == true) return 'Campo requerido';
-                  if (!value!.contains('@')) return 'Email inválido';
-                  return null;
-                },
-              ),
-            ),
-          ],
+        Card(
+          color: theme.cardTheme.color,
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: content,
+          ),
         ),
       ],
     );
   }
 
-  Widget _buildPaymentMethodSection() {
-    return Column(
-      children: [
-        // Selección de método de pago
-        Row(
-          children: [
-            Expanded(
-              child: RadioListTile<String>(
-                title: Row(
-                  children: [
-                    Icon(Icons.credit_card, color: Colors.blue[600]),
-                    const SizedBox(width: 8),
-                    const Text('Tarjeta'),
-                  ],
-                ),
-                value: 'tarjeta',
-                groupValue: _selectedPaymentMethod,
-                onChanged: (value) {
-                  setState(() {
-                    _selectedPaymentMethod = value!;
-                  });
-                },
-                contentPadding: EdgeInsets.zero,
-              ),
-            ),
-            Expanded(
-              child: RadioListTile<String>(
-                title: Row(
-                  children: [
-                    Icon(Icons.account_balance_wallet, color: Colors.green[600]),
-                    const SizedBox(width: 8),
-                    const Text('PayPal'),
-                  ],
-                ),
-                value: 'paypal',
-                groupValue: _selectedPaymentMethod,
-                onChanged: (value) {
-                  setState(() {
-                    _selectedPaymentMethod = value!;
-                  });
-                },
-                contentPadding: EdgeInsets.zero,
-              ),
-            ),
-          ],
-        ),
-        
-        const SizedBox(height: 16),
-        
-        // Formulario de tarjeta (solo si tarjeta está seleccionada)
-        if (_selectedPaymentMethod == 'tarjeta') ...[
+  Widget _buildDeliveryForm() {
+    final theme = Theme.of(context);
+    
+    return _buildSection(
+      'Información de Entrega',
+      Column(
+        children: [
           TextFormField(
-            controller: _numeroTarjetaController,
-            decoration: const InputDecoration(
-              labelText: 'Número de Tarjeta',
-              border: OutlineInputBorder(),
-              hintText: '1234 5678 9012 3456',
+            controller: _nombreController,
+            decoration: InputDecoration(
+              labelText: 'Nombre completo',
+              labelStyle: TextStyle(color: theme.colorScheme.onSurface.withOpacity(0.7)),
+              prefixIcon: Icon(Icons.person, color: theme.colorScheme.onSurface.withOpacity(0.7)),
             ),
-            keyboardType: TextInputType.number,
+            style: TextStyle(color: theme.colorScheme.onSurface),
             validator: (value) {
-              if (value?.isEmpty == true) return 'Campo requerido';
-              if (value!.length < 16) return 'Número de tarjeta inválido';
+              if (value == null || value.isEmpty) {
+                return 'Por favor ingresa tu nombre';
+              }
               return null;
             },
           ),
-          
           const SizedBox(height: 16),
-          
           TextFormField(
-            controller: _nombreTarjetaController,
-            decoration: const InputDecoration(
-              labelText: 'Nombre en la Tarjeta',
-              border: OutlineInputBorder(),
+            controller: _direccionController,
+            decoration: InputDecoration(
+              labelText: 'Dirección',
+              labelStyle: TextStyle(color: theme.colorScheme.onSurface.withOpacity(0.7)),
+              prefixIcon: Icon(Icons.location_on, color: theme.colorScheme.onSurface.withOpacity(0.7)),
             ),
-            validator: (value) => value?.isEmpty == true ? 'Campo requerido' : null,
+            style: TextStyle(color: theme.colorScheme.onSurface),
+            validator: (value) {
+              if (value == null || value.isEmpty) {
+                return 'Por favor ingresa tu dirección';
+              }
+              return null;
+            },
           ),
-          
           const SizedBox(height: 16),
-          
           Row(
             children: [
               Expanded(
                 child: TextFormField(
-                  controller: _fechaVencimientoController,
-                  decoration: const InputDecoration(
-                    labelText: 'Fecha Vencimiento',
-                    border: OutlineInputBorder(),
-                    hintText: 'MM/YY',
+                  controller: _ciudadController,
+                  decoration: InputDecoration(
+                    labelText: 'Ciudad',
+                    labelStyle: TextStyle(color: theme.colorScheme.onSurface.withOpacity(0.7)),
+                    prefixIcon: Icon(Icons.location_city, color: theme.colorScheme.onSurface.withOpacity(0.7)),
                   ),
-                  validator: (value) => value?.isEmpty == true ? 'Campo requerido' : null,
+                  style: TextStyle(color: theme.colorScheme.onSurface),
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Requerido';
+                    }
+                    return null;
+                  },
                 ),
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: 16),
               Expanded(
                 child: TextFormField(
-                  controller: _cvvController,
-                  decoration: const InputDecoration(
-                    labelText: 'CVV',
-                    border: OutlineInputBorder(),
+                  controller: _codigoPostalController,
+                  decoration: InputDecoration(
+                    labelText: 'Código Postal',
+                    labelStyle: TextStyle(color: theme.colorScheme.onSurface.withOpacity(0.7)),
                   ),
-                  keyboardType: TextInputType.number,
-                  obscureText: true,
+                  style: TextStyle(color: theme.colorScheme.onSurface),
                   validator: (value) {
-                    if (value?.isEmpty == true) return 'Campo requerido';
-                    if (value!.length < 3) return 'CVV inválido';
+                    if (value == null || value.isEmpty) {
+                      return 'Requerido';
+                    }
                     return null;
                   },
                 ),
               ),
             ],
           ),
-        ],
-        
-        // Información de PayPal (solo si PayPal está seleccionado)
-        if (_selectedPaymentMethod == 'paypal')
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Colors.blue[50],
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: Colors.blue[200]!),
+          const SizedBox(height: 16),
+          TextFormField(
+            controller: _telefonoController,
+            decoration: InputDecoration(
+              labelText: 'Teléfono',
+              labelStyle: TextStyle(color: theme.colorScheme.onSurface.withOpacity(0.7)),
+              prefixIcon: Icon(Icons.phone, color: theme.colorScheme.onSurface.withOpacity(0.7)),
             ),
-            child: Row(
+            style: TextStyle(color: theme.colorScheme.onSurface),
+            keyboardType: TextInputType.phone,
+            validator: (value) {
+              if (value == null || value.isEmpty) {
+                return 'Por favor ingresa tu teléfono';
+              }
+              return null;
+            },
+          ),
+          const SizedBox(height: 16),
+          TextFormField(
+            controller: _emailController,
+            decoration: InputDecoration(
+              labelText: 'Email',
+              labelStyle: TextStyle(color: theme.colorScheme.onSurface.withOpacity(0.7)),
+              prefixIcon: Icon(Icons.email, color: theme.colorScheme.onSurface.withOpacity(0.7)),
+            ),
+            style: TextStyle(color: theme.colorScheme.onSurface),
+            keyboardType: TextInputType.emailAddress,
+            validator: (value) {
+              if (value == null || value.isEmpty) {
+                return 'Por favor ingresa tu email';
+              }
+              if (!value.contains('@')) {
+                return 'Email inválido';
+              }
+              return null;
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPaymentMethodSection() {
+    final theme = Theme.of(context);
+    
+    return _buildSection(
+      'Método de Pago',
+      Column(
+        children: [
+          RadioListTile<String>(
+            title: Row(
               children: [
-                Icon(Icons.info_outline, color: Colors.blue[600]),
-                const SizedBox(width: 12),
-                const Expanded(
-                  child: Text(
-                    'Serás redirigido a PayPal para completar tu pago de forma segura.',
-                    style: TextStyle(fontSize: 14),
+                const Icon(Icons.credit_card, color: Color(0xFFDC3545)),
+                const SizedBox(width: 8),
+                Text(
+                  'Tarjeta de Crédito/Débito',
+                  style: TextStyle(color: theme.colorScheme.onSurface),
+                ),
+              ],
+            ),
+            value: 'tarjeta',
+            groupValue: _selectedPaymentMethod,
+            activeColor: const Color(0xFFDC3545),
+            onChanged: (value) {
+              setState(() {
+                _selectedPaymentMethod = value!;
+              });
+            },
+          ),
+          RadioListTile<String>(
+            title: Row(
+              children: [
+                const Icon(Icons.payment, color: Color(0xFFDC3545)),
+                const SizedBox(width: 8),
+                Text(
+                  'PayPal',
+                  style: TextStyle(color: theme.colorScheme.onSurface),
+                ),
+              ],
+            ),
+            value: 'paypal',
+            groupValue: _selectedPaymentMethod,
+            activeColor: const Color(0xFFDC3545),
+            onChanged: (value) {
+              setState(() {
+                _selectedPaymentMethod = value!;
+              });
+            },
+          ),
+          
+          if (_selectedPaymentMethod == 'tarjeta') ...[
+            const SizedBox(height: 16),
+            TextFormField(
+              controller: _numeroTarjetaController,
+              decoration: InputDecoration(
+                labelText: 'Número de tarjeta',
+                labelStyle: TextStyle(color: theme.colorScheme.onSurface.withOpacity(0.7)),
+                hintText: '1234 5678 9012 3456',
+                hintStyle: TextStyle(color: theme.colorScheme.onSurface.withOpacity(0.5)),
+                prefixIcon: Icon(Icons.credit_card, color: theme.colorScheme.onSurface.withOpacity(0.7)),
+              ),
+              style: TextStyle(color: theme.colorScheme.onSurface),
+              keyboardType: TextInputType.number,
+              validator: (value) {
+                if (value == null || value.isEmpty) {
+                  return 'Número de tarjeta requerido';
+                }
+                return null;
+              },
+            ),
+            const SizedBox(height: 16),
+            TextFormField(
+              controller: _nombreTarjetaController,
+              decoration: InputDecoration(
+                labelText: 'Nombre en la tarjeta',
+                labelStyle: TextStyle(color: theme.colorScheme.onSurface.withOpacity(0.7)),
+                prefixIcon: Icon(Icons.person, color: theme.colorScheme.onSurface.withOpacity(0.7)),
+              ),
+              style: TextStyle(color: theme.colorScheme.onSurface),
+              validator: (value) {
+                if (value == null || value.isEmpty) {
+                  return 'Nombre requerido';
+                }
+                return null;
+              },
+            ),
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                Expanded(
+                  child: TextFormField(
+                    controller: _fechaVencimientoController,
+                    decoration: InputDecoration(
+                      labelText: 'MM/AA',
+                      labelStyle: TextStyle(color: theme.colorScheme.onSurface.withOpacity(0.7)),
+                      hintText: '12/25',
+                      hintStyle: TextStyle(color: theme.colorScheme.onSurface.withOpacity(0.5)),
+                      prefixIcon: Icon(Icons.calendar_today, color: theme.colorScheme.onSurface.withOpacity(0.7)),
+                    ),
+                    style: TextStyle(color: theme.colorScheme.onSurface),
+                    keyboardType: TextInputType.number,
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return 'Fecha requerida';
+                      }
+                      return null;
+                    },
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: TextFormField(
+                    controller: _cvvController,
+                    decoration: InputDecoration(
+                      labelText: 'CVV',
+                      labelStyle: TextStyle(color: theme.colorScheme.onSurface.withOpacity(0.7)),
+                      hintText: '123',
+                      hintStyle: TextStyle(color: theme.colorScheme.onSurface.withOpacity(0.5)),
+                      prefixIcon: Icon(Icons.lock, color: theme.colorScheme.onSurface.withOpacity(0.7)),
+                    ),
+                    style: TextStyle(color: theme.colorScheme.onSurface),
+                    keyboardType: TextInputType.number,
+                    obscureText: true,
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return 'CVV requerido';
+                      }
+                      return null;
+                    },
                   ),
                 ),
               ],
             ),
-          ),
-      ],
+          ] else if (_selectedPaymentMethod == 'paypal') ...[
+            const SizedBox(height: 16),
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: theme.colorScheme.surface,
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: theme.colorScheme.onSurface.withOpacity(0.2)),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.info, color: Color(0xFFDC3545)),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      'Serás redirigido a PayPal para completar el pago de forma segura.',
+                      style: TextStyle(color: theme.colorScheme.onSurface),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ],
+      ),
     );
   }
 
   Widget _buildOrderSummary() {
-    return Column(
-      children: [
-        _buildSummaryRow('Subtotal:', '\$${_subtotal.toStringAsFixed(2)}'),
-        _buildSummaryRow('IVA (16%):', '\$${_tax.toStringAsFixed(2)}'),
-        _buildSummaryRow('Envío:', _shipping == 0 ? 'Gratis' : '\$${_shipping.toStringAsFixed(2)}'),
-        const Divider(height: 20),
-        _buildSummaryRow(
-          'Total:',
-          '\$${_total.toStringAsFixed(2)}',
-          isTotal: true,
-        ),
-      ],
+    final theme = Theme.of(context);
+    
+    return _buildSection(
+      'Resumen del Pedido',
+      Column(
+        children: [
+          _buildSummaryRow('Subtotal', _subtotal),
+          _buildSummaryRow('Impuestos', _tax),
+          _buildSummaryRow('Envío', _shipping, showFree: true),
+          const Divider(),
+          _buildSummaryRow('Total', _total, isTotal: true),
+        ],
+      ),
     );
   }
 
-  Widget _buildSummaryRow(String label, String value, {bool isTotal = false}) {
+  Widget _buildSummaryRow(String label, double amount, {bool isTotal = false, bool showFree = false}) {
+    final theme = Theme.of(context);
+    
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8),
       child: Row(
@@ -380,16 +415,37 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
             style: TextStyle(
               fontSize: isTotal ? 18 : 16,
               fontWeight: isTotal ? FontWeight.bold : FontWeight.normal,
-              color: isTotal ? Colors.black : Colors.grey[700],
+              color: theme.colorScheme.onSurface,
             ),
           ),
-          Text(
-            value,
-            style: TextStyle(
-              fontSize: isTotal ? 18 : 16,
-              fontWeight: FontWeight.bold,
-              color: isTotal ? Theme.of(context).primaryColor : Colors.black,
-            ),
+          Row(
+            children: [
+              if (showFree && amount == 0)
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: Colors.green.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: const Text(
+                    'Gratis',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Colors.green,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
+              const SizedBox(width: 8),
+              Text(
+                '\$${amount.toStringAsFixed(2)}',
+                style: TextStyle(
+                  fontSize: isTotal ? 18 : 16,
+                  fontWeight: isTotal ? FontWeight.bold : FontWeight.normal,
+                  color: isTotal ? const Color(0xFFDC3545) : theme.colorScheme.onSurface,
+                ),
+              ),
+            ],
           ),
         ],
       ),
@@ -397,31 +453,45 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
   }
 
   Widget _buildFinishButton() {
-    return SizedBox(
-      width: double.infinity,
+    final theme = Theme.of(context);
+    
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surface,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.1),
+            blurRadius: 10,
+            offset: const Offset(0, -5),
+          ),
+        ],
+      ),
       child: ElevatedButton(
         onPressed: _isProcessing ? null : _processOrder,
         style: ElevatedButton.styleFrom(
+          backgroundColor: const Color(0xFFDC3545),
           padding: const EdgeInsets.symmetric(vertical: 16),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
           ),
         ),
         child: _isProcessing
-            ? const CircularProgressIndicator(color: Colors.white)
-            : Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Icon(Icons.lock),
-                  const SizedBox(width: 8),
-                  Text(
-                    'Pagar \$${_total.toStringAsFixed(2)}',
-                    style: const TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ],
+            ? const SizedBox(
+                height: 20,
+                width: 20,
+                child: CircularProgressIndicator(
+                  color: Colors.white,
+                  strokeWidth: 2,
+                ),
+              )
+            : Text(
+                'Finalizar Compra - \$${_total.toStringAsFixed(2)}',
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                ),
               ),
       ),
     );
@@ -438,7 +508,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
 
     try {
       // Simular procesamiento del pago
-      await Future.delayed(const Duration(seconds: 3));
+      await Future.delayed(const Duration(seconds: 2));
 
       if (mounted) {
         // Mostrar diálogo de éxito
@@ -446,17 +516,36 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
           context: context,
           barrierDismissible: false,
           builder: (context) => AlertDialog(
-            icon: Icon(
-              Icons.check_circle,
-              color: Colors.green[600],
-              size: 64,
-            ),
-            title: const Text('¡Pago Exitoso!'),
-            content: const Text(
-              'Tu orden ha sido procesada correctamente. Recibirás un email con los detalles de tu compra.',
+            backgroundColor: Theme.of(context).colorScheme.surface,
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(
+                  Icons.check_circle,
+                  color: Colors.green,
+                  size: 64,
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  '¡Compra Exitosa!',
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: Theme.of(context).colorScheme.onSurface,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Tu pedido ha sido procesado correctamente.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
+                  ),
+                ),
+              ],
             ),
             actions: [
-              ElevatedButton(
+              TextButton(
                 onPressed: () {
                   Navigator.of(context).pop();
                   context.go('/home');

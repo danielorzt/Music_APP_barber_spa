@@ -1,0 +1,174 @@
+# Archivo de Contexto Maestro v3.0: BarberMusic&Spa (API Backend)
+
+
+## 1. Visión y Objetivo del Proyecto
+| Campo | Descripción |
+|-------|-------------|
+| **Nombre del Proyecto** | BarberMusic&Spa (BMSPA) |
+| **Objetivo** | Desarrollar el **backend (API)** que soporte dos aplicaciones: la *App de Cliente* y el *Panel de Administración*, para gestionar una cadena de barberías y spas con múltiples sucursales en México. |
+| **Principios Clave** | • **Experiencia Premium al Cliente**: flujo de agendamiento y compra ultra-sencillo.<br>• **Gestión Centralizada y Eficiente**: panel administrativo robusto, sin fricción.<br>• **Arquitectura Robusta**: *Arquitectura Hexagonal (DDD)*, desacoplada del framework. |
+
+---
+
+## 2. Actores: Roles y Permisos
+
+| Rol | Descripción | Permisos Clave en la API |
+|-----|-------------|--------------------------|
+| **Cliente** | Usuario registrado por defecto. | • CRUD propio perfil y **una única dirección**.<br>• CRUD propias **citas**.<br>• CRUD propias **órdenes de productos**.<br>• CRUD propias **reseñas**. |
+| **Empleado** | Barberos/estilistas. | • Ver **agenda personal**.<br>• Cambiar estado de sus citas (`COMPLETADA` \| `CANCELADA_PERSONAL`).<br>• Ver catálogo de servicios y productos. |
+| **Admin Sucursal** | Admin de **una** sucursal. | • Hereda permisos de **Empleado**.<br>• CRUD catálogo (servicios y productos) **solo para su sucursal**.<br>• **Promover Cliente → Empleado** (asignado a su sucursal).<br>• CRUD **horarios_sucursal**.<br>• Ver todas las citas de su sucursal.<br>• Moderar reseñas (aprobar/rechazar). |
+| **Gerente (Super Admin)** | Acceso global. | • Todos los permisos anteriores.<br>• CRUD **Sucursales**, **Categorías**, **Promociones**, **Especialidades**.<br>• Promover **Empleado → Admin Sucursal**.<br>• Acceso sin restricción a **todos los datos de todas las sucursales**. |
+
+---
+
+## 3. Aplicación 1 – App de Cliente (Flujo y Lógica de Negocio)
+
+### 3.1 Autenticación y Perfil
+- Registro → rol `CLIENTE`.
+- **Una única dirección** por cliente (no se contemplan múltiples).
+- Sin preferencias de música ni sucursal en esta fase.
+
+### 3.2 Flujo de Agendamiento de Citas
+1. **Exploración** – lista de servicios filtrables por categoría.  
+2. **Selección de servicio** – **un solo servicio** por agendamiento.  
+3. **Selección de sucursal** – puede sugerirse la más cercana o última visitada.  
+4. **Pre-validación de disponibilidad** – la API verifica huecos antes de mostrar calendario.  
+5. **Calendario** – horarios disponibles según `horarios_sucursal`.  
+6. **Selección de personal (opcional)** – se guarda como **solicitud**; el admin debe confirmar.  
+7. **Confirmación** – estado `PROGRAMADA`.  
+8. **Pago** – **100 % en sucursal**; `transacciones_pago` **no** se usa para citas.
+
+### 3.3 Órdenes de Productos
+- **Creación** – array de `detalle_ordenes`.  
+- **Pago online** – PayPal y MercadoPago.  
+- Al completarse → registro en `transacciones_pago` y estado `PAGADA`.
+
+### 3.4 Reseñas
+- **Creación** – `aprobada = false` (pendiente).  
+- **Edición** – texto y calificación; vuelve a `aprobada = false`.  
+- **Eliminación** – permanente en BD.
+
+---
+
+## 4. Aplicación 2 – Panel de Administración
+
+### 4.1 Dashboard
+- **Admin Sucursal** – métricas de **su** sucursal.  
+- **Gerente** – métricas globales.
+
+### 4.2 Gestión de Personal (Promoción)
+| Acción | Actor | Origen | Destino | Pasos Automáticos |
+|--------|-------|--------|---------|-------------------|
+| Promover a Empleado | Admin Sucursal | `CLIENTE` | `EMPLEADO` | 1. Cambiar `rol`.<br>2. Crear registro en `personal` con `sucursal_asignada_id` del admin. |
+| Promover a Admin | Gerente | `EMPLEADO` | `ADMIN_SUCURSAL` | 1. Cambiar `tipo_personal` a `ADMIN_SUCURSAL`. |
+
+### 4.3 Gestión de Agendamientos
+- **Admin Sucursal** ve todas las citas de su sucursal.  
+- Si existe **solicitud de personal** → puede confirmar o reasignar → estado `CONFIRMADA`.
+
+### 4.4 Moderación de Reseñas
+- Lista reseñas con `aprobada = false`.  
+- Acciones: **Aprobar** (`true`) o **Rechazar**.
+
+---
+
+## 5. Reglas de Negocio Críticas y Lógica Transversal
+
+| Área | Regla |
+|------|-------|
+| **Pagos** | • **Citas**: 100 % en sucursal.<br>• **Productos**: 100 % online (PayPal / MercadoPago) → genera `transaccion_pago`. |
+| **Notificaciones** | • **Canales**: email + push.<br>• **Eventos**:<br>&nbsp;&nbsp;&nbsp;&nbsp;– Recordatorios de cita (24 h y 2 h antes).<br>&nbsp;&nbsp;&nbsp;&nbsp;– Confirmación o cambio de personal.<br>&nbsp;&nbsp;&nbsp;&nbsp;– Confirmación de compra con detalle de productos. |
+| **Reportes** | No requeridos en esta fase. |
+
+---
+
+
+# Archivo de Contexto Maestro v3.0: App de Cliente (Flutter)
+
+> Super Prompt Base – copiar tal-cual para generar prompts técnicos o de negocio sin perder contexto.
+
+---
+
+## 1. Visión y Objetivo de la Aplicación
+| Campo | Descripción |
+|-------|-------------|
+| **Nombre de la App** | BarberMusic&Spa (BMSPA) |
+| **Plataforma** | Flutter (iOS & Android) |
+| **Objetivo** | Brindar a los clientes una experiencia premium, moderna y sin fricciones para:<br>• Descubrir servicios<br>• Agendar citas<br>• Comprar productos<br>• Gestionar su perfil e historial |
+| **Principios de Desarrollo** | • **Interfaz Intuitiva y Atractiva**<br>• **Rendimiento Fluido** (loading & errores elegantes)<br>• **Comunicación Segura con la API** (JWT)<br>• **Gestión de Estado Eficiente** (Provider / BLoC / Riverpod) |
+
+---
+
+## 2. Estructura General y Navegación (Flujo Principal)
+Navegación inferior (`BottomNavigationBar`) con 5 secciones:
+
+| Ítem | Propósito |
+|------|-----------|
+| **Inicio** | Dashboard rápido |
+| **Agendar** | Wizard de reserva de citas |
+| **Tienda** | Catálogo y compra de productos |
+| **Mis Citas** | Historial y gestión de citas |
+| **Perfil** | Gestión de cuenta |
+
+---
+
+## 3. Detalle de Módulos y Pantallas
+
+### Módulo 1: Autenticación (Onboarding)
+| Sub-pantalla | Detalles |
+|--------------|----------|
+| **Bienvenida / Login / Registro** | • PageView limpio<br>• Campos: nombre, email, contraseña, teléfono<br>• Estados: `isLoading`, manejo de errores (“correo ya existe”, etc.) |
+| **API Calls** | • `POST /api/Client_usuarios/auth/register`<br>• `POST /api/Client_usuarios/auth/login` |
+| **Post-Login** | • Guardar JWT con `flutter_secure_storage`<br>• Navegar a `HomeScreen` |
+
+---
+
+### Módulo 2: Inicio (`HomeScreen`)
+| Elemento | Detalles |
+|----------|----------|
+| **UI** | • Saludo personalizado<br>• Botón “Agendar Nueva Cita”<br>• Carrusel de promociones activas<br>• Sección “Servicios Populares” |
+| **Estados** | `isLoading` para promociones y servicios |
+| **API Calls** | • `GET /api/Admin_promociones/promociones`<br>• `GET /api/Catalog_servicios/servicios` |
+
+---
+
+### Módulo 3: Flujo de Agendamiento (Wizard de 5 pasos)
+
+| Paso | Pantalla | Responsabilidades |
+|------|----------|-------------------|
+| **1** | **Selección de Servicio** | • Lista por categoría (buscador incluido)<br>• 1 solo servicio seleccionable<br>• `GET /api/Catalog_servicios/servicios`<br>• `GET /api/Admin_categorias/categorias` |
+| **2** | **Selección de Sucursal** | • Lista + mapa ordenado por cercanía<br>• `GET /api/Admin_sucursales/sucursales` |
+| **3** | **Selección de Fecha y Hora** | • Calendario + grilla de slots<br>• Pre-validación: `GET /api/disponibilidad?servicio_id=X&sucursal_id=Y&fecha=YYYY-MM-DD` |
+| **4** | **Selección de Personal (Opcional)** | • Lista “Cualquiera” + barberos disponibles<br>• `GET /api/disponibilidad/personal?servicio_id=X&sucursal_id=Y&fecha_hora=...` |
+| **5** | **Resumen y Confirmación** | • Muestra: servicio, sucursal, fecha, hora, personal, precio, notas<br>• Sin pago online; aviso: “Pagarás en sucursal”<br>• `POST /api/Scheduling_agendamientos/agendamientos` |
+
+---
+
+### Módulo 4: Tienda
+
+| Sub-pantalla | Detalles |
+|--------------|----------|
+| **Catálogo de Productos** | • Grilla con imagen, nombre, precio, botón “Añadir al Carrito”<br>• Filtros por categoría<br>• `GET /api/Catalog_productos/productos` |
+| **Carrito** | • Modificar cantidades<br>• Subtotal, impuestos, total<br>• Botón “Proceder al Pago” |
+| **Checkout & Pago** | • Confirmar única dirección de envío<br>• Integrar SDK PayPal & MercadoPago<br>• Flujo:<br>&nbsp;&nbsp;1. `POST …/ordenes` → estado `PENDIENTE_PAGO`<br>&nbsp;&nbsp;2. Tras pago exitoso → `POST …/ordenes/{id}/pago-completado` → estado `PAGADA` + crea `transaccion_pago` |
+
+---
+
+### Módulo 5: Mis Citas y Mis Órdenes
+
+| Sección | Funcionalidades |
+|---------|-----------------|
+| **Mis Citas** | • Tabs: “Próximas” / “Anteriores”<br>• Tarjeta con info clave<br>• Acciones:<br>&nbsp;&nbsp;– Próximas: botón **Cancelar**<br>&nbsp;&nbsp;– Pasadas: botón **Dejar Reseña**<br>• APIs:<br>&nbsp;&nbsp;– `GET /api/Scheduling_agendamientos/agendamientos` (filtrado por token)<br>&nbsp;&nbsp;– `PUT …/{id}` para cancelar |
+| **Mis Órdenes** | • Lista con nº orden, fecha, total, estado<br>• `GET /api/Client_ordenes/ordenes` |
+
+---
+
+### Módulo 6: Perfil
+
+| Sub-pantalla | Acciones |
+|--------------|----------|
+| **Perfil Principal** | • Mostrar datos del usuario<br>• Links a:<br>&nbsp;&nbsp;– Editar Perfil<br>&nbsp;&nbsp;– Mi Dirección (única)<br>&nbsp;&nbsp;– Mis Reseñas<br>&nbsp;&nbsp;– **Cerrar Sesión** |
+| **Cerrar Sesión** | • Limpiar token (`flutter_secure_storage`)<br>• Navegar a `LoginScreen`<br>• `POST /api/Client_usuarios/auth/logout` |
+
+---
+

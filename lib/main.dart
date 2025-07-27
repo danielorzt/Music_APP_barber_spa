@@ -30,27 +30,39 @@ void main() async {
   final settingsProvider = SettingsProvider();
   await settingsProvider.init();
 
-  runApp(MyApp(settingsProvider: settingsProvider));
+  // Crear AuthProvider e inicializar estado de autenticación
+  final authProvider = AuthProvider();
+  await authProvider.checkAuthStatus();
+
+  runApp(MyApp(
+    settingsProvider: settingsProvider,
+    authProvider: authProvider,
+  ));
 }
 
 class MyApp extends StatelessWidget {
   final SettingsProvider settingsProvider;
+  final AuthProvider authProvider;
 
-  const MyApp({super.key, required this.settingsProvider});
+  const MyApp({
+    super.key, 
+    required this.settingsProvider,
+    required this.authProvider,
+  });
 
   @override
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
         ChangeNotifierProvider.value(value: settingsProvider),
-        ChangeNotifierProvider(create: (_) => AuthProvider()),
+        ChangeNotifierProvider.value(value: authProvider),
         ChangeNotifierProvider(create: (_) => AppointmentsProvider()),
       ],
       child: Consumer<SettingsProvider>(
         builder: (context, settings, child) {
           return MaterialApp.router(
-            title: 'BarberMusic & Spa',
-            debugShowCheckedModeBanner: false,
+          title: 'BarberMusic & Spa',
+          debugShowCheckedModeBanner: false,
             
             // Configuración de tema
             theme: AppTheme.lightTheme,
@@ -71,7 +83,7 @@ class MyApp extends StatelessWidget {
             ],
             
             // Router
-            routerConfig: AppRouter.router,
+          routerConfig: AppRouter.router,
           );
         },
       ),

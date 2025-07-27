@@ -276,12 +276,14 @@ class _CartScreenState extends State<CartScreen> {
   }
 
   Widget _buildPriceSummary() {
+    final theme = Theme.of(context);
+    
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.grey[50],
+        color: theme.colorScheme.surface,
         border: Border(
-          top: BorderSide(color: Colors.grey[200]!),
+          top: BorderSide(color: theme.colorScheme.onSurface.withOpacity(0.1)),
         ),
       ),
       child: Column(
@@ -289,7 +291,7 @@ class _CartScreenState extends State<CartScreen> {
           _buildPriceRow('Subtotal:', _subtotal),
           _buildPriceRow('IVA (16%):', _tax),
           _buildPriceRow('Envío:', _shipping, showFree: _shipping == 0),
-          const Divider(height: 20),
+          Divider(height: 20, color: theme.colorScheme.onSurface.withOpacity(0.1)),
           _buildPriceRow('Total:', _total, isTotal: true),
         ],
       ),
@@ -297,6 +299,8 @@ class _CartScreenState extends State<CartScreen> {
   }
 
   Widget _buildPriceRow(String label, double amount, {bool isTotal = false, bool showFree = false}) {
+    final theme = Theme.of(context);
+    
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
       child: Row(
@@ -307,20 +311,39 @@ class _CartScreenState extends State<CartScreen> {
             style: TextStyle(
               fontSize: isTotal ? 18 : 16,
               fontWeight: isTotal ? FontWeight.bold : FontWeight.normal,
-              color: isTotal ? Colors.black : Colors.grey[700],
+              color: theme.colorScheme.onSurface,
             ),
           ),
-          Text(
-            showFree ? 'Gratis' : '\$${amount.toStringAsFixed(2)}',
-            style: TextStyle(
-              fontSize: isTotal ? 18 : 16,
-              fontWeight: isTotal ? FontWeight.bold : FontWeight.w600,
-              color: isTotal 
-                  ? Theme.of(context).primaryColor 
-                  : showFree 
-                      ? Colors.green 
-                      : Colors.black,
-            ),
+          Row(
+            children: [
+              if (showFree)
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: Colors.green.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: const Text(
+                    'Gratis',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Colors.green,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
+              const SizedBox(width: 8),
+              Text(
+                showFree ? '' : '\$${amount.toStringAsFixed(2)}',
+                style: TextStyle(
+                  fontSize: isTotal ? 18 : 16,
+                  fontWeight: isTotal ? FontWeight.bold : FontWeight.w600,
+                  color: isTotal 
+                      ? const Color(0xFFDC3545)
+                      : theme.colorScheme.onSurface,
+                ),
+              ),
+            ],
           ),
         ],
       ),

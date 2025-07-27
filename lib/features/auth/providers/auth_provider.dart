@@ -1,10 +1,13 @@
 // lib/features/auth/providers/auth_provider.dart
 import 'package:flutter/foundation.dart';
 import 'package:music_app/features/profile/models/user_model.dart';
+import 'package:music_app/core/services/auth_api_service.dart';
 
 enum AuthStatus { initial, loading, authenticated, unauthenticated, error }
 
 class AuthProvider with ChangeNotifier {
+  final AuthApiService _apiService = AuthApiService();
+  
   AuthStatus _status = AuthStatus.initial;
   User? _currentUser;
   String? _error;
@@ -21,40 +24,46 @@ class AuthProvider with ChangeNotifier {
     _error = null;
     
     try {
-      // Simulación de llamada a API
-      await Future.delayed(const Duration(seconds: 2));
+      print('🔐 AuthProvider: Iniciando login...');
       
-      // Simular validación básica
+      // Validación básica
       if (email.isEmpty || password.isEmpty) {
         _error = 'Email y contraseña son requeridos';
         _status = AuthStatus.error;
         return false;
       }
       
-      // Simular diferentes tipos de usuario
-      if (email == 'admin@barbershop.com') {
-        _currentUser = User(
-          id: '1',
-          nombre: 'Administrador',
-          email: email,
-          telefono: '+1234567890',
-          role: 'admin',
-        );
-      } else {
-        _currentUser = User(
-          id: '2',
-          nombre: 'Cliente Demo',
-          email: email,
-          telefono: '+1234567890',
-          role: 'client',
-        );
-      }
+      // Llamada a la API real
+      final result = await _apiService.login(
+        email: email,
+        password: password,
+      );
       
-      _status = AuthStatus.authenticated;
-      return true;
+      if (result['success']) {
+        print('✅ AuthProvider: Login exitoso');
+        
+        // Extraer datos del usuario de la respuesta
+        final userData = result['user'];
+        if (userData != null) {
+          _currentUser = User.fromJson(userData);
+          _status = AuthStatus.authenticated;
+          print('👤 Usuario autenticado: ${_currentUser?.nombre}');
+          return true;
+        } else {
+          _error = 'Datos de usuario inválidos';
+          _status = AuthStatus.error;
+          return false;
+        }
+      } else {
+        _error = result['error'] ?? 'Error desconocido en el login';
+        _status = AuthStatus.error;
+        print('❌ AuthProvider: ${_error}');
+        return false;
+      }
     } catch (e) {
-      _error = 'Error al iniciar sesión: $e';
+      _error = 'Error inesperado: $e';
       _status = AuthStatus.error;
+      print('💥 AuthProvider Error: $e');
       return false;
     } finally {
       _setLoading(false);
@@ -71,37 +80,48 @@ class AuthProvider with ChangeNotifier {
     _error = null;
     
     try {
-      // Simulación de llamada a API
-      await Future.delayed(const Duration(seconds: 2));
+      print('📝 AuthProvider: Iniciando registro...');
       
-      // Simular validación básica
+      // Validación básica
       if (email.isEmpty || password.isEmpty || nombre.isEmpty) {
         _error = 'Todos los campos son requeridos';
         _status = AuthStatus.error;
         return false;
       }
       
-      // Simular verificación de email existente
-      if (email == 'test@existe.com') {
-        _error = 'Este email ya está registrado';
-        _status = AuthStatus.error;
-        return false;
-      }
-      
-      // Crear nuevo usuario
-      _currentUser = User(
-        id: DateTime.now().millisecondsSinceEpoch.toString(),
+      // Llamada a la API real
+      final result = await _apiService.register(
         nombre: nombre,
         email: email,
+        password: password,
         telefono: telefono,
-        role: 'client',
       );
       
-      _status = AuthStatus.authenticated;
-      return true;
+      if (result['success']) {
+        print('✅ AuthProvider: Registro exitoso');
+        
+        // Extraer datos del usuario de la respuesta
+        final userData = result['user'];
+        if (userData != null) {
+          _currentUser = User.fromJson(userData);
+          _status = AuthStatus.authenticated;
+          print('👤 Usuario registrado: ${_currentUser?.nombre}');
+          return true;
+        } else {
+          _error = 'Datos de usuario inválidos';
+          _status = AuthStatus.error;
+          return false;
+        }
+      } else {
+        _error = result['error'] ?? 'Error desconocido en el registro';
+        _status = AuthStatus.error;
+        print('❌ AuthProvider: ${_error}');
+        return false;
+      }
     } catch (e) {
-      _error = 'Error al registrar usuario: $e';
+      _error = 'Error inesperado: $e';
       _status = AuthStatus.error;
+      print('💥 AuthProvider Error: $e');
       return false;
     } finally {
       _setLoading(false);
@@ -112,14 +132,23 @@ class AuthProvider with ChangeNotifier {
     _setLoading(true);
     
     try {
-      // Simulación de llamada a API
-      await Future.delayed(const Duration(seconds: 1));
+      print('🚪 AuthProvider: Cerrando sesión...');
+      
+      // Llamada a la API para logout
+      await _apiService.logout();
       
       _currentUser = null;
       _status = AuthStatus.unauthenticated;
       _error = null;
+      
+      print('✅ AuthProvider: Sesión cerrada exitosamente');
     } catch (e) {
       _error = 'Error al cerrar sesión: $e';
+      print('❌ AuthProvider Logout Error: $e');
+      
+      // Aunque haya error, cerrar sesión localmente
+      _currentUser = null;
+      _status = AuthStatus.unauthenticated;
     } finally {
       _setLoading(false);
     }
@@ -135,7 +164,8 @@ class AuthProvider with ChangeNotifier {
     _setLoading(true);
     
     try {
-      // Simulación de llamada a API
+      // Por ahora mantener funcionamiento local
+      // TODO: Implementar API call cuando el endpoint esté disponible
       await Future.delayed(const Duration(seconds: 1));
       
       _currentUser = _currentUser!.copyWith(
@@ -163,22 +193,47 @@ class AuthProvider with ChangeNotifier {
     notifyListeners();
   }
 
-  // Método para verificar si hay sesión guardada (simulado)
+  /// Verificar si hay sesión guardada y validar token
   Future<void> checkAuthStatus() async {
     _status = AuthStatus.loading;
     notifyListeners();
     
     try {
-      // Simular verificación de token guardado
-      await Future.delayed(const Duration(seconds: 1));
+      print('🔍 AuthProvider: Verificando estado de autenticación...');
       
-      // Por ahora, simular que no hay sesión activa
-      _status = AuthStatus.unauthenticated;
+      // Verificar si hay token guardado
+      final hasToken = await _apiService.hasValidToken();
+      if (!hasToken) {
+        print('🔍 No hay token guardado');
+        _status = AuthStatus.unauthenticated;
+        notifyListeners();
+        return;
+      }
+      
+      // Verificar token con el servidor
+      final result = await _apiService.getCurrentUser();
+      if (result['success']) {
+        print('✅ Token válido, usuario encontrado');
+        _currentUser = User.fromJson(result['user']);
+        _status = AuthStatus.authenticated;
+        print('👤 Usuario autenticado: ${_currentUser?.nombre}');
+      } else {
+        print('❌ Token inválido o expirado');
+        _status = AuthStatus.unauthenticated;
+        _currentUser = null;
+      }
     } catch (e) {
-      _status = AuthStatus.error;
-      _error = 'Error al verificar sesión';
+      print('💥 Error verificando auth status: $e');
+      _status = AuthStatus.unauthenticated;
+      _currentUser = null;
     }
     
     notifyListeners();
   }
+
+  /// Método de conveniencia para verificar si el usuario es admin
+  bool get isAdmin => _currentUser?.role == 'admin';
+  
+  /// Método de conveniencia para verificar si el usuario es cliente
+  bool get isClient => _currentUser?.role == 'client';
 }

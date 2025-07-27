@@ -204,19 +204,28 @@ class _LoginScreenState extends State<LoginScreen> {
                 OutlinedButton(
                   onPressed: () async {
                     final authProvider = Provider.of<AuthProvider>(context, listen: false);
+                    
+                    // Usar credenciales reales de la base de datos
                     final success = await authProvider.login(
-                      email: 'admin@barbershop.com',
-                      password: 'admin123',
+                      email: 'admin@barbermusicaspa.com',
+                      password: 'password', // Cambia por la contraseña real de tu BD
                     );
                     
                     if (success && mounted) {
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(
-                          content: Text('Conectado como Admin'),
-                          backgroundColor: Colors.blue,
+                          content: Text('✅ Conectado como Admin'),
+                          backgroundColor: Colors.green,
                         ),
                       );
                       context.go('/home');
+                    } else if (mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text('❌ Error: ${authProvider.error ?? "Error desconocido"}'),
+                          backgroundColor: Colors.red,
+                        ),
+                      );
                     }
                   },
                   style: OutlinedButton.styleFrom(
@@ -225,7 +234,26 @@ class _LoginScreenState extends State<LoginScreen> {
                       borderRadius: BorderRadius.circular(12),
                     ),
                   ),
-                  child: const Text('Entrar como Admin (Demo)'),
+                  child: const Text('🧪 Login con BD Real'),
+                ),
+                
+                const SizedBox(height: 16),
+                
+                // Botón de prueba API
+                OutlinedButton.icon(
+                  onPressed: () => context.push('/test-login'),
+                  style: OutlinedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    side: const BorderSide(color: Color(0xFFDC3545)),
+                  ),
+                  icon: const Icon(Icons.api, color: Color(0xFFDC3545)),
+                  label: const Text(
+                    '🧪 Probar API de Laravel',
+                    style: TextStyle(color: Color(0xFFDC3545)),
+                  ),
                 ),
                 
                 const SizedBox(height: 32),

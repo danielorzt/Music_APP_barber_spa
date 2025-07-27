@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:music_app/core/widgets/back_button_interceptor.dart';
 
 class HistoryScreen extends StatefulWidget {
   const HistoryScreen({super.key});
@@ -25,458 +26,457 @@ class _HistoryScreenState extends State<HistoryScreen> with SingleTickerProvider
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Historial'),
-        bottom: TabBar(
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    
+    return BackButtonInterceptor(
+      fallbackRoute: '/perfil',
+      child: Scaffold(
+        backgroundColor: theme.colorScheme.background,
+        appBar: AppBar(
+          title: Text(
+            'Historial',
+            style: TextStyle(
+              color: theme.colorScheme.onSurface,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          backgroundColor: theme.colorScheme.surface,
+          elevation: 0,
+          leading: IconButton(
+            icon: Icon(Icons.arrow_back, color: theme.colorScheme.onSurface),
+            onPressed: () => context.go('/perfil'),
+          ),
+          bottom: TabBar(
+            controller: _tabController,
+            labelColor: const Color(0xFFDC3545),
+            unselectedLabelColor: theme.colorScheme.onSurface.withOpacity(0.7),
+            indicatorColor: const Color(0xFFDC3545),
+            dividerColor: theme.colorScheme.onSurface.withOpacity(0.1),
+            tabs: const [
+              Tab(text: 'Citas'),
+              Tab(text: 'Compras'),
+              Tab(text: 'Servicios'),
+            ],
+          ),
+        ),
+        body: TabBarView(
           controller: _tabController,
-          tabs: const [
-            Tab(text: 'Citas'),
-            Tab(text: 'Compras'),
-            Tab(text: 'Servicios'),
+          children: [
+            _buildAppointmentsHistory(),
+            _buildPurchasesHistory(),
+            _buildServicesHistory(),
           ],
         ),
-      ),
-      body: TabBarView(
-        controller: _tabController,
-        children: [
-          _buildAppointmentsHistory(),
-          _buildPurchasesHistory(),
-          _buildServicesHistory(),
-        ],
       ),
     );
   }
 
   Widget _buildAppointmentsHistory() {
-    return ListView.builder(
-      padding: const EdgeInsets.all(16),
-      itemCount: 5,
-      itemBuilder: (context, index) {
-        final appointments = [
-          {
-            'service': 'Corte Clásico',
-            'date': '15 Dic 2024',
-            'time': '14:30',
-            'status': 'completado',
-            'price': 25.0,
-            'barber': 'Carlos Rodríguez',
-          },
-          {
-            'service': 'Afeitado Tradicional',
-            'date': '10 Dic 2024',
-            'time': '16:00',
-            'status': 'completado',
-            'price': 18.0,
-            'barber': 'Miguel Ángel',
-          },
-          {
-            'service': 'Masaje Relajante',
-            'date': '5 Dic 2024',
-            'time': '11:00',
-            'status': 'completado',
-            'price': 45.0,
-            'barber': 'Ana María',
-          },
-          {
-            'service': 'Tratamiento de Barba',
-            'date': '1 Dic 2024',
-            'time': '13:15',
-            'status': 'cancelado',
-            'price': 22.0,
-            'barber': 'Carlos Rodríguez',
-          },
-          {
-            'service': 'Corte + Afeitado',
-            'date': '25 Nov 2024',
-            'time': '15:45',
-            'status': 'completado',
-            'price': 35.0,
-            'barber': 'Miguel Ángel',
-          },
-        ];
+    final theme = Theme.of(context);
+    
+    // Datos mock de citas
+    final appointments = [
+      {
+        'id': '1',
+        'service': 'Corte + Barba',
+        'date': '2024-01-15',
+        'time': '10:00 AM',
+        'barber': 'Carlos Rodríguez',
+        'status': 'completada',
+        'price': 40.0,
+      },
+      {
+        'id': '2',
+        'service': 'Masaje Relajante',
+        'date': '2024-01-10',
+        'time': '2:00 PM',
+        'barber': 'Ana García',
+        'status': 'completada',
+        'price': 50.0,
+      },
+      {
+        'id': '3',
+        'service': 'Tratamiento Facial',
+        'date': '2024-01-05',
+        'time': '11:30 AM',
+        'barber': 'María López',
+        'status': 'cancelada',
+        'price': 60.0,
+      },
+    ];
 
-        final appointment = appointments[index];
-        final isCompleted = appointment['status'] == 'completado';
-        final isCancelled = appointment['status'] == 'cancelado';
-
-        return Container(
-          margin: const EdgeInsets.only(bottom: 16),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(
-              color: isCancelled ? Colors.red.shade200 : Colors.grey.shade200,
-            ),
-            color: Colors.white,
-          ),
-          child: ListTile(
-            contentPadding: const EdgeInsets.all(16),
-            leading: Container(
-              width: 60,
-              height: 60,
-              decoration: BoxDecoration(
-                color: isCompleted 
-                    ? Colors.green.shade100 
-                    : isCancelled 
-                        ? Colors.red.shade100 
-                        : Colors.blue.shade100,
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Icon(
-                isCompleted 
-                    ? Icons.check_circle 
-                    : isCancelled 
-                        ? Icons.cancel 
-                        : Icons.schedule,
-                color: isCompleted 
-                    ? Colors.green 
-                    : isCancelled 
-                        ? Colors.red 
-                        : Colors.blue,
-                size: 30,
-              ),
-            ),
-            title: Text(
-              appointment['service'] as String,
-              style: const TextStyle(
-                fontWeight: FontWeight.bold,
-                fontSize: 16,
-              ),
-            ),
-            subtitle: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const SizedBox(height: 8),
-                Row(
-                  children: [
-                    Icon(Icons.calendar_today, size: 16, color: Colors.grey.shade600),
-                    const SizedBox(width: 4),
-                    Text(
-                      '${appointment['date']} - ${appointment['time']}',
-                      style: TextStyle(color: Colors.grey.shade600),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 4),
-                Row(
-                  children: [
-                    Icon(Icons.person, size: 16, color: Colors.grey.shade600),
-                    const SizedBox(width: 4),
-                    Text(
-                      appointment['barber'] as String,
-                      style: TextStyle(color: Colors.grey.shade600),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: isCompleted 
-                            ? Colors.green.shade100 
-                            : isCancelled 
-                                ? Colors.red.shade100 
-                                : Colors.blue.shade100,
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Text(
-                        appointment['status'] as String,
-                        style: TextStyle(
-                          color: isCompleted 
-                              ? Colors.green 
-                              : isCancelled 
-                                  ? Colors.red 
-                                  : Colors.blue,
-                          fontSize: 12,
-                          fontWeight: FontWeight.w500,
+    return Container(
+      color: theme.colorScheme.background,
+      child: ListView.builder(
+        padding: const EdgeInsets.all(16),
+        itemCount: appointments.length,
+        itemBuilder: (context, index) {
+          final appointment = appointments[index];
+          return Card(
+            margin: const EdgeInsets.only(bottom: 12),
+            color: theme.cardTheme.color,
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Expanded(
+                        child: Text(
+                          appointment['service'] as String,
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                            color: theme.colorScheme.onSurface,
+                          ),
                         ),
                       ),
-                    ),
-                    const Spacer(),
-                    Text(
-                      '\$${appointment['price']}',
-                      style: TextStyle(
-                        color: Theme.of(context).primaryColor,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 16,
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: appointment['status'] == 'completada'
+                              ? Colors.green.withOpacity(0.1)
+                              : Colors.red.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Text(
+                          (appointment['status'] as String).toUpperCase(),
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w500,
+                            color: appointment['status'] == 'completada'
+                                ? Colors.green
+                                : Colors.red,
+                          ),
+                        ),
                       ),
-                    ),
-                  ],
-                ),
-              ],
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      Icon(Icons.calendar_today, size: 16, color: theme.colorScheme.onSurface.withOpacity(0.7)),
+                      const SizedBox(width: 4),
+                      Text(
+                        '${appointment['date']} - ${appointment['time']}',
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: theme.colorScheme.onSurface.withOpacity(0.7),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                  Row(
+                    children: [
+                      Icon(Icons.person, size: 16, color: theme.colorScheme.onSurface.withOpacity(0.7)),
+                      const SizedBox(width: 4),
+                      Text(
+                        appointment['barber'] as String,
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: theme.colorScheme.onSurface.withOpacity(0.7),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        '\$${appointment['price']}',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: const Color(0xFFDC3545),
+                        ),
+                      ),
+                      if (appointment['status'] == 'completada')
+                        TextButton(
+                          onPressed: () {
+                            // TODO: Navegar a reseña
+                          },
+                          child: const Text('Dejar Reseña'),
+                        ),
+                    ],
+                  ),
+                ],
+              ),
             ),
-            trailing: isCompleted ? IconButton(
-              icon: const Icon(Icons.rate_review),
-              onPressed: () {
-                // TODO: Abrir pantalla de reseña
-              },
-            ) : null,
-          ),
-        );
-      },
+          );
+        },
+      ),
     );
   }
 
   Widget _buildPurchasesHistory() {
-    return ListView.builder(
-      padding: const EdgeInsets.all(16),
-      itemCount: 3,
-      itemBuilder: (context, index) {
-        final purchases = [
-          {
-            'orderId': 'ORD-001',
-            'date': '20 Dic 2024',
-            'items': 3,
-            'total': 89.50,
-            'status': 'entregado',
-            'products': ['Aceite para Barba', 'Navaja Profesional', 'Crema de Afeitar'],
-          },
-          {
-            'orderId': 'ORD-002',
-            'date': '15 Dic 2024',
-            'items': 2,
-            'total': 45.00,
-            'status': 'en_camino',
-            'products': ['Cepillo para Barba', 'Aceite Esencial'],
-          },
-          {
-            'orderId': 'ORD-003',
-            'date': '10 Dic 2024',
-            'items': 1,
-            'total': 25.00,
-            'status': 'entregado',
-            'products': ['Kit de Afeitado Premium'],
-          },
-        ];
+    final theme = Theme.of(context);
+    
+    // Datos mock de compras
+    final purchases = [
+      {
+        'id': '1',
+        'orderNumber': 'ORD-001',
+        'date': '2024-01-12',
+        'items': [
+          {'name': 'Aceite para Barba Premium', 'quantity': 1, 'price': 25.0},
+          {'name': 'Crema de Afeitar Suave', 'quantity': 2, 'price': 18.0},
+        ],
+        'total': 61.0,
+        'status': 'entregado',
+      },
+      {
+        'id': '2',
+        'orderNumber': 'ORD-002',
+        'date': '2024-01-08',
+        'items': [
+          {'name': 'Navaja de Afeitar Profesional', 'quantity': 1, 'price': 45.0},
+        ],
+        'total': 45.0,
+        'status': 'en_transito',
+      },
+    ];
 
-        final purchase = purchases[index];
-        final isDelivered = purchase['status'] == 'entregado';
-        final isInTransit = purchase['status'] == 'en_camino';
-
-        return Container(
-          margin: const EdgeInsets.only(bottom: 16),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: Colors.grey.shade200),
-            color: Colors.white,
-          ),
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      purchase['orderId'] as String,
-                      style: const TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 16,
-                      ),
-                    ),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: isDelivered 
-                            ? Colors.green.shade100 
-                            : Colors.orange.shade100,
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Text(
-                        isDelivered ? 'Entregado' : 'En camino',
+    return Container(
+      color: theme.colorScheme.background,
+      child: ListView.builder(
+        padding: const EdgeInsets.all(16),
+        itemCount: purchases.length,
+        itemBuilder: (context, index) {
+          final purchase = purchases[index];
+          final items = purchase['items'] as List<Map<String, dynamic>>;
+          
+          return Card(
+            margin: const EdgeInsets.only(bottom: 12),
+            color: theme.cardTheme.color,
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'Orden ${purchase['orderNumber']}',
                         style: TextStyle(
-                          color: isDelivered ? Colors.green : Colors.orange,
-                          fontSize: 12,
-                          fontWeight: FontWeight.w500,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                          color: theme.colorScheme.onSurface,
                         ),
                       ),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: purchase['status'] == 'entregado'
+                              ? Colors.green.withOpacity(0.1)
+                              : Colors.orange.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Text(
+                          purchase['status'] == 'entregado' ? 'ENTREGADO' : 'EN TRÁNSITO',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w500,
+                            color: purchase['status'] == 'entregado'
+                                ? Colors.green
+                                : Colors.orange,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    purchase['date'] as String,
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: theme.colorScheme.onSurface.withOpacity(0.7),
                     ),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  purchase['date'] as String,
-                  style: TextStyle(color: Colors.grey.shade600),
-                ),
-                const SizedBox(height: 12),
-                Text(
-                  '${purchase['items']} productos',
-                  style: const TextStyle(fontWeight: FontWeight.w500),
-                ),
-                const SizedBox(height: 8),
-                ...(purchase['products'] as List<String>).map((product) => 
-                  Padding(
+                  ),
+                  const SizedBox(height: 12),
+                  ...items.map((item) => Padding(
                     padding: const EdgeInsets.only(bottom: 4),
                     child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Icon(Icons.circle, size: 6, color: Colors.grey.shade400),
-                        const SizedBox(width: 8),
                         Expanded(
                           child: Text(
-                            product,
-                            style: TextStyle(color: Colors.grey.shade600),
+                            '${item['quantity']}x ${item['name']}',
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: theme.colorScheme.onSurface,
+                            ),
+                          ),
+                        ),
+                        Text(
+                          '\$${(item['price'] * item['quantity']).toStringAsFixed(2)}',
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: theme.colorScheme.onSurface,
                           ),
                         ),
                       ],
                     ),
-                  ),
-                ),
-                const SizedBox(height: 12),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      'Total: \$${purchase['total']}',
-                      style: TextStyle(
-                        color: Theme.of(context).primaryColor,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 16,
-                      ),
-                    ),
-                    ElevatedButton(
-                      onPressed: () {
-                        // TODO: Ver detalles del pedido
-                      },
-                      style: ElevatedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(20),
+                  )).toList(),
+                  const Divider(),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'Total',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: theme.colorScheme.onSurface,
                         ),
                       ),
-                      child: const Text('Ver Detalles'),
-                    ),
-                  ],
-                ),
-              ],
+                      Text(
+                        '\$${purchase['total']}',
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFFDC3545),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
             ),
-          ),
-        );
-      },
+          );
+        },
+      ),
     );
   }
 
   Widget _buildServicesHistory() {
-    return ListView.builder(
-      padding: const EdgeInsets.all(16),
-      itemCount: 4,
-      itemBuilder: (context, index) {
-        final services = [
-          {
-            'service': 'Corte Clásico',
-            'date': '15 Dic 2024',
-            'duration': '30 min',
-            'price': 25.0,
-            'rating': 5,
-            'review': 'Excelente servicio, muy profesional.',
-          },
-          {
-            'service': 'Afeitado Tradicional',
-            'date': '10 Dic 2024',
-            'duration': '20 min',
-            'price': 18.0,
-            'rating': 4,
-            'review': 'Buen trabajo, muy satisfecho.',
-          },
-          {
-            'service': 'Masaje Relajante',
-            'date': '5 Dic 2024',
-            'duration': '60 min',
-            'price': 45.0,
-            'rating': 5,
-            'review': 'Increíble experiencia, muy relajante.',
-          },
-          {
-            'service': 'Tratamiento de Barba',
-            'date': '1 Dic 2024',
-            'duration': '25 min',
-            'price': 22.0,
-            'rating': 4,
-            'review': 'Buen tratamiento, barba muy suave.',
-          },
-        ];
+    final theme = Theme.of(context);
+    
+    // Datos mock de servicios más utilizados
+    final services = [
+      {
+        'name': 'Corte + Barba',
+        'count': 12,
+        'lastUsed': '2024-01-15',
+        'avgRating': 4.8,
+        'totalSpent': 480.0,
+      },
+      {
+        'name': 'Masaje Relajante',
+        'count': 8,
+        'lastUsed': '2024-01-10',
+        'avgRating': 4.9,
+        'totalSpent': 400.0,
+      },
+      {
+        'name': 'Tratamiento Facial',
+        'count': 5,
+        'lastUsed': '2024-01-05',
+        'avgRating': 4.7,
+        'totalSpent': 300.0,
+      },
+    ];
 
-        final service = services[index];
-
-        return Container(
-          margin: const EdgeInsets.only(bottom: 16),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: Colors.grey.shade200),
-            color: Colors.white,
-          ),
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Expanded(
-                      child: Text(
-                        service['service'] as String,
-                        style: const TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 16,
+    return Container(
+      color: theme.colorScheme.background,
+      child: ListView.builder(
+        padding: const EdgeInsets.all(16),
+        itemCount: services.length,
+        itemBuilder: (context, index) {
+          final service = services[index];
+          return Card(
+            margin: const EdgeInsets.only(bottom: 12),
+            color: theme.cardTheme.color,
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Expanded(
+                        child: Text(
+                          service['name'] as String,
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                            color: theme.colorScheme.onSurface,
+                          ),
                         ),
                       ),
-                    ),
-                    Text(
-                      '\$${service['price']}',
-                      style: TextStyle(
-                        color: Theme.of(context).primaryColor,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 16,
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFDC3545).withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Text(
+                          '${service['count']} veces',
+                          style: const TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w500,
+                            color: Color(0xFFDC3545),
+                          ),
+                        ),
                       ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                Row(
-                  children: [
-                    Icon(Icons.calendar_today, size: 16, color: Colors.grey.shade600),
-                    const SizedBox(width: 4),
-                    Text(
-                      service['date'] as String,
-                      style: TextStyle(color: Colors.grey.shade600),
-                    ),
-                    const SizedBox(width: 16),
-                    Icon(Icons.schedule, size: 16, color: Colors.grey.shade600),
-                    const SizedBox(width: 4),
-                    Text(
-                      service['duration'] as String,
-                      style: TextStyle(color: Colors.grey.shade600),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                Row(
-                  children: List.generate(5, (starIndex) => 
-                    Icon(
-                      starIndex < (service['rating'] as int) 
-                          ? Icons.star 
-                          : Icons.star_border,
-                      color: Colors.amber,
-                      size: 20,
-                    ),
+                    ],
                   ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  service['review'] as String,
-                  style: TextStyle(
-                    color: Colors.grey.shade700,
-                    fontStyle: FontStyle.italic,
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      Icon(Icons.star, size: 16, color: Colors.amber),
+                      const SizedBox(width: 4),
+                      Text(
+                        '${service['avgRating']} promedio',
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: theme.colorScheme.onSurface.withOpacity(0.7),
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      Icon(Icons.calendar_today, size: 16, color: theme.colorScheme.onSurface.withOpacity(0.7)),
+                      const SizedBox(width: 4),
+                      Text(
+                        'Último: ${service['lastUsed']}',
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: theme.colorScheme.onSurface.withOpacity(0.7),
+                        ),
+                      ),
+                    ],
                   ),
-                ),
-              ],
+                  const SizedBox(height: 8),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'Total gastado: \$${service['totalSpent']}',
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w500,
+                          color: theme.colorScheme.onSurface,
+                        ),
+                      ),
+                      TextButton(
+                        onPressed: () {
+                          // TODO: Navegar a agendar este servicio
+                        },
+                        child: const Text('Agendar de Nuevo'),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
             ),
-          ),
-        );
-      },
+          );
+        },
+      ),
     );
   }
 } 
