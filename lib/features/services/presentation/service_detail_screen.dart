@@ -20,9 +20,9 @@ class _ServiceDetailScreenState extends State<ServiceDetailScreen> {
     'description':
         'Lifting facial no invasivo que utiliza ultrasonido focalizado de alta intensidad para tensar y rejuvenecer la piel desde las capas más profundas. Resultados visibles desde la primera sesión.',
     'images': [
-      'https://images.unsplash.com/photo-1570172619644-dfd03ed5d881?q=80&w=1974&auto=format&fit=crop',
-      'https://images.unsplash.com/photo-1599387823531-b44c6a6f8737?q=80&w=1974&auto=format&fit=crop',
-      'https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?q=80&w=2120&auto=format&fit=crop'
+      'https://picsum.photos/800/600?random=40',
+      'https://picsum.photos/800/600?random=41',
+      'https://picsum.photos/800/600?random=42'
     ],
     'reviews': [
       {'user': 'Mariana L.', 'rating': 5, 'comment': '¡Increíble! Mi piel se ve mucho más joven. Lo recomiendo totalmente.'},

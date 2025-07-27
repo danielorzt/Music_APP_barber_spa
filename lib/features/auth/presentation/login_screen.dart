@@ -1,8 +1,8 @@
 // lib/features/auth/presentation/login_screen.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../providers/auth_provider.dart';
 import 'package:go_router/go_router.dart';
+import '../providers/auth_provider.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -15,84 +15,91 @@ class _LoginScreenState extends State<LoginScreen> {
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
-  bool _isPasswordVisible = false;
-
-  @override
-  void dispose() {
-    _emailController.dispose();
-    _passwordController.dispose();
-    super.dispose();
-  }
+  bool _obscurePassword = true;
 
   @override
   Widget build(BuildContext context) {
-    final authProvider = Provider.of<AuthProvider>(context);
-
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Iniciar Sesión'),
-      ),
-      body: SingleChildScrollView(
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
+      body: SafeArea(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(24.0),
           child: Form(
             key: _formKey,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                // Logo o imagen de la app
-                Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 20),
-                  child: Center(
-                    child: Image.asset(
-                      'assets/images/logo.png', // Asegúrate de tener esta imagen
-                      height: 150,
-                      width: 150,
-                    ),
-                  ),
+                const SizedBox(height: 60),
+                
+                // Logo y Título
+                Icon(
+                  Icons.spa,
+                  size: 80,
+                  color: Theme.of(context).primaryColor,
                 ),
-
-                // Campo de email
+                const SizedBox(height: 20),
+                
+                Text(
+                  'Bienvenido',
+                  style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: Theme.of(context).primaryColor,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                
+                const SizedBox(height: 8),
+                
+                Text(
+                  'Inicia sesión en tu cuenta',
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: Colors.grey[600],
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                
+                const SizedBox(height: 40),
+                
+                // Campo Email
                 TextFormField(
                   controller: _emailController,
+                  keyboardType: TextInputType.emailAddress,
                   decoration: const InputDecoration(
                     labelText: 'Correo Electrónico',
-                    prefixIcon: Icon(Icons.email),
+                    prefixIcon: Icon(Icons.email_outlined),
                     border: OutlineInputBorder(),
                   ),
-                  keyboardType: TextInputType.emailAddress,
                   validator: (value) {
                     if (value == null || value.isEmpty) {
-                      return 'Por favor ingresa tu correo electrónico';
+                      return 'Por favor ingresa tu email';
                     }
-                    if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value)) {
-                      return 'Por favor ingresa un correo electrónico válido';
+                    if (!value.contains('@')) {
+                      return 'Por favor ingresa un email válido';
                     }
                     return null;
                   },
                 ),
-
+                
                 const SizedBox(height: 16),
-
-                // Campo de contraseña
+                
+                // Campo Contraseña
                 TextFormField(
                   controller: _passwordController,
+                  obscureText: _obscurePassword,
                   decoration: InputDecoration(
                     labelText: 'Contraseña',
-                    prefixIcon: const Icon(Icons.lock),
+                    prefixIcon: const Icon(Icons.lock_outline),
+                    border: const OutlineInputBorder(),
                     suffixIcon: IconButton(
                       icon: Icon(
-                        _isPasswordVisible ? Icons.visibility_off : Icons.visibility,
+                        _obscurePassword ? Icons.visibility : Icons.visibility_off,
                       ),
                       onPressed: () {
                         setState(() {
-                          _isPasswordVisible = !_isPasswordVisible;
+                          _obscurePassword = !_obscurePassword;
                         });
                       },
                     ),
-                    border: const OutlineInputBorder(),
                   ),
-                  obscureText: !_isPasswordVisible,
                   validator: (value) {
                     if (value == null || value.isEmpty) {
                       return 'Por favor ingresa tu contraseña';
@@ -103,114 +110,127 @@ class _LoginScreenState extends State<LoginScreen> {
                     return null;
                   },
                 ),
-
+                
                 const SizedBox(height: 8),
-
-                // Olvidé mi contraseña
+                
+                // Enlace "Olvidé mi contraseña"
                 Align(
                   alignment: Alignment.centerRight,
                   child: TextButton(
                     onPressed: () {
-                      // Navegar a la pantalla de recuperación de contraseña
+                      // TODO: Implementar recuperación de contraseña
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Función en desarrollo'),
+                        ),
+                      );
                     },
                     child: const Text('¿Olvidaste tu contraseña?'),
                   ),
                 ),
-
+                
                 const SizedBox(height: 24),
-
-                // Botón de inicio de sesión
-                ElevatedButton(
-                  onPressed: authProvider.status == AuthStatus.authenticating
-                      ? null
-                      : () async {
-                    if (_formKey.currentState!.validate()) {
-                      final success = await authProvider.login(
-                        _emailController.text.trim(),
-                        _passwordController.text,
+                
+                // Botón Iniciar Sesión
+                Consumer<AuthProvider>(
+                  builder: (context, authProvider, child) {
+                    return ElevatedButton(
+                      onPressed: authProvider.isLoading
+                          ? null
+                          : () async {
+                              if (_formKey.currentState!.validate()) {
+                                final success = await authProvider.login(
+                                  email: _emailController.text,
+                                  password: _passwordController.text,
+                                );
+                                
+                                if (success && mounted) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text('Inicio de sesión exitoso'),
+                                      backgroundColor: Colors.green,
+                                    ),
+                                  );
+                                  context.go('/home');
+                                } else if (mounted) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text(authProvider.error ?? 'Error al iniciar sesión'),
+                                      backgroundColor: Colors.red,
+                                    ),
+                                  );
+                                }
+                              }
+                            },
+                      style: ElevatedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      child: authProvider.isLoading
+                          ? const CircularProgressIndicator(color: Colors.white)
+                          : const Text(
+                              'Iniciar Sesión',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                    );
+                  },
+                ),
+                
+                const SizedBox(height: 20),
+                
+                // Divisor
+                Row(
+                  children: [
+                    const Expanded(child: Divider()),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      child: Text(
+                        'O',
+                        style: TextStyle(color: Colors.grey[600]),
+                      ),
+                    ),
+                    const Expanded(child: Divider()),
+                  ],
+                ),
+                
+                const SizedBox(height: 20),
+                
+                // Acceso rápido de demo
+                OutlinedButton(
+                  onPressed: () async {
+                    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+                    final success = await authProvider.login(
+                      email: 'admin@barbershop.com',
+                      password: 'admin123',
+                    );
+                    
+                    if (success && mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Conectado como Admin'),
+                          backgroundColor: Colors.blue,
+                        ),
                       );
-
-                      if (success && mounted) {
-                        context.go('/home');
-                      } else if (mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text(authProvider.errorMessage ?? 'Error al iniciar sesión'),
-                            backgroundColor: Colors.red,
-                          ),
-                        );
-                      }
+                      context.go('/home');
                     }
                   },
-                  style: ElevatedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                  ),
-                  child: authProvider.status == AuthStatus.authenticating
-                      ? const SizedBox(
-                    height: 20,
-                    width: 20,
-                    child: CircularProgressIndicator(
-                      color: Colors.white,
-                      strokeWidth: 2,
-                    ),
-                  )
-                      : const Text(
-                    'INICIAR SESIÓN',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
+                  style: OutlinedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
                     ),
                   ),
+                  child: const Text('Entrar como Admin (Demo)'),
                 ),
-
-                const SizedBox(height: 16),
-
-                // Separador
-                const Row(
-                  children: [
-                    Expanded(child: Divider()),
-                    Padding(
-                      padding: EdgeInsets.symmetric(horizontal: 16),
-                      child: Text('O continúa con'),
-                    ),
-                    Expanded(child: Divider()),
-                  ],
-                ),
-
-                const SizedBox(height: 16),
-
-                // Botones de inicio de sesión con redes sociales
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                  children: [
-                    ElevatedButton.icon(
-                      onPressed: () {
-                        // Implementar inicio de sesión con Google
-                      },
-                      icon: const Icon(Icons.g_mobiledata, size: 24),
-                      label: const Text('Google'),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.white,
-                        foregroundColor: Colors.black,
-                      ),
-                    ),
-                    ElevatedButton.icon(
-                      onPressed: () {
-                        // Implementar inicio de sesión con Facebook
-                      },
-                      icon: const Icon(Icons.facebook, size: 24),
-                      label: const Text('Facebook'),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.blue,
-                        foregroundColor: Colors.white,
-                      ),
-                    ),
-                  ],
-                ),
-
-                const SizedBox(height: 24),
-
-                // Enlace para registrarse
+                
+                const SizedBox(height: 32),
+                
+                // Link para registro
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
@@ -219,7 +239,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       onPressed: () {
                         context.push('/register');
                       },
-                      child: const Text('Regístrate aquí'),
+                      child: const Text('Crear cuenta'),
                     ),
                   ],
                 ),
@@ -229,5 +249,12 @@ class _LoginScreenState extends State<LoginScreen> {
         ),
       ),
     );
+  }
+
+  @override
+  void dispose() {
+    _emailController.dispose();
+    _passwordController.dispose();
+    super.dispose();
   }
 }

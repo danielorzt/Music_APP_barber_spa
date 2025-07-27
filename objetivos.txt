@@ -1,0 +1,79 @@
+Funcionalidades para el Cliente
+
+Gestión de Perfil:
+
+Registro y Login
+
+Ver y editar perfil
+
+Citas:
+
+Agendamiento de citas
+
+Ver historial de citas
+
+Cancelar citas
+
+Servicios y Productos:
+
+Ver catálogo de servicios
+
+Ver catálogo de productos
+
+Compra de productos
+
+Notificaciones:
+
+Recordatorios de citas
+
+Notificaciones de promociones
+
+Extras:
+
+Ver galería de trabajos
+
+Dejar reseñas y calificaciones
+
+Funcionalidades para el Administrador (Barbero/Dueño)
+
+Gestión de Citas:
+
+Ver agenda de citas
+
+Aceptar/Rechazar citas
+
+Marcar citas como completadas
+
+Gestión de Clientes:
+
+Ver lista de clientes
+
+Ver historial de citas por cliente
+
+Gestión de Servicios y Productos:
+
+Añadir/Editar/Eliminar servicios
+
+Añadir/Editar/Eliminar productos
+
+Control de inventario de productos
+
+Gestión de Barberos:
+
+Añadir/Editar/Eliminar barberos
+
+Asignar horarios a barberos
+
+Reportes y Estadísticas:
+
+Reportes de ingresos
+
+Estadísticas de citas
+
+Reportes de ventas de productos
+
+Gestión de Contenido:
+
+Gestionar galería de trabajos
+
+Gestionar promociones

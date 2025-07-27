@@ -19,9 +19,9 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
     'description':
         'Un potente sérum antioxidante con una concentración del 20% de Vitamina C pura, diseñado para iluminar, reafirmar y proteger tu piel contra los daños ambientales. Ideal para todo tipo de piel.',
     'images': [
-      'https://plus.unsplash.com/premium_photo-1675827055984-3588a445749a?q=80&w=1974&auto=format&fit=crop',
-      'https://images.unsplash.com/photo-1620916566398-39f1143ab7be?q=80&w=1974&auto=format&fit=crop',
-      'https://images.unsplash.com/photo-1600856094225-2b04de835697?q=80&w=1974&auto=format&fit=crop',
+      'https://picsum.photos/800/600?random=30',
+      'https://picsum.photos/800/600?random=31',
+      'https://picsum.photos/800/600?random=32',
     ],
     'reviews': [
       {'user': 'Ana P.', 'rating': 5, 'comment': '¡Resultados visibles en una semana! Mi piel está mucho más luminosa.'},

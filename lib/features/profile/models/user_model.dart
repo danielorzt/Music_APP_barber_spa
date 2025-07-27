@@ -4,68 +4,91 @@
 // part 'user_model.g.dart';
 
 // @JsonSerializable()
-class User {
-  final int? id;
+import 'package:equatable/equatable.dart';
+
+class User extends Equatable {
+  final String? id;
   final String nombre;
   final String email;
-  final String? direccion;
   final String? telefono;
-  final String? tipo;
-  final String? estado;
-  final String? imagen;
+  final String? direccion;
+  final String? role; // 'client' o 'admin'
+  final String? avatarUrl;
+  final DateTime? fechaRegistro;
 
-  // Propiedades adicionales para compatibilidad con la UI
-  String get name => nombre;
-  String get imageUrl => imagen ?? '';
-  bool get isPremium => tipo == 'premium';
-
-  // No incluimos password en el modelo para mayor seguridad
-
-  User({
+  const User({
     this.id,
     required this.nombre,
     required this.email,
-    this.direccion,
     this.telefono,
-    this.tipo,
-    this.estado,
-    this.imagen,
-    String? name,
-    String? phone,
-  }) : 
-    _tempName = name,
-    _tempPhone = phone;
+    this.direccion,
+    this.role = 'client',
+    this.avatarUrl,
+    this.fechaRegistro,
+  });
 
-  final String? _tempName;
-  final String? _tempPhone;
+  @override
+  List<Object?> get props => [
+        id,
+        nombre,
+        email,
+        telefono,
+        direccion,
+        role,
+        avatarUrl,
+        fechaRegistro,
+      ];
 
-  // factory User.fromJson(Map<String, dynamic> json) => _$UserFromJson(json);
-  // Map<String, dynamic> toJson() => _$UserToJson(this);
-  
-  // Implementación temporal sin json_serializable
   factory User.fromJson(Map<String, dynamic> json) {
     return User(
-      id: json['id'],
-      nombre: json['nombre'] ?? json['name'] ?? '',
-      email: json['email'] ?? '',
-      direccion: json['direccion'],
-      telefono: json['telefono'],
-      tipo: json['tipo'],
-      estado: json['estado'],
-      imagen: json['imagen'],
+      id: json['id']?.toString(),
+      nombre: json['nombre'] as String,
+      email: json['email'] as String,
+      telefono: json['telefono'] as String?,
+      direccion: json['direccion'] as String?,
+      role: json['role'] as String? ?? 'client',
+      avatarUrl: json['avatarUrl'] as String?,
+      fechaRegistro: json['fechaRegistro'] != null
+          ? DateTime.parse(json['fechaRegistro'] as String)
+          : null,
     );
   }
-  
+
   Map<String, dynamic> toJson() {
     return {
       'id': id,
       'nombre': nombre,
       'email': email,
-      'direccion': direccion,
       'telefono': telefono,
-      'tipo': tipo,
-      'estado': estado,
-      'imagen': imagen,
+      'direccion': direccion,
+      'role': role,
+      'avatarUrl': avatarUrl,
+      'fechaRegistro': fechaRegistro?.toIso8601String(),
     };
   }
+
+  User copyWith({
+    String? id,
+    String? nombre,
+    String? email,
+    String? telefono,
+    String? direccion,
+    String? role,
+    String? avatarUrl,
+    DateTime? fechaRegistro,
+  }) {
+    return User(
+      id: id ?? this.id,
+      nombre: nombre ?? this.nombre,
+      email: email ?? this.email,
+      telefono: telefono ?? this.telefono,
+      direccion: direccion ?? this.direccion,
+      role: role ?? this.role,
+      avatarUrl: avatarUrl ?? this.avatarUrl,
+      fechaRegistro: fechaRegistro ?? this.fechaRegistro,
+    );
+  }
+
+  bool get isAdmin => role == 'admin';
+  bool get isClient => role == 'client';
 }

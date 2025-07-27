@@ -1,33 +1,120 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-import 'package:music_app/features/auth/screens/login_screen.dart';
-import 'package:music_app/features/onboarding/presentation/onboarding_screen.dart';
-import 'package:music_app/features/splash/presentation/splash_screen.dart';
-import 'package:music_app/features/products/screens/product_list_screen.dart';
-import 'package:music_app/features/home/presentation/home_screen.dart';
-import 'package:music_app/features/profile/presentation/profile_screen.dart';
-import 'package:music_app/features/profile/presentation/history_screen.dart';
-import 'package:music_app/features/profile/presentation/favorites_screen.dart';
-import 'package:music_app/features/profile/presentation/addresses_screen.dart';
-import 'package:music_app/features/profile/presentation/payment_methods_screen.dart';
-import 'package:music_app/features/profile/presentation/help_support_screen.dart';
-import 'package:music_app/features/cart/presentation/cart_screen.dart';
-import 'package:music_app/features/appointments/presentation/appointments_screen.dart';
-import 'package:music_app/features/appointments/presentation/book_appointment_screen.dart';
-import 'package:music_app/features/products/presentation/product_detail_screen.dart';
-import 'package:music_app/features/services/presentation/service_detail_screen.dart';
-import 'package:music_app/features/products/presentation/category_items_screen.dart';
-// import 'package:music_app/core/api/api_interceptors.dart';
+import 'package:provider/provider.dart';
 
-// --- Marcadores de posición de pantalla ---
-// Reemplazaremos estos con las pantallas reales en los próximos pasos.
-// class ProductDetailScreen extends StatelessWidget { final String id; const ProductDetailScreen({super.key, required this.id}); @override Widget build(BuildContext context) => Scaffold(body: Center(child: Text('Product Detail Screen for ID: $id'))); }
+// Screens - Auth
+import '../../features/auth/presentation/login_screen.dart';
+import '../../features/auth/presentation/register_screen.dart';
+
+// Screens - Main
+import '../../features/splash/presentation/splash_screen.dart';
+import '../../features/onboarding/presentation/onboarding_screen.dart';
+import '../../features/home/presentation/home_screen.dart';
+
+// Screens - Cliente
+import '../../features/appointments/presentation/appointments_screen.dart';
+import '../../features/appointments/presentation/book_appointment_screen.dart';
+import '../../features/products/presentation/product_detail_screen.dart';
+import '../../features/products/presentation/category_items_screen.dart';
+import '../../features/services/presentation/service_detail_screen.dart';
+import '../../features/services/presentation/services_screen.dart';
+import '../../features/cart/presentation/cart_screen.dart';
+import '../../features/checkout/presentation/checkout_screen.dart';
+import '../../features/profile/presentation/profile_screen.dart';
+import '../../features/profile/presentation/addresses_screen.dart';
+import '../../features/profile/presentation/favorites_screen.dart';
+import '../../features/profile/presentation/history_screen.dart';
+import '../../features/profile/presentation/payment_methods_screen.dart';
+import '../../features/profile/presentation/help_support_screen.dart';
+import '../../features/profile/presentation/settings_screen.dart';
+
+// Providers
+import '../../features/auth/providers/auth_provider.dart';
+
+// Placeholder widget para pantallas no implementadas
+class PlaceholderScreen extends StatelessWidget {
+  final String title;
+  
+  const PlaceholderScreen({super.key, required this.title});
+  
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(title),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () {
+            if (GoRouter.of(context).canPop()) {
+              GoRouter.of(context).pop();
+            } else {
+              context.go('/home');
+            }
+          },
+        ),
+      ),
+      body: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.construction,
+              size: 80,
+              color: Colors.grey[400],
+            ),
+            const SizedBox(height: 16),
+            Text(
+              title,
+              style: const TextStyle(
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 8),
+            const Text('En construcción...'),
+            const SizedBox(height: 24),
+            ElevatedButton(
+              onPressed: () => context.go('/home'),
+              child: const Text('Ir al Inicio'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
 
 class AppRouter {
   static final GoRouter router = GoRouter(
     initialLocation: '/splash',
+    // Clave global para manejar el estado de navegación
+    navigatorKey: GlobalKey<NavigatorState>(),
+    debugLogDiagnostics: true,
+    redirect: (context, state) {
+      final authProvider = Provider.of<AuthProvider>(context, listen: false);
+      final isAuthenticated = authProvider.isAuthenticated;
+      
+      // Rutas que no requieren autenticación
+      final publicRoutes = ['/splash', '/onboarding', '/home', '/login', '/register', '/servicios', '/productos', '/categoria'];
+      
+      // Si la ruta actual es pública, permitir acceso
+      if (publicRoutes.any((route) => state.fullPath?.startsWith(route) == true)) {
+        return null;
+      }
+      
+      // Para rutas protegidas del cliente
+      final protectedRoutes = ['/perfil', '/citas', '/carrito', '/checkout'];
+      if (protectedRoutes.any((route) => state.fullPath?.startsWith(route) == true)) {
+        if (!isAuthenticated) {
+          return '/login';
+        }
+      }
+      
+      return null;
+    },
     routes: [
+      // === PANTALLAS PRINCIPALES ===
       GoRoute(
         path: '/splash',
         builder: (context, state) => const SplashScreen(),
@@ -37,16 +124,45 @@ class AppRouter {
         builder: (context, state) => const OnboardingScreen(),
       ),
       GoRoute(
+        path: '/home',
+        builder: (context, state) => WillPopScope(
+          onWillPop: () async {
+            // En la pantalla home, mostrar diálogo de confirmación para salir
+            return await _showExitDialog(context) ?? false;
+          },
+          child: const HomeScreen(),
+        ),
+      ),
+      
+      // === AUTENTICACIÓN ===
+      GoRoute(
         path: '/login',
         builder: (context, state) => const LoginScreen(),
       ),
       GoRoute(
-        path: '/home',
-        builder: (context, state) => const HomeScreen(),
+        path: '/register',
+        builder: (context, state) => const RegisterScreen(),
       ),
+      
+      // === SERVICIOS ===
+      GoRoute(
+        path: '/servicios',
+        builder: (context, state) => const ServicesScreen(),
+        routes: [
+          GoRoute(
+            path: ':id',
+            builder: (context, state) {
+              final id = state.pathParameters['id']!;
+              return ServiceDetailScreen(serviceId: id);
+            },
+          ),
+        ],
+      ),
+      
+      // === PRODUCTOS ===
       GoRoute(
         path: '/productos',
-        builder: (context, state) => const ProductListScreen(),
+        builder: (context, state) => const CategoryItemsScreen(categoryName: 'Todos'),
         routes: [
           GoRoute(
             path: ':id',
@@ -57,13 +173,8 @@ class AppRouter {
           ),
         ],
       ),
-      GoRoute(
-        path: '/servicios/:id',
-        builder: (context, state) {
-          final id = state.pathParameters['id']!;
-          return ServiceDetailScreen(serviceId: id);
-        },
-      ),
+      
+      // === CATEGORÍAS ===
       GoRoute(
         path: '/categoria/:categoryName',
         builder: (context, state) {
@@ -71,7 +182,37 @@ class AppRouter {
           return CategoryItemsScreen(categoryName: categoryName);
         },
       ),
-      // Rutas protegidas que requieren autenticación
+      
+      // === CARRITO Y CHECKOUT ===
+      GoRoute(
+        path: '/carrito',
+        builder: (context, state) => const CartScreen(),
+      ),
+      GoRoute(
+        path: '/checkout',
+        builder: (context, state) => const CheckoutScreen(),
+      ),
+      
+      // === CITAS ===
+      GoRoute(
+        path: '/citas',
+        builder: (context, state) => const AppointmentsScreen(),
+        routes: [
+          GoRoute(
+            path: 'agendar',
+            builder: (context, state) => const BookAppointmentScreen(),
+          ),
+          // Placeholder para citas individuales
+          GoRoute(
+            path: ':id',
+            builder: (context, state) {
+              return const PlaceholderScreen(title: 'Detalle de Cita');
+            },
+          ),
+        ],
+      ),
+      
+      // === PERFIL ===
       GoRoute(
         path: '/perfil',
         builder: (context, state) => const ProfileScreen(),
@@ -96,59 +237,46 @@ class AppRouter {
             path: 'ayuda',
             builder: (context, state) => const HelpSupportScreen(),
           ),
-        ],
-      ),
-      GoRoute(
-        path: '/carrito',
-        builder: (context, state) => const CartScreen(),
-      ),
-      GoRoute(
-        path: '/citas',
-        builder: (context, state) => const AppointmentsScreen(),
-        routes: [
           GoRoute(
-            path: 'agendar',
-            builder: (context, state) => const BookAppointmentScreen(),
+            path: 'configuracion',
+            builder: (context, state) => const SettingsScreen(),
           ),
         ],
       ),
-    ],
-    redirect: (BuildContext context, GoRouterState state) async {
-      // Función simple para verificar si hay token
-      final storage = const FlutterSecureStorage();
-      final token = await storage.read(key: 'auth_token');
-      final isLoggedIn = token != null && token.isNotEmpty;
       
-      final location = state.matchedLocation;
-
-      // Rutas públicas (no requieren autenticación)
-      final publicRoutes = [
-        '/splash', 
-        '/onboarding', 
-        '/login',
-        '/home',
-        '/productos',
-      ];
-
-      // Rutas protegidas (requieren autenticación)
-      final protectedRoutes = [
-        '/perfil',
-        '/carrito',
-        '/citas',
-      ];
-
-      // Si el usuario no está logueado y intenta acceder a una ruta protegida
-      if (!isLoggedIn && protectedRoutes.any((route) => location.startsWith(route))) {
-        return '/login'; // Redirigir a la pantalla de login
-      }
-
-      // Si el usuario está logueado y trata de ir a /login, redirigir a /home
-      if (isLoggedIn && location == '/login') {
-        return '/home';
-      }
-
-      // No se necesita redirección en otros casos
-      return null;
-    },
+      // === EXTRAS (Placeholders por ahora) ===
+      GoRoute(
+        path: '/galeria',
+        builder: (context, state) => const PlaceholderScreen(title: 'Galería'),
+      ),
+      GoRoute(
+        path: '/notificaciones',
+        builder: (context, state) => const PlaceholderScreen(title: 'Notificaciones'),
+      ),
+    ],
   );
+
+  // Función para mostrar diálogo de salida
+  static Future<bool?> _showExitDialog(BuildContext context) {
+    return showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Salir de la aplicación'),
+        content: const Text('¿Estás seguro de que quieres salir?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Cancelar'),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.of(context).pop(true);
+              SystemNavigator.pop(); // Cierra la aplicación
+            },
+            child: const Text('Salir'),
+          ),
+        ],
+      ),
+    );
+  }
 }
