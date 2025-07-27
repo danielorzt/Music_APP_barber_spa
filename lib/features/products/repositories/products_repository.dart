@@ -149,7 +149,6 @@ class ProductsRepository {
     await Future.delayed(const Duration(milliseconds: 600));
     
     // Simular eliminación exitosa
-    print('Producto $id eliminado exitosamente');
     
     // CÓDIGO ORIGINAL COMENTADO:
     // try {

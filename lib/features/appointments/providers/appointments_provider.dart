@@ -15,13 +15,19 @@ class AppointmentsProvider with ChangeNotifier {
   bool get isLoading => _isLoading;
   String? get error => _error;
 
-  Future<void> fetchUserAppointments(int userId) async {
+  Future<void> fetchUserAppointments(String userId) async {
     _isLoading = true;
     _error = null;
     notifyListeners();
 
     try {
-      _appointments = await _repository.getUserAppointments(userId);
+      // El repositorio espera un int, así que hacemos la conversión aquí
+      final intUserId = int.tryParse(userId);
+      if (intUserId != null) {
+        _appointments = await _repository.getUserAppointments(intUserId);
+      } else {
+        throw Exception('ID de usuario inválido');
+      }
     } catch (e) {
       _error = e.toString();
     }
@@ -48,7 +54,7 @@ class AppointmentsProvider with ChangeNotifier {
     }
   }
 
-  Future<bool> cancelAppointment(int appointmentId) async {
+  Future<bool> cancelAppointment(String appointmentId) async {
     _isLoading = true;
     _error = null;
     notifyListeners();
@@ -64,8 +70,8 @@ class AppointmentsProvider with ChangeNotifier {
             estado: 'CANCELADA',
             mensaje: appointment.mensaje,
             usuarioId: appointment.usuarioId,
-            servicioId: appointment.servicioId,
-            sucursalId: appointment.sucursalId,
+            serviceId: appointment.serviceId,
+            branchId: appointment.branchId,
             servicio: appointment.servicio,
             sucursal: appointment.sucursal,
           );

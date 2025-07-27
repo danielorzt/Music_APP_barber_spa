@@ -2,6 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/auth_provider.dart';
+import 'package:go_router/go_router.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -130,7 +131,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       );
 
                       if (success && mounted) {
-                        Navigator.pushReplacementNamed(context, '/home');
+                        context.go('/home');
                       } else if (mounted) {
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(
@@ -216,7 +217,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     const Text('¿No tienes una cuenta?'),
                     TextButton(
                       onPressed: () {
-                        Navigator.pushNamed(context, '/register');
+                        context.push('/register');
                       },
                       child: const Text('Regístrate aquí'),
                     ),

@@ -1,31 +1,32 @@
-// lib/features/products/presentation/product_detail_screen.dart
 import 'package:flutter/material.dart';
 import 'package:music_app/core/widgets/simple_carousel.dart';
+import 'package:go_router/go_router.dart';
 
-class ProductDetailScreen extends StatefulWidget {
-  final String productId;
+class ServiceDetailScreen extends StatefulWidget {
+  final String serviceId;
 
-  const ProductDetailScreen({super.key, required this.productId});
+  const ServiceDetailScreen({super.key, required this.serviceId});
 
   @override
-  State<ProductDetailScreen> createState() => _ProductDetailScreenState();
+  State<ServiceDetailScreen> createState() => _ServiceDetailScreenState();
 }
 
-class _ProductDetailScreenState extends State<ProductDetailScreen> {
+class _ServiceDetailScreenState extends State<ServiceDetailScreen> {
   // Datos de ejemplo
-  final Map<String, dynamic> product = {
-    'name': 'Sérum Vitamina C Premium',
-    'price': 450.00,
+  final Map<String, dynamic> service = {
+    'name': 'Tratamiento Hifu',
+    'price': 3500.00,
+    'duration': '60 min',
     'description':
-        'Un potente sérum antioxidante con una concentración del 20% de Vitamina C pura, diseñado para iluminar, reafirmar y proteger tu piel contra los daños ambientales. Ideal para todo tipo de piel.',
+        'Lifting facial no invasivo que utiliza ultrasonido focalizado de alta intensidad para tensar y rejuvenecer la piel desde las capas más profundas. Resultados visibles desde la primera sesión.',
     'images': [
-      'https://plus.unsplash.com/premium_photo-1675827055984-3588a445749a?q=80&w=1974&auto=format&fit=crop',
-      'https://images.unsplash.com/photo-1620916566398-39f1143ab7be?q=80&w=1974&auto=format&fit=crop',
-      'https://images.unsplash.com/photo-1600856094225-2b04de835697?q=80&w=1974&auto=format&fit=crop',
+      'https://images.unsplash.com/photo-1570172619644-dfd03ed5d881?q=80&w=1974&auto=format&fit=crop',
+      'https://images.unsplash.com/photo-1599387823531-b44c6a6f8737?q=80&w=1974&auto=format&fit=crop',
+      'https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?q=80&w=2120&auto=format&fit=crop'
     ],
     'reviews': [
-      {'user': 'Ana P.', 'rating': 5, 'comment': '¡Resultados visibles en una semana! Mi piel está mucho más luminosa.'},
-      {'user': 'Carlos G.', 'rating': 4, 'comment': 'Buen producto, aunque un poco caro. La textura es agradable.'},
+      {'user': 'Mariana L.', 'rating': 5, 'comment': '¡Increíble! Mi piel se ve mucho más joven. Lo recomiendo totalmente.'},
+      {'user': 'Javier R.', 'rating': 5, 'comment': 'El personal fue muy profesional y los resultados superaron mis expectativas.'},
     ]
   };
 
@@ -35,7 +36,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(product['name']),
+        title: Text(service['name']),
         actions: [
           IconButton(icon: const Icon(Icons.share), onPressed: () {}),
           IconButton(icon: const Icon(Icons.favorite_border), onPressed: () {}),
@@ -46,17 +47,17 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             _buildImageSlider(),
-            _buildProductInfo(),
+            _buildServiceInfo(),
             _buildReviewsSection(),
           ],
         ),
       ),
-      bottomNavigationBar: _buildAddToCartBar(),
+      bottomNavigationBar: _buildBookAppointmentBar(),
     );
   }
 
   Widget _buildImageSlider() {
-    final List<String> images = product['images'];
+    final List<String> images = service['images'];
     return Column(
       children: [
         SimpleCarousel(
@@ -92,23 +93,34 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
     );
   }
 
-  Widget _buildProductInfo() {
+  Widget _buildServiceInfo() {
     return Padding(
       padding: const EdgeInsets.all(16.0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            product['name'],
+            service['name'],
             style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 8),
-          Text(
-            '\$${product['price'].toStringAsFixed(2)}',
-            style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                  color: Theme.of(context).primaryColor,
-                  fontWeight: FontWeight.bold,
-                ),
+          Row(
+            children: [
+              Text(
+                '\$${service['price'].toStringAsFixed(2)}',
+                style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                      color: Theme.of(context).primaryColor,
+                      fontWeight: FontWeight.bold,
+                    ),
+              ),
+              const SizedBox(width: 16),
+              Icon(Icons.timer_outlined, size: 20, color: Colors.grey[600]),
+              const SizedBox(width: 4),
+              Text(
+                service['duration'],
+                style: TextStyle(fontSize: 16, color: Colors.grey[600]),
+              ),
+            ],
           ),
           const SizedBox(height: 16),
           const Text(
@@ -117,7 +129,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
           ),
           const SizedBox(height: 8),
           Text(
-            product['description'],
+            service['description'],
             style: const TextStyle(fontSize: 16, height: 1.5),
           ),
         ],
@@ -126,14 +138,14 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
   }
 
   Widget _buildReviewsSection() {
-    final List<Map<String, dynamic>> reviews = product['reviews'];
+    final List<Map<String, dynamic>> reviews = service['reviews'];
     return Padding(
       padding: const EdgeInsets.all(16.0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Text(
-            'Reseñas de Clientes',
+            'Opiniones de Clientes',
             style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 16),
@@ -170,7 +182,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
     );
   }
 
-  Widget _buildAddToCartBar() {
+  Widget _buildBookAppointmentBar() {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -185,14 +197,14 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
       ),
       child: ElevatedButton(
         onPressed: () {
-          // Lógica para añadir al carrito
+          context.go('/citas/agendar');
         },
         style: ElevatedButton.styleFrom(
           padding: const EdgeInsets.symmetric(vertical: 16),
           textStyle: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
         ),
-        child: const Text('Añadir al Carrito'),
+        child: const Text('Agendar Cita'),
       ),
     );
   }
-}
+} 

@@ -12,10 +12,10 @@ class AppointmentsRepository {
     // Datos mock para citas
     return [
       Appointment(
-        id: 1,
-        usuarioId: userId,
-        servicioId: 1,
-        sucursalId: 1,
+        id: '1',
+        usuarioId: userId.toString(),
+        serviceId: '1',
+        branchId: '1',
         fechaHora: DateTime.now().add(const Duration(days: 2, hours: 14)),
         estado: 'confirmado',
         mensaje: 'Corte tradicional con acabado profesional',
@@ -30,10 +30,10 @@ class AppointmentsRepository {
         },
       ),
       Appointment(
-        id: 2,
-        usuarioId: userId,
-        servicioId: 3,
-        sucursalId: 1,
+        id: '2',
+        usuarioId: userId.toString(),
+        serviceId: '3',
+        branchId: '1',
         fechaHora: DateTime.now().add(const Duration(days: 5, hours: 16, minutes: 30)),
         estado: 'pendiente',
         mensaje: 'Masaje de 60 minutos para relajación',
@@ -48,10 +48,10 @@ class AppointmentsRepository {
         },
       ),
       Appointment(
-        id: 3,
-        usuarioId: userId,
-        servicioId: 2,
-        sucursalId: 1,
+        id: '3',
+        usuarioId: userId.toString(),
+        serviceId: '2',
+        branchId: '1',
         fechaHora: DateTime.now().subtract(const Duration(days: 3, hours: 10)),
         estado: 'completado',
         mensaje: 'Afeitado con navaja tradicional',
@@ -82,10 +82,10 @@ class AppointmentsRepository {
     
     // Simular creación exitosa
     return Appointment(
-      id: DateTime.now().millisecondsSinceEpoch,
+      id: DateTime.now().millisecondsSinceEpoch.toString(),
       usuarioId: appointment.usuarioId,
-      servicioId: appointment.servicioId,
-      sucursalId: appointment.sucursalId,
+      serviceId: appointment.serviceId,
+      branchId: appointment.branchId,
       fechaHora: appointment.fechaHora,
       estado: 'pendiente',
       mensaje: appointment.mensaje,
@@ -105,7 +105,7 @@ class AppointmentsRepository {
     // }
   }
 
-  Future<Appointment> updateAppointmentStatus(int appointmentId, String status) async {
+  Future<Appointment> updateAppointmentStatus(String appointmentId, String status) async {
     // Simular delay de red
     await Future.delayed(const Duration(milliseconds: 800));
     
@@ -119,8 +119,8 @@ class AppointmentsRepository {
     return Appointment(
       id: appointment.id,
       usuarioId: appointment.usuarioId,
-      servicioId: appointment.servicioId,
-      sucursalId: appointment.sucursalId,
+      serviceId: appointment.serviceId,
+      branchId: appointment.branchId,
       fechaHora: appointment.fechaHora,
       estado: status,
       mensaje: appointment.mensaje,

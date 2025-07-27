@@ -1,0 +1,50 @@
+# Cambios realizados para correr la app sin API - 26 de Julio 2025
+
+## Error Solucionado
+- **Error**: `The argument type 'int' can't be assigned to the parameter type 'String'` en appointments_screen.dart:33
+
+## Cambios Específicos
+
+### 1. appointments_screen.dart
+- **Línea 33**: Cambiado `authProvider.currentUser!.id!` por `authProvider.currentUser!.id.toString()`
+- **Razón**: El método fetchUserAppointments espera un String pero currentUser.id es un int
+
+### 2. Cambios Previos de Contexto (realizados anteriormente)
+
+#### ServiceModel (service_model.dart)
+- Removida dependencia de json_annotation
+- Eliminado archivo service_model.g.dart (no generado)
+- Creada clase ServiceModel simple con campos: id, name, description, imagen, price, duration
+- Agregados métodos fromJson y toJson manuales
+
+#### Appointment Model (appointment_model.dart)
+- Agregados campos faltantes: usuarioId, fechaHora, estado, servicio, sucursal, mensaje
+- Cambiado tipo de id de int a String para consistencia
+- Agregados métodos fromJson y toJson manuales
+
+#### book_appointment_screen.dart
+- Corregido error de sintaxis en ListTile (línea 224)
+- Envuelto validación en Column para estructura correcta
+- Corregidos nombres de campos en constructor Appointment
+
+#### Repositories y Providers
+- appointments_repository.dart: Cambiados todos los id de int a String
+- appointments_provider.dart: Actualizado para manejar String ids
+- Corregidos nombres de campos (serviceId/branchId vs servicioId/sucursalId)
+
+## Resultado
+- La aplicación ahora puede compilar y ejecutar sin errores
+- Funciona en modo frontend sin necesidad de API
+- Datos mock disponibles para pruebas de interfaz
+
+## Notas Técnicas
+- User model mantiene id como int? para compatibilidad
+- Se usa .toString() para conversión cuando sea necesario
+- Todos los constructores de Appointment usan String ids consistentemente
+- Eliminadas dependencias de generación de código que causaban errores
+
+## Próximos Pasos Recomendados
+- Probar todas las pantallas principales
+- Verificar navegación entre pantallas
+- Revisar que los datos mock se muestren correctamente
+- Considerar estandarizar todos los ids como String en futuras versiones

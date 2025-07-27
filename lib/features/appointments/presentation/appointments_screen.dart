@@ -17,14 +17,20 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> {
   @override
   void initState() {
     super.initState();
-    _loadAppointments();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final authProvider = Provider.of<AuthProvider>(context, listen: false);
+      if (authProvider.isAuthenticated && authProvider.currentUser != null) {
+        Provider.of<AppointmentsProvider>(context, listen: false)
+          .fetchUserAppointments(authProvider.currentUser!.id!.toString());
+      }
+    });
   }
 
   Future<void> _loadAppointments() async {
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
     if (authProvider.isAuthenticated && authProvider.currentUser != null) {
       await Provider.of<AppointmentsProvider>(context, listen: false)
-          .fetchUserAppointments(authProvider.currentUser!.id!);
+          .fetchUserAppointments(authProvider.currentUser!.id.toString());
     }
   }
 

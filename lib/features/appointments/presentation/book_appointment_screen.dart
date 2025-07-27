@@ -2,9 +2,11 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
+import 'package:music_app/features/services/providers/services_provider.dart';
+import 'package:music_app/features/branches/providers/branches_provider.dart';
+import 'package:music_app/features/services/models/service_model.dart';
 import '../providers/appointments_provider.dart';
 import '../../auth/providers/auth_provider.dart';
-import '../../services/providers/services_provider.dart';
 import '../models/appointment_model.dart';
 
 class BookAppointmentScreen extends StatefulWidget {
@@ -18,8 +20,8 @@ class _BookAppointmentScreenState extends State<BookAppointmentScreen> {
   final _formKey = GlobalKey<FormState>();
   DateTime? _selectedDate;
   TimeOfDay? _selectedTime;
-  int? _selectedServiceId;
-  int? _selectedBranchId;
+  String? _selectedServiceId;
+  String? _selectedBranchId;
   final _notesController = TextEditingController();
 
   bool _isLoading = false;
@@ -27,10 +29,7 @@ class _BookAppointmentScreenState extends State<BookAppointmentScreen> {
   @override
   void initState() {
     super.initState();
-    Future.microtask(() {
-      Provider.of<ServicesProvider>(context, listen: false).fetchServices();
-      Provider.of<BranchesProvider>(context, listen: false).fetchBranches();
-    });
+    // No es necesario llamar a fetch aquí si se hace en el constructor del provider
   }
 
   @override
@@ -153,116 +152,91 @@ class _BookAppointmentScreenState extends State<BookAppointmentScreen> {
               ),
             ),
             const SizedBox(height: 8),
-            servicesProvider.isLoading
-                ? const Center(child: CircularProgressIndicator())
-                : servicesProvider.error != null
-                ? Center(
-              child: Text('Error: ${servicesProvider.error}'),
-            )
-                : DropdownButtonFormField<int>(
-              value: _selectedServiceId,
-              decoration: const InputDecoration(
-                border: OutlineInputBorder(),
-                hintText: 'Seleccionar servicio',
-              ),
-              items: servicesProvider.services.map((service) {
-                return DropdownMenuItem<int>(
-                  value: service.id,
-                  child: Text('${service.nombre} - \$${service.precio.toStringAsFixed(2)}'),
-                );
-              }).toList(),
-              validator: (value) {
-                if (value == null) {
-                  return 'Por favor selecciona un servicio';
-                }
-                return null;
-              },
-              onChanged: (value) {
-                setState(() {
-                  _selectedServiceId = value;
-                });
-              },
-            ),
-            const SizedBox(height: 16),
+            if (servicesProvider.isLoading || branchesProvider.isLoading)
+              const Center(child: CircularProgressIndicator()),
+            if (servicesProvider.error != null || branchesProvider.error != null)
+              Center(child: Text('Error: ${servicesProvider.error ?? branchesProvider.error}')),
 
-            // Seleccionar sucursal
-            const Text(
-              'Sucursal',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: 8),
-            branchesProvider.isLoading
-                ? const Center(child: CircularProgressIndicator())
-                : branchesProvider.error != null
-                ? Center(
-              child: Text('Error: ${branchesProvider.error}'),
-            )
-                : DropdownButtonFormField<int>(
-              value: _selectedBranchId,
-              decoration: const InputDecoration(
-                border: OutlineInputBorder(),
-                hintText: 'Seleccionar sucursal',
-              ),
-              items: branchesProvider.branches.map((branch) {
-                return DropdownMenuItem<int>(
-                  value: branch.id,
-                  child: Text(branch.nombre),
-                );
-              }).toList(),
-              validator: (value) {
-                if (value == null) {
-                  return 'Por favor selecciona una sucursal';
-                }
-                return null;
-              },
-              onChanged: (value) {
-                setState(() {
-                  _selectedBranchId = value;
-                });
-              },
-            ),
-            const SizedBox(height: 16),
+                // Selector de Servicio
+                DropdownButtonFormField<String>(
+                  value: _selectedServiceId,
+                  hint: const Text('Seleccionar Servicio'),
+                  items: servicesProvider.services.map((ServiceModel service) {
+                    return DropdownMenuItem<String>(
+                      value: service.id,
+                      child: Text(service.name),
+                    );
+                  }).toList(),
+                  onChanged: (value) {
+                    setState(() {
+                      _selectedServiceId = value;
+                    });
+                  },
+                  validator: (value) => value == null ? 'Por favor, selecciona un servicio' : null,
+                ),
+                const SizedBox(height: 20),
 
-            // Seleccionar fecha
-            const Text(
-              'Fecha',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: 8),
-            InkWell(
-              onTap: () => _selectDate(context),
-              child: InputDecorator(
-                decoration: InputDecoration(
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(4),
-                  ),
-                  suffixIcon: const Icon(Icons.calendar_today),
+                // Selector de Sucursal
+                DropdownButtonFormField<String>(
+                  value: _selectedBranchId,
+                  hint: const Text('Seleccionar Sucursal'),
+                  items: branchesProvider.branches.map((Branch branch) {
+                    return DropdownMenuItem<String>(
+                      value: branch.id,
+                      child: Text(branch.name),
+                    );
+                  }).toList(),
+                  onChanged: (value) {
+                    setState(() {
+                      _selectedBranchId = value;
+                    });
+                  },
+                  validator: (value) => value == null ? 'Por favor, selecciona una sucursal' : null,
                 ),
-                child: _selectedDate == null
-                    ? const Text('Seleccionar fecha')
-                    : Text(
-                  DateFormat('EEEE, d MMMM, yyyy', 'es_ES').format(_selectedDate!),
+                const SizedBox(height: 20),
+
+                // Selector de Fecha
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    ListTile(
+                      title: const Text(
+                        'Fecha',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      subtitle: InkWell(
+                        onTap: () => _selectDate(context),
+                        child: InputDecorator(
+                          decoration: InputDecoration(
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                            suffixIcon: const Icon(Icons.calendar_today),
+                          ),
+                          child: _selectedDate == null
+                              ? const Text('Seleccionar fecha')
+                              : Text(
+                            DateFormat('EEEE, d MMMM, yyyy', 'es_ES').format(_selectedDate!),
+                          ),
+                        ),
+                      ),
+                    ),
+                    if (_selectedDate == null)
+                      const Padding(
+                        padding: EdgeInsets.only(top: 8, left: 12),
+                        child: Text(
+                          'Por favor selecciona una fecha',
+                          style: TextStyle(
+                            color: Colors.red,
+                            fontSize: 12,
+                          ),
+                        ),
+                      ),
+                  ],
                 ),
-              ),
-            ),
-            if (_selectedDate == null)
-        const Padding(
-    padding: EdgeInsets.only(top: 8, left: 12),
-    child: Text(
-// lib/features/appointments/presentation/book_appointment_screen.dart (continuación)
-      'Por favor selecciona una fecha',
-      style: TextStyle(
-        color: Colors.red,
-        fontSize: 12,
-      ),
-    ),
-        ),
                 const SizedBox(height: 16),
 
                 // Seleccionar hora
@@ -386,17 +360,11 @@ class _BookAppointmentScreenState extends State<BookAppointmentScreen> {
     try {
       // Crear objeto de cita
       final appointment = Appointment(
-        fechaHora: DateTime(
-          _selectedDate!.year,
-          _selectedDate!.month,
-          _selectedDate!.day,
-          _selectedTime!.hour,
-          _selectedTime!.minute,
-        ),
+        fechaHora: _selectedDate!.add(Duration(hours: _selectedTime!.hour, minutes: _selectedTime!.minute)),
         estado: 'SOLICITADA',
-        usuarioId: authProvider.currentUser!.id!,
-        servicioId: _selectedServiceId!,
-        sucursalId: _selectedBranchId!,
+        usuarioId: authProvider.currentUser!.id!.toString(),
+        serviceId: _selectedServiceId!,
+        branchId: _selectedBranchId!,
         mensaje: _notesController.text.isNotEmpty ? _notesController.text : null,
       );
 

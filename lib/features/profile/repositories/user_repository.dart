@@ -23,7 +23,6 @@ class UserRepository {
 
       return User.fromJson(jsonDecode(userString));
     } catch (e) {
-      print('Error al obtener usuario: $e');
       return null;
     }
   }
@@ -34,7 +33,6 @@ class UserRepository {
       final prefs = await SharedPreferences.getInstance();
       return await prefs.setString(_userKey, jsonEncode(user.toJson()));
     } catch (e) {
-      print('Error al guardar usuario: $e');
       return false;
     }
   }
@@ -73,7 +71,6 @@ class UserRepository {
       final prefs = await SharedPreferences.getInstance();
       return await prefs.remove(_userKey);
     } catch (e) {
-      print('Error al cerrar sesión: $e');
       return false;
     }
   }

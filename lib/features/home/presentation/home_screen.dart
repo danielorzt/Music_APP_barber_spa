@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
 import '../../auth/providers/auth_provider.dart';
+import '../../profile/presentation/profile_screen.dart';
+import 'package:music_app/core/widgets/simple_carousel.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -14,17 +16,21 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   int _currentIndex = 0;
 
-  final List<Widget> _screens = [
-    const HomeTab(),
-    const CartTab(),
-    const AppointmentsTab(),
-    const ProfileTab(),
-  ];
-
   @override
   Widget build(BuildContext context) {
+    // Escuchar el estado de autenticación
+    final authProvider = Provider.of<AuthProvider>(context);
+    
+    final List<Widget> screens = [
+      const HomeTab(),
+      const CartTab(),
+      const AppointmentsTab(),
+      // Cambiar dinámicamente la pantalla de perfil
+      authProvider.isAuthenticated ? const ProfileScreen() : const ProfileLoginTab(),
+    ];
+
     return Scaffold(
-      body: _screens[_currentIndex],
+      body: screens[_currentIndex],
       bottomNavigationBar: BottomNavigationBar(
         type: BottomNavigationBarType.fixed,
         currentIndex: _currentIndex,
@@ -171,7 +177,7 @@ class HomeTab extends StatelessWidget {
                     fontSize: 16,
                   ),
                 ),
-                const SizedBox(height: 16),
+                const Spacer(),
                 ElevatedButton(
                   onPressed: () {
                     // TODO: Navegar a servicios
@@ -228,7 +234,12 @@ class HomeTab extends StatelessWidget {
               final category = categories[index];
               return GestureDetector(
                 onTap: () {
-                  // TODO: Navegar a categoría
+                  final categoryName = category['name'] as String;
+                  if (categoryName == 'Citas') {
+                    context.go('/citas');
+                  } else {
+                    context.go('/categoria/$categoryName');
+                  }
                 },
                 child: Column(
                   children: [
@@ -246,13 +257,17 @@ class HomeTab extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: 8),
-                    Text(
-                      category['name'] as String,
-                      style: const TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w500,
+                    Expanded(
+                      child: Text(
+                        category['name'] as String,
+                        style: const TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500,
+                        ),
+                        textAlign: TextAlign.center,
+                        overflow: TextOverflow.ellipsis,
+                        maxLines: 2,
                       ),
-                      textAlign: TextAlign.center,
                     ),
                   ],
                 ),
@@ -295,80 +310,35 @@ class HomeTab extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 16),
-          SizedBox(
+          SimpleCarousel(
             height: 200,
-            child: ListView.builder(
-              scrollDirection: Axis.horizontal,
-              itemCount: 5,
-              itemBuilder: (context, index) {
-                return Container(
-                  width: 160,
-                  margin: const EdgeInsets.only(right: 16),
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: Colors.grey.shade200),
+            autoPlay: true,
+            viewportFraction: 0.8,
+            items: [
+              'https://images.unsplash.com/photo-1556228720-195a672e8a03?w=600&h=400&fit=crop',
+              'https://images.unsplash.com/photo-1596462502278-27bfdc403348?w=600&h=400&fit=crop',
+              'https://images.unsplash.com/photo-1570172619644-dfd03ed5d881?q=80&w=1974&auto=format&fit=crop',
+            ].map((imageUrl) {
+              return Container(
+                margin: const EdgeInsets.symmetric(horizontal: 5.0),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(12),
+                  child: Image.network(
+                    imageUrl, 
+                    fit: BoxFit.cover,
+                    errorBuilder: (context, error, stackTrace) {
+                      return Container(
+                        color: Colors.grey[300],
+                        child: Icon(Icons.image, color: Colors.grey[600]),
+                      );
+                    },
                   ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      ClipRRect(
-                        borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
-                        child: Image.network(
-                          'https://images.unsplash.com/photo-1556228720-195a672e8a03?w=300&h=120&fit=crop',
-                          height: 120,
-                          width: double.infinity,
-                          fit: BoxFit.cover,
-                          errorBuilder: (context, error, stackTrace) {
-                            return Container(
-                              height: 120,
-                              color: Colors.grey.shade300,
-                              child: Icon(Icons.image, color: Colors.grey.shade600),
-                            );
-                          },
-                        ),
-                      ),
-                      Padding(
-                        padding: const EdgeInsets.all(12),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'Producto ${index + 1}',
-                              style: const TextStyle(
-                                fontWeight: FontWeight.w600,
-                                fontSize: 14,
-                              ),
-                            ),
-                            const SizedBox(height: 4),
-                            Row(
-                              children: [
-                                Text(
-                                  '\$${(25 - index * 2).toDouble()}',
-                                  style: TextStyle(
-                                    color: Theme.of(context).primaryColor,
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 16,
-                                  ),
-                                ),
-                                const SizedBox(width: 8),
-                                Text(
-                                  '\$${(35 - index * 2).toDouble()}',
-                                  style: TextStyle(
-                                    color: Colors.grey.shade600,
-                                    decoration: TextDecoration.lineThrough,
-                                    fontSize: 12,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                );
-              },
-            ),
+                ),
+              );
+            }).toList(),
           ),
         ],
       ),
@@ -400,71 +370,62 @@ class HomeTab extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 16),
-          GridView.builder(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 2,
-              crossAxisSpacing: 16,
-              mainAxisSpacing: 16,
-              childAspectRatio: 0.75,
-            ),
-            itemCount: 4,
-            itemBuilder: (context, index) {
+          SimpleCarousel(
+            height: 250,
+            autoPlay: false,
+            viewportFraction: 0.9,
+            items: List.generate(4, (index) {
               return Container(
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: Colors.grey.shade200),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    ClipRRect(
-                      borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
-                      child: Image.network(
-                        'https://images.unsplash.com/photo-1596462502278-27bfdc403348?w=300&h=200&fit=crop',
-                        height: 120,
-                        width: double.infinity,
-                        fit: BoxFit.cover,
-                        errorBuilder: (context, error, stackTrace) {
-                          return Container(
-                            height: 120,
-                            color: Colors.grey.shade300,
-                            child: Icon(Icons.image, color: Colors.grey.shade600),
-                          );
-                        },
+                width: MediaQuery.of(context).size.width,
+                margin: const EdgeInsets.symmetric(horizontal: 5.0),
+                child: Container(
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: Colors.grey.shade200),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      ClipRRect(
+                        borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
+                        child: Image.network(
+                          'https://images.unsplash.com/photo-1596462502278-27bfdc403348?w=300&h=200&fit=crop',
+                          height: 120,
+                          width: double.infinity,
+                          fit: BoxFit.cover,
+                        ),
                       ),
-                    ),
-                    Padding(
-                      padding: const EdgeInsets.all(12),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Producto Premium ${index + 1}',
-                            style: const TextStyle(
-                              fontWeight: FontWeight.w600,
-                              fontSize: 14,
+                      Padding(
+                        padding: const EdgeInsets.all(12),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Producto Premium ${index + 1}',
+                              style: const TextStyle(
+                                fontWeight: FontWeight.w600,
+                                fontSize: 14,
+                              ),
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
                             ),
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            '\$${(30 + index * 5).toDouble()}',
-                            style: TextStyle(
-                              color: Theme.of(context).primaryColor,
-                              fontWeight: FontWeight.bold,
-                              fontSize: 16,
+                            const SizedBox(height: 4),
+                            Text(
+                              '\$${(30 + index * 5).toDouble()}',
+                              style: TextStyle(
+                                color: Theme.of(context).primaryColor,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 16,
+                              ),
                             ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               );
-            },
+            }),
           ),
         ],
       ),
@@ -491,86 +452,90 @@ class HomeTab extends StatelessWidget {
             itemCount: 3,
             itemBuilder: (context, index) {
               final services = [
-                {'name': 'Corte Clásico', 'price': 25.0, 'duration': '30 min'},
-                {'name': 'Afeitado Tradicional', 'price': 18.0, 'duration': '20 min'},
-                {'name': 'Masaje Relajante', 'price': 45.0, 'duration': '60 min'},
+                {'id': '1', 'name': 'Corte Clásico', 'price': 25.0, 'duration': '30 min'},
+                {'id': '2', 'name': 'Afeitado Tradicional', 'price': 18.0, 'duration': '20 min'},
+                {'id': '3', 'name': 'Masaje Relajante', 'price': 45.0, 'duration': '60 min'},
               ];
               
               final service = services[index];
               
-              return Container(
-                margin: const EdgeInsets.only(bottom: 12),
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: Colors.grey.shade200),
-                ),
-                child: Row(
-                  children: [
-                    Container(
-                      width: 60,
-                      height: 60,
-                      decoration: BoxDecoration(
-                        color: Theme.of(context).primaryColor.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(12),
+              return GestureDetector(
+                onTap: () {
+                  context.go('/servicios/${service['id']}');
+                },
+                child: Container(
+                  margin: const EdgeInsets.only(bottom: 12),
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: Colors.grey.shade200),
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 60,
+                        height: 60,
+                        decoration: BoxDecoration(
+                          color: Theme.of(context).primaryColor.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Icon(
+                          Icons.spa,
+                          color: Theme.of(context).primaryColor,
+                          size: 30,
+                        ),
                       ),
-                      child: Icon(
-                        Icons.spa,
-                        color: Theme.of(context).primaryColor,
-                        size: 30,
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              service['name'] as String,
+                              style: const TextStyle(
+                                fontWeight: FontWeight.w600,
+                                fontSize: 16,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              service['duration'] as String,
+                              style: TextStyle(
+                                color: Colors.grey.shade600,
+                                fontSize: 14,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
-                    ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.end,
                         children: [
                           Text(
-                            service['name'] as String,
-                            style: const TextStyle(
-                              fontWeight: FontWeight.w600,
-                              fontSize: 16,
+                            '\$${service['price']}',
+                            style: TextStyle(
+                              color: Theme.of(context).primaryColor,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 18,
                             ),
                           ),
                           const SizedBox(height: 4),
-                          Text(
-                            service['duration'] as String,
-                            style: TextStyle(
-                              color: Colors.grey.shade600,
-                              fontSize: 14,
+                          ElevatedButton(
+                            onPressed: () {
+                              context.go('/citas/agendar');
+                            },
+                            style: ElevatedButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(20),
+                              ),
                             ),
+                            child: const Text('Agendar'),
                           ),
                         ],
                       ),
-                    ),
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.end,
-                      children: [
-                        Text(
-                          '\$${service['price']}',
-                          style: TextStyle(
-                            color: Theme.of(context).primaryColor,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 18,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        ElevatedButton(
-                          onPressed: () {
-                            // Redirigir al login si no está autenticado
-                            context.go('/login');
-                          },
-                          style: ElevatedButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(20),
-                            ),
-                          ),
-                          child: const Text('Agendar'),
-                        ),
-                      ],
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               );
             },
@@ -770,8 +735,9 @@ class AppointmentsTab extends StatelessWidget {
   }
 }
 
-class ProfileTab extends StatelessWidget {
-  const ProfileTab({super.key});
+// Renombrar el antiguo ProfileTab a ProfileLoginTab
+class ProfileLoginTab extends StatelessWidget {
+  const ProfileLoginTab({super.key});
 
   @override
   Widget build(BuildContext context) {

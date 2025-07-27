@@ -71,4 +71,27 @@ class CartRepository {
       rethrow;
     }
   }
+
+  Future<List<CartItem>> getCartItems() async {
+    // final response = await _apiService.get('/cart');
+    // return (response['items'] as List)
+    //     .map((item) => CartItem.fromJson(item))
+    //     .toList();
+    return []; // Devolver una lista vacía
+  }
+
+  Future<void> addToCart(String productId, int quantity) async {
+    // await _apiService.post('/cart', data: {
+    //   'productId': productId,
+    //   'quantity': quantity,
+    // });
+  }
+
+  Future<void> removeFromCart(String itemId) async {
+    // await _apiService.delete('/cart/$itemId');
+  }
+
+  Future<void> updateQuantity(String itemId, int quantity) async {
+    // await _apiService.put('/cart/$itemId', data: {'quantity': quantity});
+  }
 }

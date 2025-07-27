@@ -15,11 +15,14 @@ import 'package:music_app/features/profile/presentation/help_support_screen.dart
 import 'package:music_app/features/cart/presentation/cart_screen.dart';
 import 'package:music_app/features/appointments/presentation/appointments_screen.dart';
 import 'package:music_app/features/appointments/presentation/book_appointment_screen.dart';
+import 'package:music_app/features/products/presentation/product_detail_screen.dart';
+import 'package:music_app/features/services/presentation/service_detail_screen.dart';
+import 'package:music_app/features/products/presentation/category_items_screen.dart';
 // import 'package:music_app/core/api/api_interceptors.dart';
 
 // --- Marcadores de posición de pantalla ---
 // Reemplazaremos estos con las pantallas reales en los próximos pasos.
-class ProductDetailScreen extends StatelessWidget { final String id; const ProductDetailScreen({super.key, required this.id}); @override Widget build(BuildContext context) => Scaffold(body: Center(child: Text('Product Detail Screen for ID: $id'))); }
+// class ProductDetailScreen extends StatelessWidget { final String id; const ProductDetailScreen({super.key, required this.id}); @override Widget build(BuildContext context) => Scaffold(body: Center(child: Text('Product Detail Screen for ID: $id'))); }
 
 class AppRouter {
   static final GoRouter router = GoRouter(
@@ -49,10 +52,24 @@ class AppRouter {
             path: ':id',
             builder: (context, state) {
               final id = state.pathParameters['id']!;
-              return ProductDetailScreen(id: id);
+              return ProductDetailScreen(productId: id);
             },
           ),
         ],
+      ),
+      GoRoute(
+        path: '/servicios/:id',
+        builder: (context, state) {
+          final id = state.pathParameters['id']!;
+          return ServiceDetailScreen(serviceId: id);
+        },
+      ),
+      GoRoute(
+        path: '/categoria/:categoryName',
+        builder: (context, state) {
+          final categoryName = state.pathParameters['categoryName']!;
+          return CategoryItemsScreen(categoryName: categoryName);
+        },
       ),
       // Rutas protegidas que requieren autenticación
       GoRoute(

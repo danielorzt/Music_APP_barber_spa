@@ -1,28 +1,41 @@
 // lib/features/services/models/service_model.dart
-import 'package:json_annotation/json_annotation.dart';
 
-part 'service_model.g.dart';
-
-@JsonSerializable()
-class Service {
-  final int? id;
-  final String nombre;
-  final String? descripcion;
+class ServiceModel {
+  final String id;
+  final String name;
+  final String description;
   final String? imagen;
-  final double precio;
-  final int duracion;
-  final int usuarioId;
+  final double price;
+  final int duration;
 
-  Service({
-    this.id,
-    required this.nombre,
-    this.descripcion,
+  ServiceModel({
+    required this.id,
+    required this.name,
+    required this.description,
     this.imagen,
-    required this.precio,
-    required this.duracion,
-    required this.usuarioId,
+    required this.price,
+    required this.duration,
   });
 
-  factory Service.fromJson(Map<String, dynamic> json) => _$ServiceFromJson(json);
-  Map<String, dynamic> toJson() => _$ServiceToJson(this);
+  factory ServiceModel.fromJson(Map<String, dynamic> json) {
+    return ServiceModel(
+      id: json['id']?.toString() ?? '',
+      name: json['name'] ?? json['nombre'] ?? '',
+      description: json['description'] ?? json['descripcion'] ?? '',
+      imagen: json['imagen'],
+      price: (json['price'] ?? json['precio'] ?? 0.0).toDouble(),
+      duration: json['duration'] ?? json['duracion'] ?? 0,
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'name': name,
+      'description': description,
+      'imagen': imagen,
+      'price': price,
+      'duration': duration,
+    };
+  }
 }

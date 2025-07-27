@@ -1,6 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:smooth_page_indicator/smooth_page_indicator.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:go_router/go_router.dart';
 import 'widgets/onboarding_page_widget.dart';
 
@@ -15,148 +13,146 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   final PageController _pageController = PageController();
   int _currentPage = 0;
 
-  final List<Map<String, dynamic>> _pages = [
+  final List<Map<String, dynamic>> _onboardingData = [
     {
-      'title': 'Reserva con Facilidad',
-      'description': 'Programa tus citas de barbería y spa en segundos. Elige tu servicio favorito, fecha y hora que más te convenga.',
-      'imagePath': 'reserva',
-      'color': const Color(0xFF4A90E2),
+      'image': 'https://images.unsplash.com/photo-1560066984-138dadb4c035?fit=crop&w=600&h=400',
+      'title': 'Bienvenido a BarberMusic & Spa',
+      'description': 'Descubre la experiencia perfecta de cuidado personal y relajación en un solo lugar.',
     },
     {
-      'title': 'Productos Premium',
-      'description': 'Explora nuestra exclusiva colección de productos para el cuidado personal. Calidad garantizada con envío a domicilio.',
-      'imagePath': 'productos',
-      'color': const Color(0xFFE27D4A),
+      'image': 'https://images.unsplash.com/photo-1599387823531-b44c6a6f8737?fit=crop&w=600&h=400',
+      'title': 'Servicios Profesionales',
+      'description': 'Nuestros expertos te ofrecen servicios de corte, barba, spa y tratamientos premium.',
     },
     {
-      'title': 'Múltiples Sucursales',
-      'description': 'Encuentra la sucursal más cercana a ti. Con ubicaciones estratégicas en toda la ciudad para tu comodidad.',
-      'imagePath': 'ubicaciones',
-      'color': const Color(0xFF50C878),
-    },
-    {
-      'title': 'Experiencia Premium',
-      'description': 'Disfruta de un servicio de primera clase con los mejores profesionales y un ambiente relajante.',
-      'imagePath': 'pagos',
-      'color': const Color(0xFF9B59B6),
+      'image': 'https://images.unsplash.com/photo-1570172619644-dfd03ed5d881?fit=crop&w=600&h=400',
+      'title': 'Reserva Fácil',
+      'description': 'Agenda tus citas de manera rápida y sencilla desde la comodidad de tu teléfono.',
     },
   ];
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: SafeArea(
+        child: Column(
+          children: [
+            // Skip button
+            Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  TextButton(
+                    onPressed: () => _goToHome(),
+                    child: const Text('Saltar'),
+                  ),
+                ],
+              ),
+            ),
+            
+            // PageView
+            Expanded(
+              child: PageView.builder(
+                controller: _pageController,
+                onPageChanged: (int page) {
+                  setState(() {
+                    _currentPage = page;
+                  });
+                },
+                itemCount: _onboardingData.length,
+                itemBuilder: (context, index) {
+                  return OnboardingPageWidget(
+                    image: _onboardingData[index]['image'],
+                    title: _onboardingData[index]['title'],
+                    description: _onboardingData[index]['description'],
+                  );
+                },
+              ),
+            ),
+            
+            // Page indicators
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 20),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: _buildPageIndicators(),
+              ),
+            ),
+            
+            // Bottom buttons
+            Padding(
+              padding: const EdgeInsets.all(24.0),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  // Previous button
+                  _currentPage > 0
+                      ? TextButton(
+                          onPressed: () {
+                            _pageController.previousPage(
+                              duration: const Duration(milliseconds: 300),
+                              curve: Curves.easeInOut,
+                            );
+                          },
+                          child: const Text('Anterior'),
+                        )
+                      : const SizedBox(width: 80),
+                  
+                  // Next/Finish button
+                  ElevatedButton(
+                    onPressed: () {
+                      if (_currentPage < _onboardingData.length - 1) {
+                        _pageController.nextPage(
+                          duration: const Duration(milliseconds: 300),
+                          curve: Curves.easeInOut,
+                        );
+                      } else {
+                        _goToHome();
+                      }
+                    },
+                    child: Text(
+                      _currentPage < _onboardingData.length - 1 
+                          ? 'Siguiente' 
+                          : 'Comenzar',
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  List<Widget> _buildPageIndicators() {
+    List<Widget> indicators = [];
+    for (int i = 0; i < _onboardingData.length; i++) {
+      indicators.add(
+        Container(
+          width: 8.0,
+          height: 8.0,
+          margin: const EdgeInsets.symmetric(horizontal: 4.0),
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: _currentPage == i 
+                ? Theme.of(context).primaryColor
+                : Colors.grey.shade300,
+          ),
+        ),
+      );
+    }
+    return indicators;
+  }
+
+  void _goToHome() {
+    context.go('/home');
+  }
 
   @override
   void dispose() {
     _pageController.dispose();
     super.dispose();
-  }
-
-  Future<void> _completeOnboarding() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool('isFirstLaunch', false);
-    
-    if (mounted) {
-      context.go('/home');
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      body: Stack(
-        children: [
-          // Páginas del onboarding
-          PageView.builder(
-            controller: _pageController,
-            itemCount: _pages.length,
-            onPageChanged: (index) {
-              setState(() {
-                _currentPage = index;
-              });
-            },
-            itemBuilder: (context, index) {
-              return OnboardingPageWidget(
-                title: _pages[index]['title'],
-                description: _pages[index]['description'],
-                imagePath: _pages[index]['imagePath'],
-                backgroundColor: _pages[index]['color'],
-                isLastPage: index == _pages.length - 1,
-              );
-            },
-          ),
-          // Indicador de páginas y botones
-          Positioned(
-            bottom: 50,
-            left: 0,
-            right: 0,
-            child: Column(
-              children: [
-                // Indicador de páginas
-                SmoothPageIndicator(
-                  controller: _pageController,
-                  count: _pages.length,
-                  effect: WormEffect(
-                    dotWidth: 10,
-                    dotHeight: 10,
-                    spacing: 16,
-                    dotColor: Colors.grey.shade300,
-                    activeDotColor: Theme.of(context).primaryColor,
-                  ),
-                ),
-                const SizedBox(height: 40),
-                // Botones de navegación
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 20),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      // Botón Skip
-                      TextButton(
-                        onPressed: _completeOnboarding,
-                        child: Text(
-                          'Omitir',
-                          style: TextStyle(
-                            color: Colors.grey.shade600,
-                            fontSize: 16,
-                          ),
-                        ),
-                      ),
-                      // Botón Next/Comenzar
-                      ElevatedButton(
-                        onPressed: () {
-                          if (_currentPage == _pages.length - 1) {
-                            _completeOnboarding();
-                          } else {
-                            _pageController.nextPage(
-                              duration: const Duration(milliseconds: 300),
-                              curve: Curves.easeInOut,
-                            );
-                          }
-                        },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: _pages[_currentPage]['color'],
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 30,
-                            vertical: 15,
-                          ),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(30),
-                          ),
-                          elevation: 2,
-                        ),
-                        child: Text(
-                          _currentPage == _pages.length - 1 ? 'Comenzar' : 'Siguiente',
-                          style: const TextStyle(
-                            fontSize: 16,
-                            color: Colors.white,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
   }
 }
