@@ -37,7 +37,11 @@ class ProductListScreen extends StatelessWidget {
                 itemCount: state.products.length,
                 itemBuilder: (context, index) {
                   final product = state.products[index];
-                  return ProductCard(product: product);
+                  return ProductCard(
+                    name: product.nombre,
+                    price: '\$${product.precio.toStringAsFixed(2)}',
+                    imageUrl: product.urlImagen,
+                  );
                 },
               );
             }

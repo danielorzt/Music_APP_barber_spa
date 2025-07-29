@@ -4,6 +4,18 @@ import 'base_api_service.dart';
 /// Servicio para gestionar órdenes/compras
 class OrdersApiService extends BaseApiService {
   
+  /// Construir endpoint con parámetros de consulta
+  String buildEndpointWithParams(String baseEndpoint, Map<String, dynamic> params) {
+    if (params.isEmpty) return baseEndpoint;
+    
+    final queryParams = params.entries
+        .where((entry) => entry.value != null)
+        .map((entry) => '${entry.key}=${Uri.encodeComponent(entry.value.toString())}')
+        .join('&');
+    
+    return '$baseEndpoint?$queryParams';
+  }
+  
   /// Obtener todas las órdenes del usuario autenticado
   Future<Map<String, dynamic>> getUserOrders({
     int? page,

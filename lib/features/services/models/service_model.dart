@@ -38,4 +38,15 @@ class ServiceModel {
       'duration': duration,
     };
   }
+
+  Map<String, dynamic> toMap() {
+    return {
+      'id': id,
+      'name': name,
+      'description': description,
+      'imagen': imagen,
+      'price': price,
+      'duration': duration,
+    };
+  }
 }

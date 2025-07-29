@@ -1,195 +1,321 @@
+import 'dart:convert';
 import '../config/api_config.dart';
 import 'base_api_service.dart';
 
-/// Servicio para gestionar servicios y productos del catálogo
+/// Servicio para APIs de catálogo (servicios, productos, categorías, sucursales)
 class CatalogApiService extends BaseApiService {
   
-  // === SERVICIOS ===
-  
   /// Obtener todos los servicios
-  Future<Map<String, dynamic>> getServicios({
-    int? page,
-    int? limit,
-    String? categoria,
-    String? search,
-  }) async {
-    final params = <String, dynamic>{};
-    if (page != null) params['page'] = page;
-    if (limit != null) params['limit'] = limit;
-    if (categoria != null) params['categoria'] = categoria;
-    if (search != null) params['search'] = search;
-    
-    final endpoint = buildEndpointWithParams(ApiConfig.serviciosEndpoint, params);
-    
+  Future<Map<String, dynamic>> getServicios({String? categoriaId}) async {
     print('🔍 Obteniendo servicios...');
-    final result = await get(endpoint, requiresAuth: false); // Los catálogos pueden ser públicos
     
-    if (result['success']) {
-      final servicios = extractList(result['data'], 'servicios');
-      print('✅ ${servicios.length} servicios obtenidos');
+    try {
+      String endpoint = ApiConfig.serviciosEndpoint;
+      if (categoriaId != null) {
+        endpoint += '?categoria_id=$categoriaId';
+      }
       
-      return {
-        'success': true,
-        'servicios': servicios,
-        'total': result['data']['total'] ?? servicios.length,
-        'current_page': result['data']['current_page'] ?? 1,
-        'last_page': result['data']['last_page'] ?? 1,
-      };
+      final response = await get(endpoint);
+      print('✅ Servicios obtenidos exitosamente');
+      return response;
+    } catch (e) {
+      print('❌ Error obteniendo servicios: $e');
+      rethrow;
     }
-    
-    return result;
   }
   
-  /// Obtener un servicio específico por ID
+  /// Obtener un servicio específico
   Future<Map<String, dynamic>> getServicio(String id) async {
-    print('🔍 Obteniendo servicio ID: $id');
-    final result = await get('${ApiConfig.serviciosEndpoint}/$id', requiresAuth: false);
+    print('🔍 Obteniendo servicio $id...');
     
-    if (result['success']) {
-      final servicio = extractData(result['data'], 'servicio') ?? result['data'];
-      print('✅ Servicio obtenido: ${servicio['nombre'] ?? 'Sin nombre'}');
-      
-      return {
-        'success': true,
-        'servicio': servicio,
-      };
+    try {
+      final response = await get('${ApiConfig.serviciosEndpoint}/$id');
+      print('✅ Servicio obtenido exitosamente');
+      return response;
+    } catch (e) {
+      print('❌ Error obteniendo servicio: $e');
+      rethrow;
     }
-    
-    return result;
   }
-  
-  /// Obtener servicios por categoría
-  Future<Map<String, dynamic>> getServiciosByCategoria(String categoriaId) async {
-    return getServicios(categoria: categoriaId);
-  }
-  
-  /// Buscar servicios
-  Future<Map<String, dynamic>> searchServicios(String query) async {
-    return getServicios(search: query);
-  }
-  
-  // === PRODUCTOS ===
   
   /// Obtener todos los productos
-  Future<Map<String, dynamic>> getProductos({
-    int? page,
-    int? limit,
-    String? categoria,
-    String? search,
-    double? minPrice,
-    double? maxPrice,
-  }) async {
-    final params = <String, dynamic>{};
-    if (page != null) params['page'] = page;
-    if (limit != null) params['limit'] = limit;
-    if (categoria != null) params['categoria'] = categoria;
-    if (search != null) params['search'] = search;
-    if (minPrice != null) params['min_price'] = minPrice;
-    if (maxPrice != null) params['max_price'] = maxPrice;
-    
-    final endpoint = buildEndpointWithParams(ApiConfig.productosEndpoint, params);
-    
+  Future<Map<String, dynamic>> getProductos({String? categoriaId}) async {
     print('🔍 Obteniendo productos...');
-    final result = await get(endpoint, requiresAuth: false); // Los catálogos pueden ser públicos
     
-    if (result['success']) {
-      final productos = extractList(result['data'], 'productos');
-      print('✅ ${productos.length} productos obtenidos');
+    try {
+      String endpoint = ApiConfig.productosEndpoint;
+      if (categoriaId != null) {
+        endpoint += '?categoria_id=$categoriaId';
+      }
       
-      return {
-        'success': true,
-        'productos': productos,
-        'total': result['data']['total'] ?? productos.length,
-        'current_page': result['data']['current_page'] ?? 1,
-        'last_page': result['data']['last_page'] ?? 1,
-      };
+      final response = await get(endpoint);
+      print('✅ Productos obtenidos exitosamente');
+      return response;
+    } catch (e) {
+      print('❌ Error obteniendo productos: $e');
+      rethrow;
     }
-    
-    return result;
   }
   
-  /// Obtener un producto específico por ID
+  /// Obtener un producto específico
   Future<Map<String, dynamic>> getProducto(String id) async {
-    print('🔍 Obteniendo producto ID: $id');
-    final result = await get('${ApiConfig.productosEndpoint}/$id', requiresAuth: false);
+    print('🔍 Obteniendo producto $id...');
     
-    if (result['success']) {
-      final producto = extractData(result['data'], 'producto') ?? result['data'];
-      print('✅ Producto obtenido: ${producto['nombre'] ?? 'Sin nombre'}');
-      
-      return {
-        'success': true,
-        'producto': producto,
-      };
+    try {
+      final response = await get('${ApiConfig.productosEndpoint}/$id');
+      print('✅ Producto obtenido exitosamente');
+      return response;
+    } catch (e) {
+      print('❌ Error obteniendo producto: $e');
+      rethrow;
     }
-    
-    return result;
   }
   
-  /// Obtener productos por categoría
-  Future<Map<String, dynamic>> getProductosByCategoria(String categoriaId) async {
-    return getProductos(categoria: categoriaId);
-  }
-  
-  /// Buscar productos
-  Future<Map<String, dynamic>> searchProductos(String query) async {
-    return getProductos(search: query);
-  }
-  
-  /// Obtener productos con filtros de precio
-  Future<Map<String, dynamic>> getProductosWithPriceFilter({
-    double? minPrice,
-    double? maxPrice,
-    String? categoria,
-  }) async {
-    return getProductos(
-      minPrice: minPrice,
-      maxPrice: maxPrice,
-      categoria: categoria,
-    );
-  }
-  
-  // === CATEGORÍAS (Útil para filtros) ===
-  
-  /// Obtener categorías disponibles
+  /// Obtener todas las categorías
   Future<Map<String, dynamic>> getCategorias() async {
     print('🔍 Obteniendo categorías...');
-    final result = await get(ApiConfig.categoriasEndpoint, requiresAuth: false);
     
-    if (result['success']) {
-      final categorias = extractList(result['data'], 'categorias');
-      print('✅ ${categorias.length} categorías obtenidas');
-      
-      return {
-        'success': true,
-        'categorias': categorias,
-      };
+    try {
+      final response = await get(ApiConfig.categoriasEndpoint);
+      print('✅ Categorías obtenidas exitosamente');
+      return response;
+    } catch (e) {
+      print('❌ Error obteniendo categorías: $e');
+      rethrow;
     }
-    
-    return result;
   }
   
-  // === UTILIDADES ===
-  
-  /// Obtener servicios destacados (puede basarse en algún campo específico)
+  /// Obtener servicios destacados
   Future<Map<String, dynamic>> getServiciosDestacados() async {
-    // Implementar lógica específica según cómo tu API maneja servicios destacados
-    // Por ahora, obtener los primeros 6 servicios
-    return getServicios(limit: 6);
+    print('🔍 Obteniendo servicios destacados...');
+    
+    try {
+      final response = await get(ApiConfig.serviciosDestacadosEndpoint);
+      print('✅ Servicios destacados obtenidos exitosamente');
+      return response;
+    } catch (e) {
+      print('❌ Error obteniendo servicios destacados: $e');
+      print('📋 Usando datos mock para servicios destacados...');
+      
+      // Datos mock para servicios destacados
+      return {
+        'success': true,
+        'data': [
+          {
+            'id': '1',
+            'nombre': 'Corte Clásico',
+            'descripcion': 'Corte de cabello tradicional con acabado profesional',
+            'precio': 25000.0,
+            'duracion': 30,
+            'imagen': 'https://images.unsplash.com/photo-1503951914875-452162b0f3f1?w=400',
+            'destacado': true,
+          },
+          {
+            'id': '2',
+            'nombre': 'Afeitado Tradicional',
+            'descripcion': 'Afeitado con navaja y productos premium',
+            'precio': 18000.0,
+            'duracion': 20,
+            'imagen': 'https://images.unsplash.com/photo-1596462502278-27bfdc403348?w=400',
+            'destacado': true,
+          },
+          {
+            'id': '3',
+            'nombre': 'Masaje Relajante',
+            'descripcion': 'Masaje terapéutico para aliviar tensiones',
+            'precio': 45000.0,
+            'duracion': 60,
+            'imagen': 'https://images.unsplash.com/photo-1544161512-6ad2f9d19ca9?w=400',
+            'destacado': true,
+          },
+        ],
+        'message': 'Datos mock - API no disponible',
+      };
+    }
   }
   
   /// Obtener productos destacados
   Future<Map<String, dynamic>> getProductosDestacados() async {
-    // Implementar lógica específica según cómo tu API maneja productos destacados
-    // Por ahora, obtener los primeros 6 productos
-    return getProductos(limit: 6);
+    print('🔍 Obteniendo productos destacados...');
+    
+    try {
+      final response = await get(ApiConfig.productosDestacadosEndpoint);
+      print('✅ Productos destacados obtenidos exitosamente');
+      return response;
+    } catch (e) {
+      print('❌ Error obteniendo productos destacados: $e');
+      print('📋 Usando datos mock para productos destacados...');
+      
+      // Datos mock para productos destacados
+      return {
+        'success': true,
+        'data': [
+          {
+            'id': '1',
+            'nombre': 'Aceite para Barba Premium',
+            'descripcion': 'Aceite hidratante para barba con aceites esenciales',
+            'precio': 35000.0,
+            'imagen': 'https://images.unsplash.com/photo-1556228720-195a672e8a03?w=400',
+            'destacado': true,
+            'categoria': 'Cuidado Personal',
+          },
+          {
+            'id': '2',
+            'nombre': 'Navaja de Afeitar Artesanal',
+            'descripcion': 'Navaja de acero inoxidable con mango de madera',
+            'precio': 85000.0,
+            'imagen': 'https://images.unsplash.com/photo-1596462502278-27bfdc403348?w=400',
+            'destacado': true,
+            'categoria': 'Herramientas',
+          },
+          {
+            'id': '3',
+            'nombre': 'Kit de Peinado Profesional',
+            'descripcion': 'Kit completo con tijeras, peine y spray',
+            'precio': 120000.0,
+            'imagen': 'https://images.unsplash.com/photo-1503951914875-452162b0f3f1?w=400',
+            'destacado': true,
+            'categoria': 'Herramientas',
+          },
+        ],
+        'message': 'Datos mock - API no disponible',
+      };
+    }
   }
   
-  /// Obtener ofertas o productos con descuento
+  /// Obtener ofertas y promociones
   Future<Map<String, dynamic>> getOfertas() async {
     print('🔍 Obteniendo ofertas...');
-    // Implementar lógica específica para ofertas según tu API
-    // Esto podría ser un endpoint específico o filtros especiales
-    return getProductos(limit: 10);
+    
+    try {
+      final response = await get(ApiConfig.ofertasEndpoint);
+      print('✅ Ofertas obtenidas exitosamente');
+      return response;
+    } catch (e) {
+      print('❌ Error obteniendo ofertas: $e');
+      print('📋 Usando datos mock para ofertas...');
+      
+      // Datos mock para ofertas
+      return {
+        'success': true,
+        'data': [
+          {
+            'id': '1',
+            'titulo': 'Descuento 20% en Cortes',
+            'descripcion': 'Descuento especial en todos los cortes de cabello',
+            'descuento': 20,
+            'fecha_inicio': '2025-07-28',
+            'fecha_fin': '2025-08-15',
+            'imagen': 'https://images.unsplash.com/photo-1503951914875-452162b0f3f1?w=400',
+            'activa': true,
+          },
+          {
+            'id': '2',
+            'titulo': 'Combo Barba + Corte',
+            'descripcion': 'Ahorra 15% en el combo de barba y corte',
+            'descuento': 15,
+            'fecha_inicio': '2025-07-25',
+            'fecha_fin': '2025-08-10',
+            'imagen': 'https://images.unsplash.com/photo-1596462502278-27bfdc403348?w=400',
+            'activa': true,
+          },
+          {
+            'id': '3',
+            'titulo': 'Masaje Relajante 30% OFF',
+            'descripcion': 'Disfruta de un masaje relajante con descuento especial',
+            'descuento': 30,
+            'fecha_inicio': '2025-07-20',
+            'fecha_fin': '2025-08-20',
+            'imagen': 'https://images.unsplash.com/photo-1544161512-6ad2f9d19ca9?w=400',
+            'activa': true,
+          },
+        ],
+        'message': 'Datos mock - API no disponible',
+      };
+    }
+  }
+  
+  /// Obtener todas las sucursales
+  Future<Map<String, dynamic>> getSucursales() async {
+    print('🔍 Obteniendo sucursales...');
+    
+    try {
+      final response = await get(ApiConfig.sucursalesEndpoint);
+      print('✅ Sucursales obtenidas exitosamente');
+      return response;
+    } catch (e) {
+      print('❌ Error obteniendo sucursales: $e');
+      rethrow;
+    }
+  }
+  
+  /// Obtener una sucursal específica
+  Future<Map<String, dynamic>> getSucursal(String id) async {
+    print('🔍 Obteniendo sucursal $id...');
+    
+    try {
+      final response = await get('${ApiConfig.sucursalesEndpoint}/$id');
+      print('✅ Sucursal obtenida exitosamente');
+      return response;
+    } catch (e) {
+      print('❌ Error obteniendo sucursal: $e');
+      rethrow;
+    }
+  }
+  
+  /// Obtener personal de una sucursal
+  Future<Map<String, dynamic>> getPersonalSucursal(String sucursalId) async {
+    print('🔍 Obteniendo personal de sucursal $sucursalId...');
+    
+    try {
+      final response = await get('${ApiConfig.personalEndpoint}?sucursal_id=$sucursalId');
+      print('✅ Personal obtenido exitosamente');
+      return response;
+    } catch (e) {
+      print('❌ Error obteniendo personal: $e');
+      rethrow;
+    }
+  }
+  
+  /// Obtener especialidades
+  Future<Map<String, dynamic>> getEspecialidades() async {
+    print('🔍 Obteniendo especialidades...');
+    
+    try {
+      final response = await get(ApiConfig.especialidadesEndpoint);
+      print('✅ Especialidades obtenidas exitosamente');
+      return response;
+    } catch (e) {
+      print('❌ Error obteniendo especialidades: $e');
+      rethrow;
+    }
+  }
+  
+  /// Buscar servicios por nombre
+  Future<Map<String, dynamic>> buscarServicios(String query) async {
+    print('🔍 Buscando servicios: "$query"...');
+    
+    try {
+      final response = await get('${ApiConfig.serviciosEndpoint}?search=$query');
+      print('✅ Búsqueda completada exitosamente');
+      return response;
+    } catch (e) {
+      print('❌ Error en búsqueda: $e');
+      rethrow;
+    }
+  }
+  
+  /// Buscar productos por nombre
+  Future<Map<String, dynamic>> buscarProductos(String query) async {
+    print('🔍 Buscando productos: "$query"...');
+    
+    try {
+      final response = await get('${ApiConfig.productosEndpoint}?search=$query');
+      print('✅ Búsqueda completada exitosamente');
+      return response;
+    } catch (e) {
+      print('❌ Error en búsqueda: $e');
+      rethrow;
+    }
   }
 } 

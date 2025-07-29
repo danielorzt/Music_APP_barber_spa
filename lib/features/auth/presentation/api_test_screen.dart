@@ -205,7 +205,7 @@ class _ApiTestScreenState extends State<ApiTestScreen> with SingleTickerProvider
               }),
               _buildTestButton('Buscar Servicios', () async {
                 _setLoading();
-                final result = await _catalogService.searchServicios('corte');
+                final result = await _catalogService.buscarServicios('corte');
                 _updateResults('BÚSQUEDA SERVICIOS:\n${result.toString()}');
               }),
             ],
@@ -290,6 +290,7 @@ class _ApiTestScreenState extends State<ApiTestScreen> with SingleTickerProvider
                 final result = await _appointmentsService.getAvailableStaff(
                   servicioId: '1',
                   sucursalId: '1',
+                  fechaHora: DateTime.now().add(const Duration(days: 7)).toIso8601String(),
                 );
                 _updateResults('PERSONAL:\n${result.toString()}');
               }),
@@ -300,7 +301,6 @@ class _ApiTestScreenState extends State<ApiTestScreen> with SingleTickerProvider
                   servicioId: '1',
                   sucursalId: '1',
                   fechaHoraInicio: futureDate.toIso8601String(),
-                  fechaHoraFin: futureDate.add(const Duration(hours: 1)).toIso8601String(),
                   notasCliente: 'Cita de prueba desde la app',
                 );
                 _updateResults('CREAR CITA:\n${result.toString()}');

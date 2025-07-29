@@ -17,7 +17,11 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     emit(AuthLoading());
     try {
       final usuario = await _authRepository.login(event.email, event.password);
-      emit(AuthSuccess(usuario));
+      if (usuario != null) {
+        emit(AuthSuccess(usuario));
+      } else {
+        emit(AuthFailure('Usuario no encontrado'));
+      }
     } catch (e) {
       emit(AuthFailure(e.toString()));
     }

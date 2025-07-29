@@ -1,16 +1,57 @@
-// import 'package:dio/dio.dart'; // Removido - no está instalado
-// import 'package:music_app/core/api/api_client.dart';
-// import 'package:music_app/core/constants/api_endpoints.dart';
+import 'package:dio/dio.dart';
+import 'package:music_app/core/api/api_client.dart';
+import 'package:music_app/core/config/api_config.dart';
 import 'package:music_app/core/models/producto.dart';
 
 class ProductRepository {
-  // final Dio _dio = ApiClient().dio;
+  final ApiClient _apiClient = ApiClient();
 
   Future<List<Producto>> getProducts() async {
-    // Simular delay de red
-    await Future.delayed(const Duration(milliseconds: 800));
+    print('🔍 Obteniendo productos desde API...');
     
-    // Datos mock para productos
+    try {
+      final response = await _apiClient.dio.get(
+        ApiConfig.productosEndpoint,
+        options: Options(
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+          },
+        ),
+      );
+      
+      print('📡 Response status: ${response.statusCode}');
+      print('📡 Response data: ${response.data}');
+      
+      if (response.statusCode == 200) {
+        final data = response.data;
+        
+        if (data['success'] == true && data['data'] != null) {
+          final List<dynamic> productosData = data['data'];
+          final productos = productosData.map((json) => Producto.fromJson(json)).toList();
+          
+          print('✅ Productos obtenidos exitosamente: ${productos.length} productos');
+          return productos;
+        } else {
+          print('❌ Formato de respuesta inválido');
+          return _getMockProducts();
+        }
+      } else {
+        print('❌ Error en la respuesta: ${response.statusCode}');
+        return _getMockProducts();
+      }
+    } on DioException catch (e) {
+      print('❌ Error de conexión: ${e.message}');
+      print('📋 Usando datos mock...');
+      return _getMockProducts();
+    } catch (e) {
+      print('❌ Error inesperado: $e');
+      return _getMockProducts();
+    }
+  }
+
+  // Datos mock como fallback
+  List<Producto> _getMockProducts() {
     return [
       Producto(
         id: 1,
@@ -48,22 +89,5 @@ class ProductRepository {
         urlImagen: 'https://picsum.photos/400/400?random=24',
       ),
     ];
-    
-    // CÓDIGO ORIGINAL COMENTADO:
-    // try {
-    //   final response = await _dio.get(ApiEndpoints.products);
-
-    //   if (response.statusCode == 200 && response.data != null) {
-    //     final List<dynamic> productList = response.data as List<dynamic>;
-    //     return productList.map((json) => Producto.fromJson(json)).toList();
-    //   } else {
-    //     throw Exception('Error al obtener los productos: Respuesta no válida');
-    //   }
-    // } on DioException catch (e) {
-    //   final errorMessage = e.response?.data['message'] ?? 'Error de red. Inténtalo de nuevo.';
-    //   throw Exception(errorMessage);
-    // } catch (e) {
-    //   throw Exception('Ocurrió un error inesperado: ${e.toString()}');
-    // }
   }
 }

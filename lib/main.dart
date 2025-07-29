@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:provider/provider.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
@@ -13,6 +12,8 @@ import 'config/theme/app_theme.dart';
 import 'features/auth/providers/auth_provider.dart';
 import 'core/providers/settings_provider.dart';
 import 'features/appointments/providers/appointments_provider.dart';
+import 'features/services/providers/services_provider.dart';
+import 'features/products/providers/products_provider.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -57,6 +58,8 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider.value(value: settingsProvider),
         ChangeNotifierProvider.value(value: authProvider),
         ChangeNotifierProvider(create: (_) => AppointmentsProvider()),
+        ChangeNotifierProvider(create: (_) => ServicesProvider()),
+        ChangeNotifierProvider(create: (_) => ProductsProvider()),
       ],
       child: Consumer<SettingsProvider>(
         builder: (context, settings, child) {

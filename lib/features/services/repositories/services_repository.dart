@@ -1,100 +1,99 @@
 // lib/features/services/repositories/services_repository.dart
-// import '../../../core/services/api_service.dart';
+import 'package:dio/dio.dart';
+import 'package:music_app/core/api/api_client.dart';
+import 'package:music_app/core/config/api_config.dart';
 import '../models/service_model.dart';
 
 class ServicesRepository {
-  // final ApiService _apiService = ApiService();
+  final ApiClient _apiClient = ApiClient();
 
-  Future<List<Service>> getAllServices() async {
-    // Simular delay de red
-    await Future.delayed(const Duration(milliseconds: 800));
+  Future<List<ServiceModel>> getAllServices() async {
+    print('🔍 Obteniendo servicios desde API...');
     
-    // Datos mock para servicios
-    return [
-      Service(
-        id: 1,
-        nombre: 'Corte Clásico',
-        descripcion: 'Corte de cabello tradicional con acabado profesional',
-        precio: 25000.0,
-        duracion: 30,
-        imagen: 'https://images.unsplash.com/photo-1503951914875-452162b0f3f1?w=400',
-        usuarioId: 1,
-      ),
-      Service(
-        id: 2,
-        nombre: 'Afeitado Tradicional',
-        descripcion: 'Afeitado con navaja y productos premium',
-        precio: 18000.0,
-        duracion: 20,
-        imagen: 'https://images.unsplash.com/photo-1596462502278-27bfdc403348?w=400',
-        usuarioId: 1,
-      ),
-      Service(
-        id: 3,
-        nombre: 'Masaje Relajante',
-        descripcion: 'Masaje terapéutico para aliviar tensiones',
-        precio: 45000.0,
-        duracion: 60,
-        imagen: 'https://images.unsplash.com/photo-1544161512-6ad2f9d19ca9?w=400',
-        usuarioId: 1,
-      ),
-      Service(
-        id: 4,
-        nombre: 'Tratamiento de Barba',
-        descripcion: 'Limpieza, hidratación y modelado de barba',
-        precio: 22000.0,
-        duracion: 25,
-        imagen: 'https://images.unsplash.com/photo-1556228720-195a672e8a03?w=400',
-        usuarioId: 1,
-      ),
-      Service(
-        id: 5,
-        nombre: 'Corte + Afeitado',
-        descripcion: 'Combo completo de corte y afeitado tradicional',
-        precio: 35000.0,
-        duracion: 45,
-        imagen: 'https://images.unsplash.com/photo-1503951914875-452162b0f3f1?w=400',
-        usuarioId: 1,
-      ),
-      Service(
-        id: 6,
-        nombre: 'Masaje Descontracturante',
-        descripcion: 'Masaje especializado para aliviar contracturas',
-        precio: 55000.0,
-        duracion: 90,
-        imagen: 'https://images.unsplash.com/photo-1544161512-6ad2f9d19ca9?w=400',
-        usuarioId: 1,
-      ),
-    ];
-    
-    // CÓDIGO ORIGINAL COMENTADO:
-    // try {
-    //   final response = await _apiService.get('/services');
-    //   return (response as List).map((json) => Service.fromJson(json)).toList();
-    // } catch (e) {
-    //   rethrow;
-    // }
+    try {
+      final response = await _apiClient.dio.get(
+        ApiConfig.serviciosEndpoint,
+        options: Options(
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+          },
+        ),
+      );
+      
+      print('📡 Response status: ${response.statusCode}');
+      print('📡 Response data: ${response.data}');
+      
+      if (response.statusCode == 200) {
+        final data = response.data;
+        
+        if (data['success'] == true && data['data'] != null) {
+          final List<dynamic> serviciosData = data['data'];
+          final servicios = serviciosData.map((json) => ServiceModel.fromJson(json)).toList();
+          
+          print('✅ Servicios obtenidos exitosamente: ${servicios.length} servicios');
+          return servicios;
+        } else {
+          print('❌ Formato de respuesta inválido');
+          return _getMockServices();
+        }
+      } else {
+        print('❌ Error en la respuesta: ${response.statusCode}');
+        return _getMockServices();
+      }
+    } on DioException catch (e) {
+      print('❌ Error de conexión: ${e.message}');
+      print('📋 Usando datos mock...');
+      return _getMockServices();
+    } catch (e) {
+      print('❌ Error inesperado: $e');
+      return _getMockServices();
+    }
   }
 
-  Future<Service> getServiceById(int id) async {
-    // Simular delay de red
-    await Future.delayed(const Duration(milliseconds: 500));
-    
-    // Buscar en los datos mock
-    final services = await getAllServices();
-    final service = services.firstWhere(
-      (s) => s.id == id,
-      orElse: () => throw Exception('Servicio no encontrado'),
-    );
-    
-    return service;
-    
-    // CÓDIGO ORIGINAL COMENTADO:
-    // try {
-    //   final response = await _apiService.get('/services/$id');
-    //   return Service.fromJson(response);
-    // } catch (e) {
-    //   rethrow;
-    // }
+  // Datos mock como fallback
+  List<ServiceModel> _getMockServices() {
+    return [
+      ServiceModel(
+        id: '1',
+        name: 'Corte Clásico',
+        description: 'Corte de cabello tradicional con acabado profesional',
+        price: 25000.0,
+        duration: 30,
+        imagen: 'https://images.unsplash.com/photo-1503951914875-452162b0f3f1?w=400',
+      ),
+      ServiceModel(
+        id: '2',
+        name: 'Afeitado Tradicional',
+        description: 'Afeitado con navaja y productos premium',
+        price: 18000.0,
+        duration: 20,
+        imagen: 'https://images.unsplash.com/photo-1596462502278-27bfdc403348?w=400',
+      ),
+      ServiceModel(
+        id: '3',
+        name: 'Masaje Relajante',
+        description: 'Masaje terapéutico para aliviar tensiones',
+        price: 45000.0,
+        duration: 60,
+        imagen: 'https://images.unsplash.com/photo-1544161512-6ad2f9d19ca9?w=400',
+      ),
+      ServiceModel(
+        id: '4',
+        name: 'Tratamiento de Barba',
+        description: 'Limpieza, hidratación y modelado de barba',
+        price: 22000.0,
+        duration: 25,
+        imagen: 'https://images.unsplash.com/photo-1556228720-195a672e8a03?w=400',
+      ),
+      ServiceModel(
+        id: '5',
+        name: 'Corte + Afeitado',
+        description: 'Combo completo de corte y afeitado tradicional',
+        price: 35000.0,
+        duration: 45,
+        imagen: 'https://images.unsplash.com/photo-1503951914875-452162b0f3f1?w=400',
+      ),
+    ];
   }
 }

@@ -34,10 +34,7 @@ class AuthProvider with ChangeNotifier {
       }
       
       // Llamada a la API real
-      final result = await _apiService.login(
-        email: email,
-        password: password,
-      );
+      final result = await _apiService.login(email, password);
       
       if (result['success']) {
         print('✅ AuthProvider: Login exitoso');
@@ -45,8 +42,18 @@ class AuthProvider with ChangeNotifier {
         // Extraer datos del usuario de la respuesta
         final userData = result['user'];
         if (userData != null) {
-          _currentUser = User.fromJson(userData);
+          // Verificar si userData es ya un objeto User o un Map
+          if (userData is User) {
+            _currentUser = userData;
+          } else if (userData is Map<String, dynamic>) {
+            _currentUser = User.fromJson(userData);
+          } else {
+            _error = 'Formato de datos de usuario inválido';
+            _status = AuthStatus.error;
+            return false;
+          }
           _status = AuthStatus.authenticated;
+          _error = null; // Limpiar error en caso de éxito
           print('👤 Usuario autenticado: ${_currentUser?.nombre}');
           return true;
         } else {
@@ -55,15 +62,40 @@ class AuthProvider with ChangeNotifier {
           return false;
         }
       } else {
-        _error = result['error'] ?? 'Error desconocido en el login';
+        // Mejorar mensajes de error
+        String errorMessage = result['error'] ?? 'Error desconocido en el login';
+        
+        // Mapear errores comunes
+        if (errorMessage.contains('credentials')) {
+          errorMessage = 'Credenciales incorrectas. Verifica tu email y contraseña.';
+        } else if (errorMessage.contains('Unauthorized')) {
+          errorMessage = 'Credenciales incorrectas. Verifica tu email y contraseña.';
+        } else if (errorMessage.contains('network')) {
+          errorMessage = 'Error de conexión. Verifica tu conexión a internet.';
+        } else if (errorMessage.contains('timeout')) {
+          errorMessage = 'Tiempo de espera agotado. Intenta nuevamente.';
+        }
+        
+        _error = errorMessage;
         _status = AuthStatus.error;
-        print('❌ AuthProvider: ${_error}');
+        print('❌ AuthProvider: $errorMessage');
         return false;
       }
     } catch (e) {
-      _error = 'Error inesperado: $e';
+      String errorMessage = 'Error inesperado: $e';
+      
+      // Mejorar mensajes de error de excepción
+      if (e.toString().contains('SocketException')) {
+        errorMessage = 'Error de conexión. Verifica tu conexión a internet.';
+      } else if (e.toString().contains('TimeoutException')) {
+        errorMessage = 'Tiempo de espera agotado. Intenta nuevamente.';
+      } else if (e.toString().contains('FormatException')) {
+        errorMessage = 'Error en el formato de respuesta del servidor.';
+      }
+      
+      _error = errorMessage;
       _status = AuthStatus.error;
-      print('💥 AuthProvider Error: $e');
+      print('💥 AuthProvider Error: $errorMessage');
       return false;
     } finally {
       _setLoading(false);
@@ -103,8 +135,18 @@ class AuthProvider with ChangeNotifier {
         // Extraer datos del usuario de la respuesta
         final userData = result['user'];
         if (userData != null) {
-          _currentUser = User.fromJson(userData);
+          // Verificar si userData es ya un objeto User o un Map
+          if (userData is User) {
+            _currentUser = userData;
+          } else if (userData is Map<String, dynamic>) {
+            _currentUser = User.fromJson(userData);
+          } else {
+            _error = 'Formato de datos de usuario inválido';
+            _status = AuthStatus.error;
+            return false;
+          }
           _status = AuthStatus.authenticated;
+          _error = null; // Limpiar error en caso de éxito
           print('👤 Usuario registrado: ${_currentUser?.nombre}');
           return true;
         } else {
@@ -113,15 +155,40 @@ class AuthProvider with ChangeNotifier {
           return false;
         }
       } else {
-        _error = result['error'] ?? 'Error desconocido en el registro';
+        // Mejorar mensajes de error
+        String errorMessage = result['error'] ?? 'Error desconocido en el registro';
+        
+        // Mapear errores comunes
+        if (errorMessage.contains('email') && errorMessage.contains('already')) {
+          errorMessage = 'El email ya está registrado. Intenta con otro email o inicia sesión.';
+        } else if (errorMessage.contains('validation')) {
+          errorMessage = 'Datos inválidos. Verifica que todos los campos sean correctos.';
+        } else if (errorMessage.contains('network')) {
+          errorMessage = 'Error de conexión. Verifica tu conexión a internet.';
+        } else if (errorMessage.contains('timeout')) {
+          errorMessage = 'Tiempo de espera agotado. Intenta nuevamente.';
+        }
+        
+        _error = errorMessage;
         _status = AuthStatus.error;
-        print('❌ AuthProvider: ${_error}');
+        print('❌ AuthProvider: $errorMessage');
         return false;
       }
     } catch (e) {
-      _error = 'Error inesperado: $e';
+      String errorMessage = 'Error inesperado: $e';
+      
+      // Mejorar mensajes de error de excepción
+      if (e.toString().contains('SocketException')) {
+        errorMessage = 'Error de conexión. Verifica tu conexión a internet.';
+      } else if (e.toString().contains('TimeoutException')) {
+        errorMessage = 'Tiempo de espera agotado. Intenta nuevamente.';
+      } else if (e.toString().contains('FormatException')) {
+        errorMessage = 'Error en el formato de respuesta del servidor.';
+      }
+      
+      _error = errorMessage;
       _status = AuthStatus.error;
-      print('💥 AuthProvider Error: $e');
+      print('💥 AuthProvider Error: $errorMessage');
       return false;
     } finally {
       _setLoading(false);
@@ -216,6 +283,7 @@ class AuthProvider with ChangeNotifier {
         print('✅ Token válido, usuario encontrado');
         _currentUser = User.fromJson(result['user']);
         _status = AuthStatus.authenticated;
+        _error = null; // Limpiar error en caso de éxito
         print('👤 Usuario autenticado: ${_currentUser?.nombre}');
       } else {
         print('❌ Token inválido o expirado');

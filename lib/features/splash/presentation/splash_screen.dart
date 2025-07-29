@@ -9,154 +9,266 @@ class SplashScreen extends StatefulWidget {
   State<SplashScreen> createState() => _SplashScreenState();
 }
 
-class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderStateMixin {
-  late AnimationController _animationController;
+class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMixin {
+  late AnimationController _fadeController;
+  late AnimationController _scaleController;
+  late AnimationController _rotateController;
+  late AnimationController _slideController;
+  
   late Animation<double> _fadeAnimation;
+  late Animation<double> _scaleAnimation;
+  late Animation<double> _rotateAnimation;
+  late Animation<Offset> _slideAnimation;
 
   @override
   void initState() {
     super.initState();
     
-    _animationController = AnimationController(
-      duration: const Duration(seconds: 2),
+    // Controlador de fade
+    _fadeController = AnimationController(
+      duration: const Duration(milliseconds: 1500),
       vsync: this,
     );
     
+    // Controlador de escala
+    _scaleController = AnimationController(
+      duration: const Duration(milliseconds: 2000),
+      vsync: this,
+    );
+    
+    // Controlador de rotación
+    _rotateController = AnimationController(
+      duration: const Duration(seconds: 3),
+      vsync: this,
+    );
+    
+    // Controlador de deslizamiento
+    _slideController = AnimationController(
+      duration: const Duration(milliseconds: 1200),
+      vsync: this,
+    );
+    
+    // Animaciones
     _fadeAnimation = Tween<double>(
       begin: 0.0,
       end: 1.0,
     ).animate(CurvedAnimation(
-      parent: _animationController,
+      parent: _fadeController,
       curve: Curves.easeInOut,
     ));
     
-    _animationController.forward();
+    _scaleAnimation = Tween<double>(
+      begin: 0.5,
+      end: 1.0,
+    ).animate(CurvedAnimation(
+      parent: _scaleController,
+      curve: Curves.elasticOut,
+    ));
     
-    // Navegar a home después de 3 segundos
-    Timer(const Duration(seconds: 3), () {
+    _rotateAnimation = Tween<double>(
+      begin: 0.0,
+      end: 1.0,
+    ).animate(CurvedAnimation(
+      parent: _rotateController,
+      curve: Curves.easeInOut,
+    ));
+    
+    _slideAnimation = Tween<Offset>(
+      begin: const Offset(0, 1),
+      end: Offset.zero,
+    ).animate(CurvedAnimation(
+      parent: _slideController,
+      curve: Curves.bounceOut,
+    ));
+    
+    // Iniciar animaciones secuencialmente
+    _startAnimations();
+    
+    // Navegar a main después de 3.5 segundos
+    Timer(const Duration(milliseconds: 3500), () {
       if (mounted) {
-        context.go('/home');
+        context.go('/main');
       }
     });
   }
 
+  void _startAnimations() async {
+    // Iniciar fade
+    _fadeController.forward();
+    
+    // Esperar un poco y iniciar escala
+    await Future.delayed(const Duration(milliseconds: 300));
+    _scaleController.forward();
+    
+    // Esperar y iniciar rotación
+    await Future.delayed(const Duration(milliseconds: 500));
+    _rotateController.repeat();
+    
+    // Esperar y iniciar deslizamiento
+    await Future.delayed(const Duration(milliseconds: 800));
+    _slideController.forward();
+  }
+
   @override
   void dispose() {
-    _animationController.dispose();
+    _fadeController.dispose();
+    _scaleController.dispose();
+    _rotateController.dispose();
+    _slideController.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    final backgroundColor = isDarkMode ? Colors.black : Colors.white;
+    final textColor = isDarkMode ? Colors.white : Colors.black;
+    final iconColor = isDarkMode ? Colors.white : const Color(0xFFDC3545);
+    
     return Scaffold(
-      body: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [
-              Theme.of(context).primaryColor,
-              Theme.of(context).primaryColor.withOpacity(0.8),
-              Colors.purple.shade400,
-            ],
-          ),
-        ),
-        child: SafeArea(
-          child: Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const Spacer(flex: 2),
-                
-                // Logo o icono principal
-                FadeTransition(
+      backgroundColor: backgroundColor,
+      body: SafeArea(
+        child: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Spacer(flex: 2),
+              
+              // Logo con animaciones
+              AnimatedBuilder(
+                animation: Listenable.merge([_fadeController, _scaleController, _rotateController]),
+                builder: (context, child) {
+                  return FadeTransition(
+                    opacity: _fadeAnimation,
+                    child: ScaleTransition(
+                      scale: _scaleAnimation,
+                      child: Transform.rotate(
+                        angle: _rotateAnimation.value * 0.1, // Rotación sutil
+                        child: Container(
+                          width: 140,
+                          height: 140,
+                          decoration: BoxDecoration(
+                            color: backgroundColor,
+                            borderRadius: BorderRadius.circular(30),
+                            boxShadow: [
+                              BoxShadow(
+                                color: iconColor.withOpacity(0.3),
+                                blurRadius: 20,
+                                offset: const Offset(0, 10),
+                                spreadRadius: 5,
+                              ),
+                            ],
+                            border: Border.all(
+                              color: iconColor.withOpacity(0.2),
+                              width: 2,
+                            ),
+                          ),
+                          child: Icon(
+                            Icons.spa,
+                            size: 70,
+                            color: iconColor,
+                          ),
+                        ),
+                      ),
+                    ),
+                  );
+                },
+              ),
+              
+              const SizedBox(height: 40),
+              
+              // Título principal con animación de slide
+              SlideTransition(
+                position: _slideAnimation,
+                child: FadeTransition(
                   opacity: _fadeAnimation,
-                  child: Container(
-                    width: 120,
-                    height: 120,
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(25),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.2),
-                          blurRadius: 15,
-                          offset: const Offset(0, 5),
+                  child: Text(
+                    'BarberMusic & Spa',
+                    style: TextStyle(
+                      fontSize: 36,
+                      fontWeight: FontWeight.bold,
+                      color: textColor,
+                      letterSpacing: 1.5,
+                      shadows: [
+                        Shadow(
+                          color: iconColor.withOpacity(0.3),
+                          offset: const Offset(0, 2),
+                          blurRadius: 4,
                         ),
                       ],
                     ),
-                    child: const Icon(
-                      Icons.spa,
-                      size: 60,
-                      color: Color(0xFF6B73FF),
-                    ),
-                  ),
-                ),
-                
-                const SizedBox(height: 30),
-                
-                // Título principal
-                FadeTransition(
-                  opacity: _fadeAnimation,
-                  child: const Text(
-                    'BarberMusic & Spa',
-                    style: TextStyle(
-                      fontSize: 32,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
-                      letterSpacing: 1.2,
-                    ),
                     textAlign: TextAlign.center,
                   ),
                 ),
-                
-                const SizedBox(height: 10),
-                
-                // Subtítulo
-                FadeTransition(
-                  opacity: _fadeAnimation,
-                  child: const Text(
-                    'Tu experiencia premium te espera',
-                    style: TextStyle(
-                      fontSize: 16,
-                      color: Colors.white70,
-                      letterSpacing: 0.5,
+              ),
+              
+              const SizedBox(height: 16),
+              
+              // Subtítulo con animación de fade
+              FadeTransition(
+                opacity: _fadeAnimation,
+                child: Text(
+                  'Tu experiencia premium te espera',
+                  style: TextStyle(
+                    fontSize: 18,
+                    color: textColor.withOpacity(0.7),
+                    letterSpacing: 0.8,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              ),
+              
+              const Spacer(flex: 2),
+              
+              // Indicador de carga con animación de pulso
+              AnimatedBuilder(
+                animation: _fadeController,
+                builder: (context, child) {
+                  return FadeTransition(
+                    opacity: _fadeAnimation,
+                    child: Container(
+                      padding: const EdgeInsets.all(20),
+                      child: TweenAnimationBuilder<double>(
+                        tween: Tween(begin: 0.8, end: 1.2),
+                        duration: const Duration(milliseconds: 1000),
+                        builder: (context, value, child) {
+                          return Transform.scale(
+                            scale: value,
+                            child: CircularProgressIndicator(
+                              valueColor: AlwaysStoppedAnimation<Color>(iconColor),
+                              strokeWidth: 3,
+                            ),
+                          );
+                        },
+                        onEnd: () {
+                          // Reiniciar la animación de pulso
+                          if (mounted) {
+                            setState(() {});
+                          }
+                        },
+                      ),
                     ),
-                    textAlign: TextAlign.center,
+                  );
+                },
+              ),
+              
+              const SizedBox(height: 20),
+              
+              // Texto de carga con animación de fade
+              FadeTransition(
+                opacity: _fadeAnimation,
+                child: Text(
+                  'Cargando...',
+                  style: TextStyle(
+                    fontSize: 16,
+                    color: textColor.withOpacity(0.6),
+                    fontWeight: FontWeight.w500,
                   ),
                 ),
-                
-                const Spacer(flex: 2),
-                
-                // Indicador de carga
-                FadeTransition(
-                  opacity: _fadeAnimation,
-                  child: const Padding(
-                    padding: EdgeInsets.all(20.0),
-                    child: CircularProgressIndicator(
-                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                      strokeWidth: 2,
-                    ),
-                  ),
-                ),
-                
-                const SizedBox(height: 20),
-                
-                // Texto de carga
-                FadeTransition(
-                  opacity: _fadeAnimation,
-                  child: const Text(
-                    'Cargando...',
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: Colors.white70,
-                    ),
-                  ),
-                ),
-                
-                const SizedBox(height: 40),
-              ],
-            ),
+              ),
+              
+              const SizedBox(height: 40),
+            ],
           ),
         ),
       ),

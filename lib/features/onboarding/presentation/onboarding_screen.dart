@@ -147,7 +147,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   }
 
   void _goToHome() {
-    context.go('/home');
+    context.go('/main');
   }
 
   @override

@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:http/http.dart' as http;
 import '../config/api_config.dart';
 
 /// Helper para hacer pruebas rápidas de las APIs
@@ -23,6 +24,122 @@ class ApiTestHelper {
     
     print('👥 Test Accounts: ${debugInfo['testAccountsCount']} disponibles');
     print('🔧 === END DEBUG INFO ===\n');
+  }
+  
+  /// Test de conectividad básica con el servidor
+  static Future<Map<String, dynamic>> testServerConnectivity() async {
+    print('🌐 Testing server connectivity...');
+    
+    try {
+      final url = Uri.parse(ApiConfig.getTestUrl());
+      print('📡 Testing URL: $url');
+      
+      final response = await http.get(
+        url,
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+      ).timeout(const Duration(seconds: 10));
+      
+      print('📡 Response Status: ${response.statusCode}');
+      print('📡 Response Body: ${response.body}');
+      
+      if (response.statusCode == 200) {
+        return {
+          'success': true,
+          'message': 'Server is reachable',
+          'status_code': response.statusCode,
+          'data': json.decode(response.body),
+        };
+      } else {
+        return {
+          'success': false,
+          'message': 'Server responded with error',
+          'status_code': response.statusCode,
+          'error': response.body,
+        };
+      }
+    } catch (e) {
+      print('❌ Connectivity test failed: $e');
+      return {
+        'success': false,
+        'message': 'Cannot reach server',
+        'error': e.toString(),
+      };
+    }
+  }
+  
+  /// Test de autenticación con credenciales de prueba
+  static Future<Map<String, dynamic>> testAuthentication() async {
+    print('🔐 Testing authentication...');
+    
+    try {
+      final url = Uri.parse(ApiConfig.getFullUrl(ApiConfig.loginEndpoint));
+      final testCredentials = ApiConfig.testCredentials['cliente1']!;
+      
+      print('📡 Testing login with: ${testCredentials['email']}');
+      
+      final response = await http.post(
+        url,
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+        body: json.encode({
+          'email': testCredentials['email'],
+          'password': testCredentials['password'],
+        }),
+      ).timeout(const Duration(seconds: 10));
+      
+      print('📡 Auth Response Status: ${response.statusCode}');
+      print('📡 Auth Response Body: ${response.body}');
+      
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        return {
+          'success': true,
+          'message': 'Authentication successful',
+          'status_code': response.statusCode,
+          'data': data,
+        };
+      } else {
+        return {
+          'success': false,
+          'message': 'Authentication failed',
+          'status_code': response.statusCode,
+          'error': response.body,
+        };
+      }
+    } catch (e) {
+      print('❌ Authentication test failed: $e');
+      return {
+        'success': false,
+        'message': 'Authentication test error',
+        'error': e.toString(),
+      };
+    }
+  }
+  
+  /// Test completo de la API
+  static Future<void> runFullApiTest() async {
+    print('🚀 === STARTING FULL API TEST ===\n');
+    
+    // 1. Test de conectividad
+    print('1️⃣ Testing server connectivity...');
+    final connectivityResult = await testServerConnectivity();
+    print('Result: ${connectivityResult['success'] ? '✅' : '❌'} ${connectivityResult['message']}\n');
+    
+    // 2. Test de autenticación
+    print('2️⃣ Testing authentication...');
+    final authResult = await testAuthentication();
+    print('Result: ${authResult['success'] ? '✅' : '❌'} ${authResult['message']}\n');
+    
+    // 3. Mostrar configuración
+    print('3️⃣ API Configuration:');
+    printApiConfig();
+    
+    print('🏁 === API TEST COMPLETED ===\n');
   }
   
   /// Crear datos de prueba para diferentes tipos de requests

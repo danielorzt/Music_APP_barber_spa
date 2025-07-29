@@ -12,13 +12,13 @@ import '../../features/auth/presentation/api_test_screen.dart';
 // Screens - Main
 import '../../features/splash/presentation/splash_screen.dart';
 import '../../features/onboarding/presentation/onboarding_screen.dart';
-import '../../features/home/presentation/home_screen.dart';
+import '../../features/main/presentation/main_screen.dart';
 
 // Screens - Cliente
 import '../../features/appointments/presentation/appointments_screen.dart';
 import '../../features/appointments/presentation/book_appointment_screen.dart';
 import '../../features/products/presentation/product_detail_screen.dart';
-import '../../features/products/presentation/category_items_screen.dart';
+import '../../features/products/presentation/products_screen.dart';
 import '../../features/services/presentation/service_detail_screen.dart';
 import '../../features/services/presentation/services_screen.dart';
 import '../../features/cart/presentation/cart_screen.dart';
@@ -33,6 +33,8 @@ import '../../features/profile/presentation/settings_screen.dart';
 
 // Providers
 import '../../features/auth/providers/auth_provider.dart';
+import '../../features/services/models/service_model.dart';
+import '../../core/models/producto.dart';
 
 // Placeholder widget para pantallas no implementadas
 class PlaceholderScreen extends StatelessWidget {
@@ -51,7 +53,7 @@ class PlaceholderScreen extends StatelessWidget {
             if (GoRouter.of(context).canPop()) {
               GoRouter.of(context).pop();
             } else {
-              context.go('/home');
+              context.go('/main');
             }
           },
         ),
@@ -77,7 +79,7 @@ class PlaceholderScreen extends StatelessWidget {
             const Text('En construcción...'),
             const SizedBox(height: 24),
             ElevatedButton(
-              onPressed: () => context.go('/home'),
+              onPressed: () => context.go('/main'),
               child: const Text('Ir al Inicio'),
             ),
           ],
@@ -98,7 +100,7 @@ class AppRouter {
       final isAuthenticated = authProvider.isAuthenticated;
       
       // Rutas que no requieren autenticación
-      final publicRoutes = ['/splash', '/onboarding', '/home', '/login', '/register', '/servicios', '/productos', '/categoria'];
+      final publicRoutes = ['/splash', '/onboarding', '/main', '/login', '/register'];
       
       // Si la ruta actual es pública, permitir acceso
       if (publicRoutes.any((route) => state.fullPath?.startsWith(route) == true)) {
@@ -106,7 +108,7 @@ class AppRouter {
       }
       
       // Para rutas protegidas del cliente
-      final protectedRoutes = ['/perfil', '/citas', '/carrito', '/checkout'];
+      final protectedRoutes = ['/perfil', '/carrito', '/checkout', '/agendar', '/comprar'];
       if (protectedRoutes.any((route) => state.fullPath?.startsWith(route) == true)) {
         if (!isAuthenticated) {
           return '/login';
@@ -126,13 +128,13 @@ class AppRouter {
         builder: (context, state) => const OnboardingScreen(),
       ),
       GoRoute(
-        path: '/home',
+        path: '/main',
         builder: (context, state) => WillPopScope(
           onWillPop: () async {
-            // En la pantalla home, mostrar diálogo de confirmación para salir
+            // En la pantalla main, mostrar diálogo de confirmación para salir
             return await _showExitDialog(context) ?? false;
           },
-          child: const HomeScreen(),
+          child: const MainScreen(),
         ),
       ),
       
@@ -162,8 +164,11 @@ class AppRouter {
           GoRoute(
             path: ':id',
             builder: (context, state) {
-              final id = state.pathParameters['id']!;
-              return ServiceDetailScreen(serviceId: id);
+              final service = state.extra as ServiceModel?;
+              if (service != null) {
+                return ServiceDetailScreen(service: service);
+              }
+              return const PlaceholderScreen(title: 'Detalle de Servicio');
             },
           ),
         ],
@@ -172,13 +177,16 @@ class AppRouter {
       // === PRODUCTOS ===
       GoRoute(
         path: '/productos',
-        builder: (context, state) => const CategoryItemsScreen(categoryName: 'Todos'),
+        builder: (context, state) => const ProductsScreen(),
         routes: [
           GoRoute(
             path: ':id',
             builder: (context, state) {
-              final id = state.pathParameters['id']!;
-              return ProductDetailScreen(productId: id);
+              final product = state.extra as Producto?;
+              if (product != null) {
+                return ProductDetailScreen(product: product);
+              }
+              return const PlaceholderScreen(title: 'Detalle de Producto');
             },
           ),
         ],
@@ -189,7 +197,20 @@ class AppRouter {
         path: '/categoria/:categoryName',
         builder: (context, state) {
           final categoryName = state.pathParameters['categoryName']!;
-          return CategoryItemsScreen(categoryName: categoryName);
+          return const ProductsScreen(); // Por ahora redirigimos a productos
+        },
+      ),
+      
+      // === AGENDAMIENTOS ===
+      GoRoute(
+        path: '/citas',
+        builder: (context, state) => const AppointmentsScreen(),
+      ),
+      GoRoute(
+        path: '/agendar',
+        builder: (context, state) {
+          final service = state.extra as ServiceModel?;
+          return BookAppointmentScreen(selectedService: service);
         },
       ),
       
@@ -203,41 +224,22 @@ class AppRouter {
         builder: (context, state) => const CheckoutScreen(),
       ),
       
-      // === CITAS ===
-      GoRoute(
-        path: '/citas',
-        builder: (context, state) => const AppointmentsScreen(),
-        routes: [
-          GoRoute(
-            path: 'agendar',
-            builder: (context, state) => const BookAppointmentScreen(),
-          ),
-          // Placeholder para citas individuales
-          GoRoute(
-            path: ':id',
-            builder: (context, state) {
-              return const PlaceholderScreen(title: 'Detalle de Cita');
-            },
-          ),
-        ],
-      ),
-      
       // === PERFIL ===
       GoRoute(
         path: '/perfil',
         builder: (context, state) => const ProfileScreen(),
         routes: [
           GoRoute(
-            path: 'historial',
-            builder: (context, state) => const HistoryScreen(),
+            path: 'direcciones',
+            builder: (context, state) => const AddressesScreen(),
           ),
           GoRoute(
             path: 'favoritos',
             builder: (context, state) => const FavoritesScreen(),
           ),
           GoRoute(
-            path: 'direcciones',
-            builder: (context, state) => const AddressesScreen(),
+            path: 'historial',
+            builder: (context, state) => const HistoryScreen(),
           ),
           GoRoute(
             path: 'metodos-pago',
@@ -253,21 +255,10 @@ class AppRouter {
           ),
         ],
       ),
-      
-      // === EXTRAS (Placeholders por ahora) ===
-      GoRoute(
-        path: '/galeria',
-        builder: (context, state) => const PlaceholderScreen(title: 'Galería'),
-      ),
-      GoRoute(
-        path: '/notificaciones',
-        builder: (context, state) => const PlaceholderScreen(title: 'Notificaciones'),
-      ),
     ],
   );
 
-  // Función para mostrar diálogo de salida
-  static Future<bool?> _showExitDialog(BuildContext context) {
+  static Future<bool?> _showExitDialog(BuildContext context) async {
     return showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
@@ -278,12 +269,18 @@ class AppRouter {
             onPressed: () => Navigator.of(context).pop(false),
             child: const Text('Cancelar'),
           ),
-          TextButton(
+          ElevatedButton(
             onPressed: () {
               Navigator.of(context).pop(true);
-              SystemNavigator.pop(); // Cierra la aplicación
+              SystemNavigator.pop();
             },
-            child: const Text('Salir'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFFDC3545),
+            ),
+            child: const Text(
+              'Salir',
+              style: TextStyle(color: Colors.white),
+            ),
           ),
         ],
       ),

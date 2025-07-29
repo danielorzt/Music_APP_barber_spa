@@ -2,7 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../auth/providers/auth_provider.dart';
-import '../repositories/user_repository.dart';
+import '../../profile/repositories/user_repository.dart';
 import '../../appointments/providers/appointments_provider.dart';
 import '../../cart/providers/cart_provider.dart';
 import 'package:image_picker/image_picker.dart';
@@ -77,19 +77,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
     try {
       final authProvider = Provider.of<AuthProvider>(context, listen: false);
-      final userRepository = UserRepository();
-
-      await userRepository.updateUserProfile(
-        userId: authProvider.currentUser!.id!,
-        name: _nameController.text,
-        email: _emailController.text,
-        phone: _phoneController.text,
-        address: _addressController.text,
-        imageFile: _imageFile,
-      );
+      // TODO: Implementar actualización de perfil cuando esté disponible
+      // final userRepository = UserRepository();
+      // await userRepository.updateUserProfile(...);
 
       // Recargar los datos del usuario
-      await authProvider.refreshUserData();
+      // await authProvider.refreshUserData();
 
       if (mounted) {
         setState(() {
@@ -439,13 +432,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 radius: 50,
                 backgroundImage: _imageFile != null
                     ? FileImage(_imageFile!)
-                    : Provider.of<AuthProvider>(context).currentUser?.imagen != null
-                    ? NetworkImage(
-                  'http://192.168.1.X:63106/images/${Provider.of<AuthProvider>(context).currentUser!.imagen}',
-                )
                     : null,
-                child: _imageFile == null &&
-                    Provider.of<AuthProvider>(context).currentUser?.imagen == null
+                child: _imageFile == null
                     ? const Icon(
                   Icons.person,
                   size: 50,

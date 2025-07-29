@@ -161,17 +161,21 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> {
     );
   }
 
-  Widget _buildAppointmentCard(BuildContext context, Appointment appointment) {
+  Widget _buildAppointmentCard(BuildContext context, Map<String, dynamic> appointment) {
     final appointmentsProvider = Provider.of<AppointmentsProvider>(context, listen: false);
     final dateFormat = DateFormat('EEEE, d MMMM, yyyy', 'es_ES');
     final timeFormat = DateFormat('HH:mm');
-    final serviceName = appointment.servicio?['nombre'] ?? 'Servicio';
-    final branchName = appointment.sucursal?['nombre'] ?? 'Sucursal';
+    
+    // Extraer datos del Map
+    final serviceName = appointment['servicio']?['nombre'] ?? 'Servicio';
+    final branchName = appointment['sucursal']?['nombre'] ?? 'Sucursal';
+    final estado = appointment['estado'] ?? 'PENDIENTE';
+    final fechaHora = DateTime.tryParse(appointment['fecha_hora'] ?? '') ?? DateTime.now();
 
     Color statusColor;
     IconData statusIcon;
 
-    switch (appointment.estado.toUpperCase()) {
+    switch (estado.toUpperCase()) {
       case 'SOLICITADA':
         statusColor = Colors.blue;
         statusIcon = Icons.schedule;
@@ -205,7 +209,7 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> {
               children: [
                 // Fecha de la cita
                 Text(
-                  dateFormat.format(appointment.fechaHora),
+                  dateFormat.format(fechaHora),
                   style: const TextStyle(
                     fontWeight: FontWeight.bold,
                     fontSize: 16,
@@ -231,7 +235,7 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> {
                       ),
                       const SizedBox(width: 4),
                       Text(
-                        appointment.estado,
+                        estado,
                         style: TextStyle(
                           color: statusColor,
                           fontWeight: FontWeight.bold,
@@ -242,132 +246,95 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> {
                 ),
               ],
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 12),
+            
+            // Información del servicio
             Row(
               children: [
-                // Hora de la cita
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 8,
-                  ),
-                  decoration: BoxDecoration(
-                    color: Theme.of(context).primaryColor,
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Text(
-                    timeFormat.format(appointment.fechaHora),
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 16),
-                // Información del servicio
+                Icon(Icons.spa, size: 16, color: Colors.grey[600]),
+                const SizedBox(width: 8),
                 Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        serviceName,
-                        style: const TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 16,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        branchName,
-                        style: TextStyle(
-                          color: Colors.grey[600],
-                        ),
-                      ),
-                    ],
+                  child: Text(
+                    serviceName,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w600,
+                      fontSize: 14,
+                    ),
                   ),
                 ),
               ],
             ),
-            if (appointment.mensaje != null && appointment.mensaje!.isNotEmpty) ...[
-              const SizedBox(height: 16),
-              Text(
-                'Notas: ${appointment.mensaje}',
-                style: const TextStyle(
-                  fontStyle: FontStyle.italic,
+            
+            const SizedBox(height: 4),
+            
+            // Información de la sucursal
+            Row(
+              children: [
+                Icon(Icons.location_on, size: 16, color: Colors.grey[600]),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                        branchName,
+                        style: TextStyle(
+                          color: Colors.grey[600],
+                      fontSize: 14,
+                    ),
+                        ),
+                      ),
+                    ],
+            ),
+            
+            const SizedBox(height: 4),
+            
+            // Hora de la cita
+            Row(
+              children: [
+                Icon(Icons.access_time, size: 16, color: Colors.grey[600]),
+                const SizedBox(width: 8),
+                Text(
+                  timeFormat.format(fechaHora),
+                  style: TextStyle(
+                    color: Colors.grey[600],
+                    fontSize: 14,
+                  ),
                 ),
-              ),
-            ],
-            // Acciones para la cita
-            if (appointment.estado.toUpperCase() != 'CANCELADA' &&
-                appointment.estado.toUpperCase() != 'COMPLETADA')
-              Padding(
-                padding: const EdgeInsets.only(top: 16),
-                child: Row(
+              ],
+            ),
+            
+              const SizedBox(height: 16),
+            
+            // Botones de acción
+            Row(
                   mainAxisAlignment: MainAxisAlignment.end,
                   children: [
-                    TextButton(
+                if (estado == 'CONFIRMADA')
+                  TextButton.icon(
                       onPressed: () {
-                        // Mostrar detalles de la cita
-                        _showAppointmentDetails(context, appointment);
-                      },
-                      child: const Text('Ver Detalles'),
-                    ),
-                    const SizedBox(width: 8),
-                    ElevatedButton(
-                      onPressed: () {
-                        // Mostrar diálogo de confirmación para cancelar
-                        showDialog(
-                          context: context,
-                          builder: (context) => AlertDialog(
-                            title: const Text('Cancelar Cita'),
-                            content: const Text(
-                              '¿Estás seguro de que deseas cancelar esta cita?',
+                      // TODO: Implementar reprogramar cita
+                    },
+                    icon: const Icon(Icons.edit, size: 16),
+                    label: const Text('Reprogramar'),
                             ),
-                            actions: [
-                              TextButton(
-                                onPressed: () {
-                                  Navigator.of(context).pop();
-                                },
-                                child: const Text('No'),
-                              ),
-                              ElevatedButton(
+                if (estado != 'CANCELADA' && estado != 'COMPLETADA')
+                  TextButton.icon(
                                 onPressed: () async {
-                                  Navigator.of(context).pop();
-                                  final success = await appointmentsProvider
-                                      .cancelAppointment(appointment.id!);
-                                  if (success && context.mounted) {
+                      final success = await appointmentsProvider.cancelAppointment(appointment['id'].toString());
+                      if (success['success'] == true && context.mounted) {
                                     ScaffoldMessenger.of(context).showSnackBar(
                                       const SnackBar(
                                         content: Text('Cita cancelada exitosamente'),
-                                      ),
-                                    );
-                                  } else if (context.mounted) {
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      SnackBar(
-                                        content: Text(
-                                          'Error al cancelar la cita: ${appointmentsProvider.error}',
-                                        ),
-                                        backgroundColor: Colors.red,
+                            backgroundColor: Colors.green,
                                       ),
                                     );
                                   }
                                 },
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: Colors.red,
-                                ),
-                                child: const Text('Cancelar Cita'),
-                              ),
-                            ],
-                          ),
-                        );
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.red,
+                    icon: const Icon(Icons.cancel, size: 16),
+                    label: const Text('Cancelar'),
+                    style: TextButton.styleFrom(
+                      foregroundColor: Colors.red,
                       ),
-                      child: const Text('Cancelar'),
                     ),
                   ],
-                ),
               ),
           ],
         ),
