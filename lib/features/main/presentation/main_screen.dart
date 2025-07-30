@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:go_router/go_router.dart';
 import 'package:music_app/features/auth/providers/auth_provider.dart';
 import 'package:music_app/features/home/presentation/home_screen.dart';
 import 'package:music_app/features/services/presentation/services_screen.dart';
@@ -63,6 +64,15 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
   }
 
   void _onTabTapped(int index) {
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    
+    // Verificar si el usuario está autenticado para funcionalidades protegidas
+    if ((index == 3 || index == 4) && !authProvider.isAuthenticated) {
+      // Mostrar diálogo de login requerido
+      _showLoginRequiredDialog();
+      return;
+    }
+    
     if (index != _currentIndex) {
       setState(() {
         _currentIndex = index;
@@ -72,6 +82,63 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
       _animationController.reset();
       _animationController.forward();
     }
+  }
+
+  void _showLoginRequiredDialog() {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          title: Row(
+            children: [
+              Icon(
+                Icons.lock_outline,
+                color: const Color(0xFFDC3545),
+                size: 28,
+              ),
+              const SizedBox(width: 8),
+              const Text(
+                'Inicio de Sesión Requerido',
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
+          ),
+          content: const Text(
+            'Para acceder a esta funcionalidad, necesitas iniciar sesión en tu cuenta.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text(
+                'Cancelar',
+                style: TextStyle(color: Colors.grey),
+              ),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+                context.go('/login');
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFFDC3545),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+              child: const Text(
+                'Iniciar Sesión',
+                style: TextStyle(color: Colors.white),
+              ),
+            ),
+          ],
+        );
+      },
+    );
   }
 
   @override
@@ -134,12 +201,16 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                       label: 'Mis Citas',
                       index: 3,
                       isSelected: _currentIndex == 3,
+                      requiresAuth: true,
+                      isAuthenticated: isAuthenticated,
                     ),
                     _buildAnimatedTabItem(
                       icon: isAuthenticated ? Icons.person : Icons.person_outline,
                       label: 'Perfil',
                       index: 4,
                       isSelected: _currentIndex == 4,
+                      requiresAuth: true,
+                      isAuthenticated: isAuthenticated,
                     ),
                   ],
                 ),
@@ -156,7 +227,13 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
     required String label,
     required int index,
     required bool isSelected,
+    bool requiresAuth = false,
+    bool isAuthenticated = false,
   }) {
+    final isLocked = requiresAuth && !isAuthenticated;
+    final theme = Theme.of(context);
+    final isDarkMode = theme.brightness == Brightness.dark;
+    
     return GestureDetector(
       onTap: () => _onTabTapped(index),
       child: AnimatedContainer(
@@ -170,14 +247,44 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            AnimatedContainer(
-              duration: const Duration(milliseconds: 200),
-              curve: Curves.easeInOut,
-              child: Icon(
-                icon,
-                color: isSelected ? const Color(0xFFDC3545) : Colors.grey[600],
-                size: isSelected ? 28 : 24,
-              ),
+            Stack(
+              children: [
+                AnimatedContainer(
+                  duration: const Duration(milliseconds: 200),
+                  curve: Curves.easeInOut,
+                  child: Icon(
+                    icon,
+                    color: isSelected 
+                        ? const Color(0xFFDC3545) 
+                        : isLocked 
+                            ? Colors.grey[400] 
+                            : Colors.grey[600],
+                    size: isSelected ? 28 : 24,
+                  ),
+                ),
+                if (isLocked)
+                  Positioned(
+                    right: -2,
+                    top: -2,
+                    child: Container(
+                      width: 12,
+                      height: 12,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFDC3545),
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: isDarkMode ? Colors.black : Colors.white,
+                          width: 1,
+                        ),
+                      ),
+                      child: const Icon(
+                        Icons.lock,
+                        size: 8,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ),
+              ],
             ),
             const SizedBox(height: 4),
             AnimatedDefaultTextStyle(
@@ -185,7 +292,11 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
               style: TextStyle(
                 fontSize: isSelected ? 12 : 11,
                 fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                color: isSelected ? const Color(0xFFDC3545) : Colors.grey[600],
+                color: isSelected 
+                    ? const Color(0xFFDC3545) 
+                    : isLocked 
+                        ? Colors.grey[400] 
+                        : Colors.grey[600],
               ),
               child: Text(label),
             ),

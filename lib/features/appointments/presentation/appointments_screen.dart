@@ -14,31 +14,67 @@ class AppointmentsScreen extends StatefulWidget {
 }
 
 class _AppointmentsScreenState extends State<AppointmentsScreen> {
+  late Future<List<Map<String, dynamic>>> _futureAppointments;
+  bool _isRefreshing = false;
+
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      final authProvider = Provider.of<AuthProvider>(context, listen: false);
-      if (authProvider.isAuthenticated && authProvider.currentUser != null) {
-        Provider.of<AppointmentsProvider>(context, listen: false)
-          .fetchUserAppointments(authProvider.currentUser!.id!.toString());
-      }
-    });
+    // Solo se llama una vez al inicializar
+    _futureAppointments = _loadAppointments();
   }
 
-  Future<void> _loadAppointments() async {
+  /// Cargar agendamientos una sola vez
+  Future<List<Map<String, dynamic>>> _loadAppointments() async {
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
-    if (authProvider.isAuthenticated && authProvider.currentUser != null) {
-      await Provider.of<AppointmentsProvider>(context, listen: false)
-          .fetchUserAppointments(authProvider.currentUser!.id.toString());
+    
+    if (!authProvider.isAuthenticated || authProvider.currentUser == null) {
+      return [];
+    }
+
+    final userId = authProvider.currentUser!['id']?.toString();
+    if (userId == null) {
+      return [];
+    }
+
+    try {
+      final appointmentsProvider = Provider.of<AppointmentsProvider>(context, listen: false);
+      await appointmentsProvider.fetchUserAppointments(userId);
+      
+      if (appointmentsProvider.error != null) {
+        throw Exception(appointmentsProvider.error);
+      }
+      
+      return appointmentsProvider.appointments;
+    } catch (e) {
+      print('❌ Error cargando agendamientos: $e');
+      return [];
+    }
+  }
+
+  /// Recargar agendamientos (para pull-to-refresh)
+  Future<void> _refreshAppointments() async {
+    if (_isRefreshing) return;
+    
+    setState(() {
+      _isRefreshing = true;
+    });
+
+    try {
+      _futureAppointments = _loadAppointments();
+      await _futureAppointments;
+    } finally {
+      setState(() {
+        _isRefreshing = false;
+      });
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final appointmentsProvider = Provider.of<AppointmentsProvider>(context);
     final authProvider = Provider.of<AuthProvider>(context);
 
+    // Si no está autenticado, mostrar pantalla de login
     if (!authProvider.isAuthenticated) {
       return Scaffold(
         appBar: AppBar(
@@ -87,67 +123,114 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> {
         ],
       ),
       body: RefreshIndicator(
-        onRefresh: _loadAppointments,
-        child: appointmentsProvider.isLoading
-            ? const Center(child: CircularProgressIndicator())
-            : appointmentsProvider.error != null
-            ? Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Text(
-                'Error: ${appointmentsProvider.error}',
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 16),
-              ElevatedButton(
-                onPressed: _loadAppointments,
-                child: const Text('Reintentar'),
-              ),
-            ],
-          ),
-        )
-            : appointmentsProvider.appointments.isEmpty
-            ? Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const Icon(
-                Icons.calendar_today_outlined,
-                size: 80,
-                color: Colors.grey,
-              ),
-              const SizedBox(height: 16),
-              const Text(
-                'No tienes citas programadas',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
+        onRefresh: _refreshAppointments,
+        child: FutureBuilder<List<Map<String, dynamic>>>(
+          future: _futureAppointments,
+          builder: (context, snapshot) {
+            // Mostrar loading
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return const Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    CircularProgressIndicator(),
+                    SizedBox(height: 16),
+                    Text('Cargando tus citas...'),
+                  ],
                 ),
-              ),
-              const SizedBox(height: 8),
-              const Text(
-                'Agenda una cita para comenzar',
-                style: TextStyle(
-                  color: Colors.grey,
+              );
+            }
+
+            // Mostrar error
+            if (snapshot.hasError) {
+              return Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Icon(
+                      Icons.error_outline,
+                      size: 80,
+                      color: Colors.red,
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      'Error al cargar las citas',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.red[700],
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      '${snapshot.error}',
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(color: Colors.grey),
+                    ),
+                    const SizedBox(height: 24),
+                    ElevatedButton(
+                      onPressed: () {
+                        setState(() {
+                          _futureAppointments = _loadAppointments();
+                        });
+                      },
+                      child: const Text('Reintentar'),
+                    ),
+                  ],
                 ),
-              ),
-              const SizedBox(height: 24),
-              ElevatedButton(
-                onPressed: () {
-                  Navigator.pushNamed(context, '/book-appointment');
-                },
-                child: const Text('Agendar Cita'),
-              ),
-            ],
-          ),
-        )
-            : ListView.builder(
-          padding: const EdgeInsets.all(16),
-          itemCount: appointmentsProvider.appointments.length,
-          itemBuilder: (context, index) {
-            final appointment = appointmentsProvider.appointments[index];
-            return _buildAppointmentCard(context, appointment);
+              );
+            }
+
+            // Obtener la lista de agendamientos
+            final appointments = snapshot.data ?? [];
+
+            // Si no hay agendamientos, mostrar mensaje
+            if (appointments.isEmpty) {
+              return Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Icon(
+                      Icons.calendar_today_outlined,
+                      size: 80,
+                      color: Colors.grey,
+                    ),
+                    const SizedBox(height: 16),
+                    const Text(
+                      'No tienes citas programadas',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    const Text(
+                      'Agenda una cita para comenzar',
+                      style: TextStyle(
+                        color: Colors.grey,
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                    ElevatedButton(
+                      onPressed: () {
+                        Navigator.pushNamed(context, '/book-appointment');
+                      },
+                      child: const Text('Agendar Cita'),
+                    ),
+                  ],
+                ),
+              );
+            }
+
+            // Mostrar lista de agendamientos
+            return ListView.builder(
+              padding: const EdgeInsets.all(16),
+              itemCount: appointments.length,
+              itemBuilder: (context, index) {
+                final appointment = appointments[index];
+                return _buildAppointmentCard(context, appointment);
+              },
+            );
           },
         ),
       ),
@@ -162,7 +245,6 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> {
   }
 
   Widget _buildAppointmentCard(BuildContext context, Map<String, dynamic> appointment) {
-    final appointmentsProvider = Provider.of<AppointmentsProvider>(context, listen: false);
     final dateFormat = DateFormat('EEEE, d MMMM, yyyy', 'es_ES');
     final timeFormat = DateFormat('HH:mm');
     
@@ -274,14 +356,14 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> {
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
-                        branchName,
-                        style: TextStyle(
-                          color: Colors.grey[600],
+                    branchName,
+                    style: TextStyle(
+                      color: Colors.grey[600],
                       fontSize: 14,
                     ),
-                        ),
-                      ),
-                    ],
+                  ),
+                ),
+              ],
             ),
             
             const SizedBox(height: 4),
@@ -301,136 +383,169 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> {
               ],
             ),
             
-              const SizedBox(height: 16),
+            const SizedBox(height: 12),
             
             // Botones de acción
             Row(
-                  mainAxisAlignment: MainAxisAlignment.end,
-                  children: [
-                if (estado == 'CONFIRMADA')
-                  TextButton.icon(
-                      onPressed: () {
-                      // TODO: Implementar reprogramar cita
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: () {
+                      _showAppointmentDetails(context, appointment);
                     },
-                    icon: const Icon(Icons.edit, size: 16),
-                    label: const Text('Reprogramar'),
-                            ),
-                if (estado != 'CANCELADA' && estado != 'COMPLETADA')
-                  TextButton.icon(
-                                onPressed: () async {
-                      final success = await appointmentsProvider.cancelAppointment(appointment['id'].toString());
-                      if (success['success'] == true && context.mounted) {
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      const SnackBar(
-                                        content: Text('Cita cancelada exitosamente'),
-                            backgroundColor: Colors.green,
-                                      ),
-                                    );
-                                  }
-                                },
-                    icon: const Icon(Icons.cancel, size: 16),
-                    label: const Text('Cancelar'),
-                    style: TextButton.styleFrom(
-                      foregroundColor: Colors.red,
+                    icon: const Icon(Icons.info_outline, size: 16),
+                    label: const Text('Detalles'),
+                    style: OutlinedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 8),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                if (estado.toUpperCase() == 'CONFIRMADA' || estado.toUpperCase() == 'SOLICITADA')
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      onPressed: () {
+                        _showCancelDialog(context, appointment);
+                      },
+                      icon: const Icon(Icons.cancel_outlined, size: 16),
+                      label: const Text('Cancelar'),
+                      style: OutlinedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 8),
+                        foregroundColor: Colors.red,
                       ),
                     ),
-                  ],
-              ),
+                  ),
+              ],
+            ),
           ],
         ),
       ),
     );
   }
 
-  void _showAppointmentDetails(BuildContext context, Appointment appointment) {
+  void _showAppointmentDetails(BuildContext context, Map<String, dynamic> appointment) {
     final dateFormat = DateFormat('EEEE, d MMMM, yyyy', 'es_ES');
     final timeFormat = DateFormat('HH:mm');
-    final serviceName = appointment.servicio?['nombre'] ?? 'Servicio';
-    final branchName = appointment.sucursal?['nombre'] ?? 'Sucursal';
-    final servicePrice = appointment.servicio?['precio'] ?? 0.0;
-    final serviceDuration = appointment.servicio?['duracion'] ?? 0;
+    
+    final serviceName = appointment['servicio']?['nombre'] ?? 'Servicio';
+    final servicePrice = appointment['servicio']?['precio'] ?? 0.0;
+    final serviceDuration = appointment['servicio']?['duracion'] ?? 30;
+    final branchName = appointment['sucursal']?['nombre'] ?? 'Sucursal';
+    final fechaHora = DateTime.tryParse(appointment['fecha_hora'] ?? '') ?? DateTime.now();
 
     showDialog(
       context: context,
-      builder: (context) => Dialog(
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
+      builder: (context) => AlertDialog(
+        title: const Text('Detalles de la Cita'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.calendar_today),
+              title: const Text('Fecha'),
+              subtitle: Text(dateFormat.format(fechaHora)),
+            ),
+            ListTile(
+              leading: const Icon(Icons.access_time),
+              title: const Text('Hora'),
+              subtitle: Text(timeFormat.format(fechaHora)),
+            ),
+            ListTile(
+              leading: const Icon(Icons.spa),
+              title: const Text('Servicio'),
+              subtitle: Text(serviceName),
+            ),
+            ListTile(
+              leading: const Icon(Icons.attach_money),
+              title: const Text('Precio'),
+              subtitle: Text('\$${servicePrice.toStringAsFixed(2)}'),
+            ),
+            ListTile(
+              leading: const Icon(Icons.timelapse),
+              title: const Text('Duración'),
+              subtitle: Text('$serviceDuration minutos'),
+            ),
+            ListTile(
+              leading: const Icon(Icons.location_on),
+              title: const Text('Sucursal'),
+              subtitle: Text(branchName),
+            ),
+            if (appointment['mensaje'] != null && appointment['mensaje'].toString().isNotEmpty)
+              ListTile(
+                leading: const Icon(Icons.message),
+                title: const Text('Notas'),
+                subtitle: Text(appointment['mensaje'].toString()),
+              ),
+          ],
         ),
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  const Text(
-                    'Detalles de la Cita',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.close),
-                    onPressed: () {
-                      Navigator.of(context).pop();
-                    },
-                  ),
-                ],
-              ),
-              const Divider(),
-              ListTile(
-                leading: const Icon(Icons.calendar_today),
-                title: const Text('Fecha'),
-                subtitle: Text(dateFormat.format(appointment.fechaHora)),
-              ),
-              ListTile(
-                leading: const Icon(Icons.access_time),
-                title: const Text('Hora'),
-                subtitle: Text(timeFormat.format(appointment.fechaHora)),
-              ),
-              ListTile(
-                leading: const Icon(Icons.spa),
-                title: const Text('Servicio'),
-                subtitle: Text(serviceName),
-              ),
-              ListTile(
-                leading: const Icon(Icons.attach_money),
-                title: const Text('Precio'),
-                subtitle: Text('\$${servicePrice.toStringAsFixed(2)}'),
-              ),
-              ListTile(
-                leading: const Icon(Icons.timelapse),
-                title: const Text('Duración'),
-                subtitle: Text('$serviceDuration minutos'),
-              ),
-              ListTile(
-                leading: const Icon(Icons.location_on),
-                title: const Text('Sucursal'),
-                subtitle: Text(branchName),
-              ),
-              if (appointment.mensaje != null && appointment.mensaje!.isNotEmpty)
-                ListTile(
-                  leading: const Icon(Icons.message),
-                  title: const Text('Notas'),
-                  subtitle: Text(appointment.mensaje!),
-                ),
-              const SizedBox(height: 16),
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: () {
-                    Navigator.of(context).pop();
-                  },
-                  child: const Text('Cerrar'),
-                ),
-              ),
-            ],
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Cerrar'),
           ),
-        ),
+        ],
       ),
     );
+  }
+
+  void _showCancelDialog(BuildContext context, Map<String, dynamic> appointment) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Cancelar Cita'),
+        content: const Text(
+          '¿Estás seguro de que quieres cancelar esta cita? Esta acción no se puede deshacer.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('No'),
+          ),
+          TextButton(
+            onPressed: () async {
+              Navigator.of(context).pop();
+              await _cancelAppointment(appointment);
+            },
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            child: const Text('Sí, Cancelar'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _cancelAppointment(Map<String, dynamic> appointment) async {
+    final appointmentId = appointment['id']?.toString();
+    if (appointmentId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Error: No se pudo identificar la cita')),
+      );
+      return;
+    }
+
+    try {
+      final appointmentsProvider = Provider.of<AppointmentsProvider>(context, listen: false);
+      final result = await appointmentsProvider.cancelAppointment(appointmentId);
+      
+      if (result['success'] == true) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Cita cancelada exitosamente')),
+        );
+        // Recargar la lista
+        setState(() {
+          _futureAppointments = _loadAppointments();
+        });
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error: ${result['error']}')),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error: $e')),
+      );
+    }
   }
 }

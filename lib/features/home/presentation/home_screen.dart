@@ -11,6 +11,7 @@ import 'package:music_app/core/services/stories_api_service.dart';
 import 'package:music_app/core/services/news_api_service.dart';
 import 'package:music_app/core/widgets/story_card.dart';
 import 'package:music_app/core/widgets/news_card.dart';
+import 'package:music_app/core/widgets/auth_guard.dart';
 
 // Widget helper para mostrar diálogo de autenticación requerida
 void _showAuthRequiredDialog(BuildContext context, String action) {
@@ -343,7 +344,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               // Header con saludo y notificaciones
-              _buildHeader(context),
+              _buildHeader(),
               
               // Banner principal con carousel
               _buildMainBanner(),
@@ -423,44 +424,62 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     );
   }
 
-  Widget _buildHeader(BuildContext context) {
+  Widget _buildHeader() {
     final authProvider = Provider.of<AuthProvider>(context);
+    final theme = Theme.of(context);
+    final isDarkMode = theme.brightness == Brightness.dark;
+    
     return Container(
       padding: const EdgeInsets.all(20),
-      child: Row(
+      decoration: BoxDecoration(
+        color: isDarkMode ? Colors.white10 : Colors.grey[50],
+        borderRadius: const BorderRadius.only(
+          bottomLeft: Radius.circular(30),
+          bottomRight: Radius.circular(30),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  authProvider.isAuthenticated 
-                      ? '¡Hola, ${authProvider.currentUser?.nombre ?? 'Usuario'}!'
-                      : '¡Hola!',
-                  style: const TextStyle(
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    authProvider.isAuthenticated
+                        ? '¡Hola, ${authProvider.currentUser?['nombre'] ?? 'Usuario'}!'
+                        : '¡Bienvenido!',
+                    style: theme.textTheme.headlineSmall?.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color: isDarkMode ? Colors.white : Colors.black87,
+                    ),
+                  ),
+                  Text(
+                    authProvider.isAuthenticated
+                        ? '¿Qué servicio necesitas hoy?'
+                        : 'Inicia sesión para continuar',
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: isDarkMode ? Colors.white70 : Colors.grey[600],
+                    ),
+                  ),
+                ],
+              ),
+              if (authProvider.isAuthenticated)
+                CircleAvatar(
+                  radius: 25,
+                  backgroundColor: const Color(0xFFDC3545),
+                  child: Text(
+                    (authProvider.currentUser?['nombre'] ?? 'U')[0].toUpperCase(),
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 18,
+                    ),
                   ),
                 ),
-                const SizedBox(height: 4),
-                const Text(
-                  'Bienvenido a BarberMusic & Spa',
-                  style: TextStyle(
-                    fontSize: 16,
-                    color: Colors.grey,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          IconButton(
-            onPressed: () {
-              // TODO: Implementar notificaciones
-            },
-            icon: const Icon(
-              Icons.notifications_outlined,
-              size: 28,
-            ),
+            ],
           ),
         ],
       ),
@@ -684,6 +703,10 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                     service['nombre'] ?? 'Servicio',
                     service['imagen'] ?? 'https://images.unsplash.com/photo-1503951914875-452162b0f3f1?w=300&h=200&fit=crop',
                     '\$${service['precio'] ?? 0}',
+                    () {
+                      // Navegar al detalle del servicio
+                      context.go('/servicios');
+                    },
                   );
                 },
               ),
@@ -693,7 +716,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     );
   }
 
-  Widget _buildServiceCard(String title, String imageUrl, String price) {
+  Widget _buildServiceCard(String title, String imageUrl, String price, VoidCallback? onTap) {
     return Container(
       width: 160,
       margin: const EdgeInsets.only(right: 16),
@@ -702,52 +725,56 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(16),
         ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Expanded(
-              child: ClipRRect(
-                borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
-                child: Image.network(
-                  imageUrl,
-                  width: double.infinity,
-                  fit: BoxFit.cover,
-                  errorBuilder: (context, error, stackTrace) {
-                    return Container(
-                      color: Colors.grey[200],
-                      child: const Icon(Icons.image_not_supported),
-                    );
-                  },
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: ClipRRect(
+                  borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+                  child: Image.network(
+                    imageUrl,
+                    width: double.infinity,
+                    fit: BoxFit.cover,
+                    errorBuilder: (context, error, stackTrace) {
+                      return Container(
+                        color: Colors.grey[200],
+                        child: const Icon(Icons.image_not_supported),
+                      );
+                    },
+                  ),
                 ),
               ),
-            ),
-            Padding(
-              padding: const EdgeInsets.all(12),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    style: const TextStyle(
-                      fontWeight: FontWeight.w600,
-                      fontSize: 14,
+              Padding(
+                padding: const EdgeInsets.all(12),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w600,
+                        fontSize: 14,
+                      ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
                     ),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    price,
-                    style: const TextStyle(
-                      color: Color(0xFFDC3545),
-                      fontWeight: FontWeight.bold,
-                      fontSize: 16,
+                    const SizedBox(height: 4),
+                    Text(
+                      price,
+                      style: const TextStyle(
+                        color: Color(0xFFDC3545),
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -796,6 +823,10 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                     product['nombre'] ?? 'Producto',
                     '\$${product['precio'] ?? 0}',
                     product['imagen'] ?? 'https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?w=300&h=200&fit=crop',
+                    () {
+                      // Navegar al detalle del producto
+                      context.go('/productos');
+                    },
                   );
                 },
               ),
@@ -805,7 +836,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     );
   }
 
-  Widget _buildProductCard(String title, String price, String imageUrl) {
+  Widget _buildProductCard(String title, String price, String imageUrl, VoidCallback? onTap) {
     return Container(
       width: 160,
       margin: const EdgeInsets.only(right: 16),
@@ -814,52 +845,56 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(16),
         ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Expanded(
-              child: ClipRRect(
-                borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
-                child: Image.network(
-                  imageUrl,
-                  width: double.infinity,
-                  fit: BoxFit.cover,
-                  errorBuilder: (context, error, stackTrace) {
-                    return Container(
-                      color: Colors.grey[200],
-                      child: const Icon(Icons.image_not_supported),
-                    );
-                  },
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: ClipRRect(
+                  borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+                  child: Image.network(
+                    imageUrl,
+                    width: double.infinity,
+                    fit: BoxFit.cover,
+                    errorBuilder: (context, error, stackTrace) {
+                      return Container(
+                        color: Colors.grey[200],
+                        child: const Icon(Icons.image_not_supported),
+                      );
+                    },
+                  ),
                 ),
               ),
-            ),
-            Padding(
-              padding: const EdgeInsets.all(12),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    style: const TextStyle(
-                      fontWeight: FontWeight.w600,
-                      fontSize: 14,
+              Padding(
+                padding: const EdgeInsets.all(12),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w600,
+                        fontSize: 14,
+                      ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
                     ),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    price,
-                    style: const TextStyle(
-                      color: Color(0xFFDC3545),
-                      fontWeight: FontWeight.bold,
-                      fontSize: 16,
+                    const SizedBox(height: 4),
+                    Text(
+                      price,
+                      style: const TextStyle(
+                        color: Color(0xFFDC3545),
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -1277,6 +1312,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   }
 
   Widget _buildPromotions(BuildContext context) {
+    final authProvider = Provider.of<AuthProvider>(context);
+    
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 20),
       child: Column(
@@ -1350,21 +1387,10 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                         ],
                       ),
                     ),
-                    ElevatedButton(
-                      onPressed: () {
-                        final authProvider = Provider.of<AuthProvider>(context, listen: false);
-                        if (authProvider.isAuthenticated) {
-                          context.go('/agendar');
-                        } else {
-                          _showAuthRequiredDialog(context, 'reservar una cita');
-                        }
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFFDC3545),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                      ),
+                    AuthRequiredButton(
+                      onPressed: () => context.go('/agendar'),
+                      isAuthenticated: authProvider.isAuthenticated,
+                      onAuthRequired: () => _showAuthRequiredDialog(context, 'reservar una cita'),
                       child: const Text(
                         'Reservar',
                         style: TextStyle(color: Colors.white),

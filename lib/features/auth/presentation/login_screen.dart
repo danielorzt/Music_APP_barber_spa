@@ -430,24 +430,41 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
                 // Link para registro
                 FadeTransition(
                   opacity: _fadeAnimation,
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
+                  child: Column(
                     children: [
-                      Text(
-                        '¿No tienes una cuenta?',
-                        style: TextStyle(
-                          color: isDarkMode ? Colors.white70 : Colors.grey[600],
-                        ),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(
+                            '¿No tienes una cuenta?',
+                            style: TextStyle(
+                              color: isDarkMode ? Colors.white70 : Colors.grey[600],
+                            ),
+                          ),
+                          TextButton(
+                            onPressed: () {
+                              context.push('/register');
+                            },
+                            child: const Text(
+                              'Crear cuenta',
+                              style: TextStyle(
+                                color: Color(0xFFDC3545),
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
+                      const SizedBox(height: 8),
                       TextButton(
                         onPressed: () {
-                          context.push('/register');
+                          context.push('/api-test');
                         },
-                        child: const Text(
-                          'Crear cuenta',
+                        child: Text(
+                          '🔧 Configuración API',
                           style: TextStyle(
-                            color: Color(0xFFDC3545),
-                            fontWeight: FontWeight.bold,
+                            color: isDarkMode ? Colors.white60 : Colors.grey[500],
+                            fontSize: 12,
                           ),
                         ),
                       ),

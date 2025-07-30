@@ -6,13 +6,13 @@ import 'package:provider/provider.dart';
 // Screens - Auth
 import '../../features/auth/presentation/login_screen.dart';
 import '../../features/auth/presentation/register_screen.dart';
-import '../../features/auth/presentation/test_login_screen.dart';
 import '../../features/auth/presentation/api_test_screen.dart';
 
 // Screens - Main
 import '../../features/splash/presentation/splash_screen.dart';
 import '../../features/onboarding/presentation/onboarding_screen.dart';
 import '../../features/main/presentation/main_screen.dart';
+import '../../features/home/presentation/home_screen.dart';
 
 // Screens - Cliente
 import '../../features/appointments/presentation/appointments_screen.dart';
@@ -35,6 +35,9 @@ import '../../features/profile/presentation/settings_screen.dart';
 import '../../features/auth/providers/auth_provider.dart';
 import '../../features/services/models/service_model.dart';
 import '../../core/models/producto.dart';
+
+// Widgets
+import '../../core/widgets/auth_guard.dart';
 
 // Placeholder widget para pantallas no implementadas
 class PlaceholderScreen extends StatelessWidget {
@@ -90,55 +93,48 @@ class PlaceholderScreen extends StatelessWidget {
 }
 
 class AppRouter {
-  static final GoRouter router = GoRouter(
-    initialLocation: '/splash',
-    // Clave global para manejar el estado de navegación
-    navigatorKey: GlobalKey<NavigatorState>(),
-    debugLogDiagnostics: true,
+  static final _rootNavigatorKey = GlobalKey<NavigatorState>();
+  static final _shellNavigatorKey = GlobalKey<NavigatorState>();
+
+  static final router = GoRouter(
+    initialLocation: '/',
+    navigatorKey: _rootNavigatorKey,
     redirect: (context, state) {
       final authProvider = Provider.of<AuthProvider>(context, listen: false);
-      final isAuthenticated = authProvider.isAuthenticated;
       
-      // Rutas que no requieren autenticación
-      final publicRoutes = ['/splash', '/onboarding', '/main', '/login', '/register'];
-      
-      // Si la ruta actual es pública, permitir acceso
-      if (publicRoutes.any((route) => state.fullPath?.startsWith(route) == true)) {
+      // Si está en la pantalla de splash, no redirigir
+      if (state.matchedLocation == '/') {
         return null;
       }
       
-      // Para rutas protegidas del cliente
-      final protectedRoutes = ['/perfil', '/carrito', '/checkout', '/agendar', '/comprar'];
-      if (protectedRoutes.any((route) => state.fullPath?.startsWith(route) == true)) {
-        if (!isAuthenticated) {
-          return '/login';
-        }
+      // Si no está autenticado y no está en rutas públicas, redirigir a login
+      if (!authProvider.isAuthenticated && 
+          !state.matchedLocation.startsWith('/login') &&
+          !state.matchedLocation.startsWith('/register') &&
+          !state.matchedLocation.startsWith('/api-test') &&
+          !state.matchedLocation.startsWith('/onboarding')) {
+        return '/login';
+      }
+      
+      // Si está autenticado y está en login/register, redirigir a main
+      if (authProvider.isAuthenticated && 
+          (state.matchedLocation.startsWith('/login') ||
+           state.matchedLocation.startsWith('/register'))) {
+        return '/main';
       }
       
       return null;
     },
     routes: [
-      // === PANTALLAS PRINCIPALES ===
+      // Rutas de autenticación
       GoRoute(
-        path: '/splash',
+        path: '/',
         builder: (context, state) => const SplashScreen(),
       ),
       GoRoute(
         path: '/onboarding',
         builder: (context, state) => const OnboardingScreen(),
       ),
-      GoRoute(
-        path: '/main',
-        builder: (context, state) => WillPopScope(
-          onWillPop: () async {
-            // En la pantalla main, mostrar diálogo de confirmación para salir
-            return await _showExitDialog(context) ?? false;
-          },
-          child: const MainScreen(),
-        ),
-      ),
-      
-      // === AUTENTICACIÓN ===
       GoRoute(
         path: '/login',
         builder: (context, state) => const LoginScreen(),
@@ -148,112 +144,129 @@ class AppRouter {
         builder: (context, state) => const RegisterScreen(),
       ),
       GoRoute(
-        path: '/test-login',
-        builder: (context, state) => const TestLoginScreen(),
-      ),
-      GoRoute(
         path: '/api-test',
         builder: (context, state) => const ApiTestScreen(),
       ),
       
-      // === SERVICIOS ===
+      // Rutas principales (requieren autenticación)
       GoRoute(
-        path: '/servicios',
+        path: '/main',
+        builder: (context, state) => const MainScreen(),
+      ),
+      GoRoute(
+        path: '/home',
+        builder: (context, state) => const HomeScreen(),
+      ),
+      GoRoute(
+        path: '/services',
         builder: (context, state) => const ServicesScreen(),
-        routes: [
-          GoRoute(
-            path: ':id',
-            builder: (context, state) {
-              final service = state.extra as ServiceModel?;
-              if (service != null) {
-                return ServiceDetailScreen(service: service);
-              }
-              return const PlaceholderScreen(title: 'Detalle de Servicio');
-            },
-          ),
-        ],
       ),
-      
-      // === PRODUCTOS ===
       GoRoute(
-        path: '/productos',
+        path: '/products',
         builder: (context, state) => const ProductsScreen(),
-        routes: [
-          GoRoute(
-            path: ':id',
-            builder: (context, state) {
-              final product = state.extra as Producto?;
-              if (product != null) {
-                return ProductDetailScreen(product: product);
-              }
-              return const PlaceholderScreen(title: 'Detalle de Producto');
-            },
-          ),
-        ],
       ),
       
-      // === CATEGORÍAS ===
+      // Rutas protegidas que requieren autenticación
       GoRoute(
-        path: '/categoria/:categoryName',
-        builder: (context, state) {
-          final categoryName = state.pathParameters['categoryName']!;
-          return const ProductsScreen(); // Por ahora redirigimos a productos
-        },
-      ),
-      
-      // === AGENDAMIENTOS ===
-      GoRoute(
-        path: '/citas',
-        builder: (context, state) => const AppointmentsScreen(),
+        path: '/appointments',
+        builder: (context, state) => AuthGuard(
+          child: const AppointmentsScreen(),
+        ),
       ),
       GoRoute(
-        path: '/agendar',
-        builder: (context, state) {
-          final service = state.extra as ServiceModel?;
-          return BookAppointmentScreen(selectedService: service);
-        },
+        path: '/profile',
+        builder: (context, state) => AuthGuard(
+          child: const ProfileScreen(),
+        ),
       ),
-      
-      // === CARRITO Y CHECKOUT ===
       GoRoute(
-        path: '/carrito',
-        builder: (context, state) => const CartScreen(),
+        path: '/cart',
+        builder: (context, state) => AuthGuard(
+          child: const CartScreen(),
+        ),
       ),
       GoRoute(
         path: '/checkout',
-        builder: (context, state) => const CheckoutScreen(),
+        builder: (context, state) => AuthGuard(
+          child: const CheckoutScreen(),
+        ),
+      ),
+      GoRoute(
+        path: '/agendar',
+        builder: (context, state) => AuthGuard(
+          child: const BookAppointmentScreen(),
+        ),
       ),
       
-      // === PERFIL ===
+      // Rutas de detalle (pueden ser públicas pero con funcionalidades protegidas)
       GoRoute(
-        path: '/perfil',
-        builder: (context, state) => const ProfileScreen(),
-        routes: [
-          GoRoute(
-            path: 'direcciones',
-            builder: (context, state) => const AddressesScreen(),
-          ),
-          GoRoute(
-            path: 'favoritos',
-            builder: (context, state) => const FavoritesScreen(),
-          ),
-          GoRoute(
-            path: 'historial',
-            builder: (context, state) => const HistoryScreen(),
-          ),
-          GoRoute(
-            path: 'metodos-pago',
-            builder: (context, state) => const PaymentMethodsScreen(),
-          ),
-          GoRoute(
-            path: 'ayuda',
-            builder: (context, state) => const HelpSupportScreen(),
-          ),
-          GoRoute(
-            path: 'configuracion',
-            builder: (context, state) => const SettingsScreen(),
-          ),
-        ],
+        path: '/service/:id',
+        builder: (context, state) {
+          final serviceId = state.pathParameters['id']!;
+          // Crear un ServiceModel mock basado en el ID
+          final service = ServiceModel(
+            id: serviceId,
+            name: 'Servicio $serviceId',
+            description: 'Descripción del servicio $serviceId',
+            price: 25.0 + (int.parse(serviceId) * 5.0),
+            duration: 30 + (int.parse(serviceId) * 10),
+            imagen: 'https://images.unsplash.com/photo-1503951914875-452162b0f3f1?w=400&h=400&fit=crop',
+          );
+          return ServiceDetailScreen(service: service);
+        },
+      ),
+      GoRoute(
+        path: '/product/:id',
+        builder: (context, state) {
+          final productId = state.pathParameters['id']!;
+          // Crear un Producto mock basado en el ID
+          final product = Producto(
+            id: int.parse(productId),
+            nombre: 'Producto $productId',
+            descripcion: 'Descripción del producto $productId',
+            precio: 15.0 + (int.parse(productId) * 2.0),
+            urlImagen: 'https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?w=400&h=400&fit=crop',
+          );
+          return ProductDetailScreen(product: product);
+        },
+      ),
+      
+      // Rutas de perfil protegidas
+      GoRoute(
+        path: '/profile/addresses',
+        builder: (context, state) => AuthGuard(
+          child: const AddressesScreen(),
+        ),
+      ),
+      GoRoute(
+        path: '/profile/favorites',
+        builder: (context, state) => AuthGuard(
+          child: const FavoritesScreen(),
+        ),
+      ),
+      GoRoute(
+        path: '/profile/history',
+        builder: (context, state) => AuthGuard(
+          child: const HistoryScreen(),
+        ),
+      ),
+      GoRoute(
+        path: '/profile/payment-methods',
+        builder: (context, state) => AuthGuard(
+          child: const PaymentMethodsScreen(),
+        ),
+      ),
+      GoRoute(
+        path: '/profile/help-support',
+        builder: (context, state) => AuthGuard(
+          child: const HelpSupportScreen(),
+        ),
+      ),
+      GoRoute(
+        path: '/profile/settings',
+        builder: (context, state) => AuthGuard(
+          child: const SettingsScreen(),
+        ),
       ),
     ],
   );

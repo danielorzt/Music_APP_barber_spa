@@ -1,39 +1,27 @@
 import 'dart:convert';
 import 'package:dio/dio.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import '../api/api_client.dart';
 import '../config/api_config.dart';
-import '../models/user_model.dart';
+import '../config/dev_config.dart';
 
-/// Servicio para manejar autenticación con la API Laravel
 class AuthApiService {
-  final ApiClient _apiClient = ApiClient();
-  
-  /// Obtener headers para peticiones autenticadas
-  Future<Map<String, String>> get _headers async {
-    final prefs = await SharedPreferences.getInstance();
-    final token = prefs.getString('jwt_token');
-    
-    final headers = <String, String>{
-      'Content-Type': 'application/json',
-      'Accept': 'application/json',
-    };
-    
-    if (token != null) {
-      headers['Authorization'] = 'Bearer $token';
-    }
-    
-    return headers;
+  final Dio _dio = Dio();
+
+  AuthApiService() {
+    _dio.options.baseUrl = DevConfig.apiBaseUrl;
+    _dio.options.connectTimeout = DevConfig.defaultTimeout;
+    _dio.options.receiveTimeout = DevConfig.defaultTimeout;
   }
 
-  /// Login de usuario
+  /// Login con JWT
   Future<Map<String, dynamic>> login(String email, String password) async {
-    print('🔐 Intentando login para: $email');
-    final start = DateTime.now();
-    
     try {
-      final response = await _apiClient.dio.post(
-        ApiConfig.loginEndpoint,
+      print('🔐 Intentando login con JWT...');
+      print('📍 URL: ${ApiConfig.baseUrl}${ApiConfig.loginEndpoint}');
+      print('📧 Email: $email');
+      
+      final response = await _dio.post(
+        DevConfig.getEndpoint('login')!,
         data: {
           'email': email,
           'password': password,
@@ -43,136 +31,153 @@ class AuthApiService {
             'Content-Type': 'application/json',
             'Accept': 'application/json',
           },
+          validateStatus: (status) {
+            return status! <= 500; // Aceptar códigos 2xx, 3xx, 4xx, 5xx
+          },
         ),
       );
-      
-      print('📡 Response status: ${response.statusCode}');
-      print('📡 Response data: ${response.data}');
-      
+
+      print('✅ Respuesta del servidor: ${response.statusCode}');
+      print('📄 Datos: ${response.data}');
+
       if (response.statusCode == 200) {
         final data = response.data;
         
-        // Buscar token en diferentes estructuras de respuesta
+        // Extraer token y datos de usuario según la estructura de tu API
         final token = _findToken(data);
+        final userData = _findUserData(data);
         
         if (token != null) {
-          // Guardar token
-          final prefs = await SharedPreferences.getInstance();
-          await prefs.setString('jwt_token', token);
-
-          // Buscar datos de usuario en la respuesta
-          final userData = _findUserData(data);
-
-          User user;
+          await _saveToken('jwt_token', token);
+          print('💾 Token guardado: ${token.substring(0, 20)}...');
+          
           if (userData != null) {
-            // Crear usuario con datos de la respuesta
-            user = User.fromJson(userData);
-          } else {
-            // Si no hay datos de usuario en la respuesta, extraer del token JWT
-            print('⚠️ No se encontraron datos de usuario en la respuesta de login');
-            print('🔍 Extrayendo datos del token JWT...');
-
-            // Extraer datos del token JWT (email y nombre están en el token)
-            try {
-              final tokenParts = token.split('.');
-              if (tokenParts.length == 3) {
-                final payload = tokenParts[1];
-                final decodedPayload = utf8.decode(base64Url.decode(base64Url.normalize(payload)));
-                final payloadData = jsonDecode(decodedPayload);
-                
-                user = User(
-                  id: payloadData['sub']?.toString() ?? 'temp_id',
-                  nombre: payloadData['nombre'] ?? 'Usuario',
-                  email: payloadData['email'] ?? email,
-                  role: payloadData['rol'] ?? 'CLIENTE',
-                );
-                
-                print('✅ Datos extraídos del token JWT');
-              } else {
-                throw Exception('Token JWT inválido');
-              }
-            } catch (e) {
-              print('⚠️ No se pudieron extraer datos del token JWT: $e');
-              print('🔍 Creando usuario básico...');
-              
-              // Crear usuario básico como fallback
-              user = User(
-                id: 'temp_id',
-                nombre: 'Usuario',
-                email: email,
-                role: 'CLIENTE',
-              );
-            }
+            await _saveUser(userData);
+            print('💾 Datos de usuario guardados');
           }
-
-          print('✅ Login exitoso en ${DateTime.now().difference(start).inMilliseconds}ms');
-          return {
-            'success': true,
-            'user': user.toJson(), // Convertir a Map<String, dynamic>
-            'token': token,
-          };
         } else {
-          print('❌ Token no encontrado en respuesta');
+          print('⚠️ No se encontró token en la respuesta');
+        }
+
+        return {
+          'success': true,
+          'message': data['message'] ?? 'Login exitoso',
+          'user': userData,
+          'token': token,
+        };
+              } else {
+          // Manejar otros códigos de estado
+          String errorMessage = 'Error en el servidor';
+          if (response.data != null && response.data['message'] != null) {
+            errorMessage = response.data['message'];
+          }
+          
+          // Manejar errores específicos según el código de estado
+          switch (response.statusCode) {
+            case 500:
+              errorMessage = 'Error interno del servidor. El servidor está experimentando problemas técnicos.';
+              break;
+            case 401:
+              errorMessage = 'Credenciales incorrectas. Verifica tu email y contraseña.';
+              break;
+            case 422:
+              errorMessage = 'Datos inválidos. Verifica que todos los campos sean correctos.';
+              break;
+            default:
+              if (errorMessage.isEmpty) {
+                errorMessage = 'Error inesperado en el servidor';
+              }
+          }
+          
           return {
             'success': false,
-            'error': 'Credenciales incorrectas',
+            'error': errorMessage,
+            'statusCode': response.statusCode,
           };
         }
-      } else {
-        final errorMessage = response.data['message'] ?? 'Error de autenticación';
-        
-        print('❌ Login fallido: $errorMessage');
-        return {
-          'success': false,
-          'error': errorMessage,
-        };
-      }
     } on DioException catch (e) {
-      print('❌ Error en login: ${e.message}');
-      print('❌ Error type: ${e.type}');
-      print('❌ Error response: ${e.response?.data}');
+      print('❌ Error de Dio: ${e.type}');
+      print('📄 Respuesta del servidor: ${e.response?.data}');
+      print('🔢 Código de estado: ${e.response?.statusCode}');
       
       String errorMessage = 'Error de conexión';
+      
       if (e.response?.data != null) {
         final errorData = e.response!.data;
-        errorMessage = errorData['message'] ?? 'Error de autenticación';
+        final serverMessage = errorData['message'] ?? '';
+        final statusCode = e.response!.statusCode;
+        
+        print('📋 Mensaje del servidor: $serverMessage');
+        print('🔢 Código de estado: $statusCode');
+        
+        // Manejar errores específicos según los códigos de tu API
+        switch (statusCode) {
+          case 401:
+            errorMessage = 'Credenciales incorrectas. Verifica tu email y contraseña.';
+            break;
+          case 403:
+            errorMessage = 'Cuenta desactivada. Contacta al administrador.';
+            break;
+          case 409:
+            errorMessage = 'Conflicto en el servidor. Intenta nuevamente.';
+            break;
+          case 422:
+            errorMessage = 'Datos inválidos. Verifica que todos los campos sean correctos.';
+            break;
+          case 500:
+            errorMessage = 'Error interno del servidor. Intenta nuevamente en unos minutos.';
+            break;
+          default:
+            if (serverMessage.contains('credentials') || serverMessage.contains('Unauthorized')) {
+              errorMessage = 'Credenciales incorrectas. Verifica tu email y contraseña.';
+            } else if (serverMessage.contains('validation')) {
+              errorMessage = 'Datos inválidos. Verifica que todos los campos sean correctos.';
+            } else if (serverMessage.contains('Error al iniciar sesión')) {
+              errorMessage = 'Error en el servidor. Intenta nuevamente en unos minutos.';
+            } else {
+              errorMessage = serverMessage.isNotEmpty ? serverMessage : 'Error de autenticación';
+            }
+        }
+      } else if (e.type == DioExceptionType.connectionTimeout) {
+        errorMessage = 'Tiempo de espera agotado. Verifica tu conexión a internet.';
+      } else if (e.type == DioExceptionType.receiveTimeout) {
+        errorMessage = 'El servidor tardó demasiado en responder. Intenta nuevamente.';
+      } else if (e.type == DioExceptionType.connectionError) {
+        errorMessage = 'Error de conexión. Verifica tu conexión a internet.';
       }
-      
+
       return {
         'success': false,
         'error': errorMessage,
+        'statusCode': e.response?.statusCode,
       };
     } catch (e) {
-      print('❌ Error inesperado en login: $e');
+      print('❌ Error inesperado: $e');
       return {
         'success': false,
-        'error': 'Error inesperado: $e',
+        'error': 'Error inesperado. Intenta nuevamente.',
       };
     }
   }
 
   /// Registro de usuario
   Future<Map<String, dynamic>> register({
+    required String nombre,
     required String email,
     required String password,
-    required String nombre,
     String? telefono,
   }) async {
-    print('📝 Intentando registro para: $email');
-    final start = DateTime.now();
-    
     try {
-      final url = Uri.parse(ApiConfig.getFullUrl(ApiConfig.registerEndpoint));
-      final headers = await _headers;
+      print('📝 Intentando registro...');
       
-      final response = await _apiClient.dio.post(
-        ApiConfig.registerEndpoint,
+      final response = await _dio.post(
+        DevConfig.getEndpoint('register')!,
         data: {
+          'nombre': nombre,
           'email': email,
           'password': password,
           'password_confirmation': password,
-          'nombre': nombre,
-          'telefono': telefono,
+          if (telefono != null) 'telefono': telefono,
         },
         options: Options(
           headers: {
@@ -181,307 +186,213 @@ class AuthApiService {
           },
         ),
       );
-      
-      print('📡 Response status: ${response.statusCode}');
-      print('📡 Response data: ${response.data}');
-      
+
+      print('✅ Registro exitoso: ${response.statusCode}');
+      print('📄 Respuesta: ${response.data}');
+
       if (response.statusCode == 201 || response.statusCode == 200) {
         final data = response.data;
         
-        // Buscar token en diferentes estructuras de respuesta
+        // Extraer token y datos de usuario
         final token = _findToken(data);
         final userData = _findUserData(data);
         
-        if (token != null && userData != null) {
-          // Guardar token
-          final prefs = await SharedPreferences.getInstance();
-          await prefs.setString('jwt_token', token);
-          
-          // Crear usuario
-          final user = User.fromJson(userData);
-          
-          print('✅ Registro exitoso en ${DateTime.now().difference(start).inMilliseconds}ms');
-          return {
-            'success': true,
-            'user': user.toJson(), // Convertir a Map<String, dynamic>
-            'token': token,
-          };
-        } else {
-          print('❌ Token o datos de usuario no encontrados en respuesta');
-          return {
-            'success': false,
-            'error': 'Error en el registro',
-          };
+        if (token != null) {
+          await _saveToken('jwt_token', token);
+          if (userData != null) {
+            await _saveUser(userData);
+          }
         }
+
+        return {
+          'success': true,
+          'message': data['message'] ?? 'Registro exitoso',
+          'user': userData,
+        };
       } else {
-        final errorMessage = response.data['message'] ?? 'Error en el registro';
-        
-        print('❌ Registro fallido: $errorMessage');
         return {
           'success': false,
-          'error': errorMessage,
+          'error': 'Error inesperado en el servidor',
         };
       }
     } on DioException catch (e) {
-      print('❌ Error en registro: ${e.message}');
-      print('❌ Error type: ${e.type}');
-      print('❌ Error response: ${e.response?.data}');
+      print('❌ Error de Dio: ${e.type}');
+      print('📄 Respuesta del servidor: ${e.response?.data}');
       
       String errorMessage = 'Error de conexión';
       if (e.response?.data != null) {
         final errorData = e.response!.data;
-        errorMessage = errorData['message'] ?? 'Error en el registro';
+        final serverMessage = errorData['message'] ?? '';
+        
+        // Manejar errores específicos del servidor
+        if (serverMessage.contains('email already registered')) {
+          errorMessage = 'El email ya está registrado. Intenta con otro email.';
+        } else if (serverMessage.contains('validation')) {
+          errorMessage = 'Datos inválidos. Verifica que todos los campos sean correctos.';
+        } else if (serverMessage.contains('password')) {
+          errorMessage = 'La contraseña debe tener al menos 6 caracteres.';
+        } else {
+          errorMessage = serverMessage.isNotEmpty ? serverMessage : 'Error de registro';
+        }
+      } else if (e.type == DioExceptionType.connectionTimeout) {
+        errorMessage = 'Tiempo de espera agotado. Verifica tu conexión a internet.';
+      } else if (e.type == DioExceptionType.receiveTimeout) {
+        errorMessage = 'El servidor tardó demasiado en responder. Intenta nuevamente.';
+      } else if (e.type == DioExceptionType.connectionError) {
+        errorMessage = 'Error de conexión. Verifica tu conexión a internet.';
       }
-      
+
       return {
         'success': false,
         'error': errorMessage,
       };
     } catch (e) {
-      print('❌ Error inesperado en registro: $e');
+      print('❌ Error inesperado: $e');
       return {
         'success': false,
-        'error': 'Error inesperado: $e',
-      };
-    }
-  }
-
-  /// Logout de usuario
-  Future<Map<String, dynamic>> logout() async {
-    print('🚪 Intentando logout');
-    
-    try {
-      final url = Uri.parse(ApiConfig.getFullUrl(ApiConfig.logoutEndpoint));
-      final headers = await _headers;
-      
-      final response = await _apiClient.dio.post(
-        ApiConfig.logoutEndpoint,
-        options: Options(
-          headers: headers,
-        ),
-      );
-      
-      print('📡 Response status: ${response.statusCode}');
-      
-      // Limpiar token localmente sin importar la respuesta del servidor
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.remove('jwt_token');
-      
-      print('✅ Logout exitoso');
-      return {
-        'success': true,
-        'message': 'Sesión cerrada exitosamente',
-      };
-    } on DioException catch (e) {
-      print('❌ Error en logout: ${e.message}');
-      print('❌ Error type: ${e.type}');
-      print('❌ Error response: ${e.response?.data}');
-      
-      String errorMessage = 'Error de conexión';
-      if (e.response?.data != null) {
-        final errorData = e.response!.data;
-        errorMessage = errorData['message'] ?? 'Error de autenticación';
-      }
-      
-      // Limpiar token localmente incluso si hay error
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.remove('jwt_token');
-      
-      return {
-        'success': true,
-        'message': 'Sesión cerrada localmente',
-      };
-    } catch (e) {
-      print('❌ Error inesperado en logout: $e');
-      
-      // Limpiar token localmente incluso si hay error
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.remove('jwt_token');
-      
-      return {
-        'success': true,
-        'message': 'Sesión cerrada localmente',
+        'error': 'Error inesperado. Intenta nuevamente.',
       };
     }
   }
 
   /// Obtener usuario actual
-  Future<Map<String, dynamic>> getCurrentUser() async {
-    print('👤 Obteniendo usuario actual');
-    
+  Future<Map<String, dynamic>?> getCurrentUser() async {
     try {
-      final url = Uri.parse(ApiConfig.getFullUrl(ApiConfig.currentUserEndpoint));
-      final headers = await _headers;
-      
-      final response = await _apiClient.dio.get(
-        ApiConfig.currentUserEndpoint,
+      final token = await _getToken('jwt_token');
+      if (token == null) {
+        return null;
+      }
+
+      final response = await _dio.get(
+        DevConfig.getEndpoint('currentUser')!,
         options: Options(
-          headers: headers,
+          headers: {
+            'Authorization': 'Bearer $token',
+            'Accept': 'application/json',
+          },
         ),
       );
-      
-      print('📡 Response status: ${response.statusCode}');
-      
+
       if (response.statusCode == 200) {
-        final data = response.data;
-        final userData = _findUserData(data);
-        
-        if (userData != null) {
-          final user = User.fromJson(userData);
-          print('✅ Usuario actual obtenido: ${user.nombre}');
-          return {
-            'success': true,
-            'user': user.toJson(), // Convertir a Map<String, dynamic>
-          };
-        } else {
-          print('❌ Datos de usuario no encontrados');
-          return {
-            'success': false,
-            'error': 'Datos de usuario no válidos',
-          };
-        }
-      } else {
-        print('❌ Error obteniendo usuario: ${response.statusCode}');
-        return {
-          'success': false,
-          'error': 'No autenticado',
-        };
+        return response.data;
       }
-    } on DioException catch (e) {
-      print('❌ Error obteniendo usuario: ${e.message}');
-      print('❌ Error type: ${e.type}');
-      print('❌ Error response: ${e.response?.data}');
-      
-      String errorMessage = 'Error de conexión';
-      if (e.response?.data != null) {
-        final errorData = e.response!.data;
-        errorMessage = errorData['message'] ?? 'Error de autenticación';
+    } catch (e) {
+      print('❌ Error obteniendo usuario: $e');
+    }
+    return null;
+  }
+
+  /// Logout
+  Future<void> logout() async {
+    try {
+      final token = await _getToken('jwt_token');
+      if (token != null) {
+        await _dio.post(
+          DevConfig.getEndpoint('logout')!,
+          options: Options(
+            headers: {
+              'Authorization': 'Bearer $token',
+              'Accept': 'application/json',
+            },
+          ),
+        );
       }
-      
-      return {
-        'success': false,
-        'error': errorMessage,
-      };
     } catch (e) {
-      print('❌ Error inesperado obteniendo usuario: $e');
-      return {
-        'success': false,
-        'error': 'Error de conexión: $e',
-      };
+      print('❌ Error en logout: $e');
+    } finally {
+      await _clearTokens();
     }
   }
 
-  /// Verificar si hay una sesión activa
-  Future<bool> isAuthenticated() async {
+  /// Métodos privados para manejo de tokens
+  Future<void> _saveToken(String key, String token) async {
     final prefs = await SharedPreferences.getInstance();
-    final token = prefs.getString('jwt_token');
-    
-    if (token == null) {
-      return false;
-    }
-    
-    // Verificar token con el servidor
-    try {
-      final result = await getCurrentUser();
-      return result['success'] == true;
-    } catch (e) {
-      print('❌ Error verificando autenticación: $e');
-      return false;
-    }
+    await prefs.setString(key, token);
   }
 
-  /// Verificar si hay un token válido (método faltante)
-  Future<bool> hasValidToken() async {
+  Future<String?> _getToken(String key) async {
     final prefs = await SharedPreferences.getInstance();
-    final token = prefs.getString('jwt_token');
-    
-    if (token == null) {
-      return false;
-    }
-    
-    // Verificar token con el servidor
-    try {
-      final result = await getCurrentUser();
-      return result['success'] == true;
-    } catch (e) {
-      print('❌ Error verificando token: $e');
-      return false;
-    }
+    return prefs.getString(key);
   }
 
-  /// Buscar token en diferentes estructuras de respuesta
+  Future<void> _saveUser(Map<String, dynamic> user) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('user_data', jsonEncode(user));
+  }
+
+  Future<void> _clearTokens() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove('jwt_token');
+    await prefs.remove('user_data');
+  }
+
+  /// Buscar token en la respuesta del servidor
   String? _findToken(Map<String, dynamic> data) {
-    print('🔍 Buscando token en respuesta: $data');
+    print('🔍 Buscando token en respuesta: ${data.keys.toList()}');
     
-    // Estructura Laravel: data.data.token
-    if (data['data'] != null && data['data']['token'] != null) {
-      print('✅ Token encontrado en data.data.token');
-      return data['data']['token'];
-    }
-    
-    // Estructura 1: data.token
+    // Buscar en diferentes ubicaciones posibles según la estructura de tu API
     if (data['token'] != null) {
       print('✅ Token encontrado en data.token');
       return data['token'];
     }
     
-    // Estructura 2: data.access_token
+    if (data['data'] != null && data['data'] is Map<String, dynamic>) {
+      final dataObj = data['data'] as Map<String, dynamic>;
+      if (dataObj['token'] != null) {
+        print('✅ Token encontrado en data.data.token');
+        return dataObj['token'];
+      }
+    }
+    
     if (data['access_token'] != null) {
       print('✅ Token encontrado en data.access_token');
       return data['access_token'];
     }
     
-    // Estructura 3: data.data.access_token
-    if (data['data'] != null && data['data']['access_token'] != null) {
-      print('✅ Token encontrado en data.data.access_token');
-      return data['data']['access_token'];
-    }
-    
-    print('❌ Token no encontrado en ninguna estructura conocida');
-    return null;
-  }
-
-  /// Buscar datos de usuario en diferentes estructuras de respuesta
-  Map<String, dynamic>? _findUserData(Map<String, dynamic> data) {
-    print('🔍 Buscando datos de usuario en respuesta: $data');
-    
-    // Estructura 1: data.user
-    if (data['user'] != null) {
-      print('✅ Datos de usuario encontrados en data.user');
-      return data['user'];
-    }
-    
-    // Estructura 2: data.data.user
-    if (data['data'] != null && data['data']['user'] != null) {
-      print('✅ Datos de usuario encontrados en data.data.user');
-      return data['data']['user'];
-    }
-    
-    // Estructura 3: data.data (si data es directamente el usuario)
+    // Buscar en otras ubicaciones posibles
     if (data['data'] != null && data['data'] is Map<String, dynamic>) {
-      final userData = data['data'];
-      // Verificar si tiene campos de usuario (excluyendo token)
-      if (userData['id'] != null || userData['email'] != null) {
-        // Filtrar campos que no son del usuario
-        final filteredData = Map<String, dynamic>.from(userData);
-        filteredData.remove('token');
-        filteredData.remove('type');
-        filteredData.remove('expires_in');
-        
-        if (filteredData.isNotEmpty) {
-          print('✅ Datos de usuario encontrados en data.data (filtrados)');
-          return filteredData;
-        }
+      final dataObj = data['data'] as Map<String, dynamic>;
+      if (dataObj['access_token'] != null) {
+        print('✅ Token encontrado en data.data.access_token');
+        return dataObj['access_token'];
       }
     }
     
-    // Estructura 4: data directamente (si es el usuario)
+    print('❌ No se encontró token en la respuesta');
+    return null;
+  }
+
+  /// Buscar datos de usuario en la respuesta del servidor
+  Map<String, dynamic>? _findUserData(Map<String, dynamic> data) {
+    print('🔍 Buscando datos de usuario en respuesta');
+    
+    // Buscar en diferentes ubicaciones posibles según la estructura de tu API
+    if (data['user'] != null && data['user'] is Map<String, dynamic>) {
+      print('✅ Datos de usuario encontrados en data.user');
+      return data['user'] as Map<String, dynamic>;
+    }
+    
+    if (data['data'] != null && data['data'] is Map<String, dynamic>) {
+      final dataObj = data['data'] as Map<String, dynamic>;
+      if (dataObj['user'] != null && dataObj['user'] is Map<String, dynamic>) {
+        print('✅ Datos de usuario encontrados en data.data.user');
+        return dataObj['user'] as Map<String, dynamic>;
+      }
+      
+      // Si no hay objeto user separado, usar los datos principales del data
+      if (dataObj['id'] != null || dataObj['email'] != null) {
+        print('✅ Datos de usuario encontrados en data.data (datos principales)');
+        return dataObj;
+      }
+    }
+    
+    // Si no hay objeto user separado, usar los datos principales
     if (data['id'] != null || data['email'] != null) {
-      print('✅ Datos de usuario encontrados en data directamente');
+      print('✅ Datos de usuario encontrados en data (datos principales)');
       return data;
     }
     
-    print('❌ Datos de usuario no encontrados en ninguna estructura conocida');
+    print('❌ No se encontraron datos de usuario en la respuesta');
     return null;
   }
 } 

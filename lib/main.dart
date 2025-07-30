@@ -1,39 +1,28 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:go_router/go_router.dart';
 import 'package:firebase_core/firebase_core.dart';
-import 'package:flutter_localizations/flutter_localizations.dart';
 import 'firebase_options.dart';
-
-// Config
-import 'config/router/app_router.dart';
-import 'config/theme/app_theme.dart';
-
-// Providers
-import 'features/auth/providers/auth_provider.dart';
 import 'core/providers/settings_provider.dart';
+import 'features/auth/providers/auth_provider.dart';
 import 'features/appointments/providers/appointments_provider.dart';
 import 'features/services/providers/services_provider.dart';
 import 'features/products/providers/products_provider.dart';
+import 'config/router/app_router.dart';
+import 'features/splash/presentation/splash_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   
-  try {
-    await Firebase.initializeApp(
-      options: DefaultFirebaseOptions.currentPlatform,
-    );
-  } catch (e) {
-    // En caso de error con Firebase, continuar sin él
-    debugPrint('Firebase initialization failed: $e');
-  }
+  // Inicializar Firebase
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
 
-  // Inicializar el provider de configuraciones
+  // Inicializar providers
   final settingsProvider = SettingsProvider();
   await settingsProvider.init();
-
-  // Crear AuthProvider e inicializar estado de autenticación
   final authProvider = AuthProvider();
-  await authProvider.checkAuthStatus();
 
   runApp(MyApp(
     settingsProvider: settingsProvider,
@@ -46,7 +35,7 @@ class MyApp extends StatelessWidget {
   final AuthProvider authProvider;
 
   const MyApp({
-    super.key, 
+    super.key,
     required this.settingsProvider,
     required this.authProvider,
   });
@@ -64,29 +53,17 @@ class MyApp extends StatelessWidget {
       child: Consumer<SettingsProvider>(
         builder: (context, settings, child) {
           return MaterialApp.router(
-          title: 'BarberMusic & Spa',
-          debugShowCheckedModeBanner: false,
-            
-            // Configuración de tema
-            theme: AppTheme.lightTheme,
-            darkTheme: AppTheme.darkTheme,
+            title: 'Barber Music Spa',
+            debugShowCheckedModeBanner: false,
             themeMode: settings.flutterThemeMode,
-            
-            // Configuración de idioma y localizaciones
+            theme: ThemeData.light(),
+            darkTheme: ThemeData.dark(),
+            routerConfig: AppRouter.router,
             locale: settings.locale,
             supportedLocales: const [
-              Locale('es', 'ES'), // Español
-              Locale('en', 'US'), // Inglés
-              Locale('pt', 'BR'), // Portugués
+              Locale('es', 'ES'),
+              Locale('en', 'US'),
             ],
-            localizationsDelegates: const [
-              GlobalMaterialLocalizations.delegate,
-              GlobalWidgetsLocalizations.delegate,
-              GlobalCupertinoLocalizations.delegate,
-            ],
-            
-            // Router
-          routerConfig: AppRouter.router,
           );
         },
       ),

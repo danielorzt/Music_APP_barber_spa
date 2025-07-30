@@ -47,10 +47,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final user = authProvider.currentUser;
 
     if (user != null) {
-      _nameController.text = user.nombre;
-      _emailController.text = user.email;
-      _phoneController.text = user.telefono ?? '';
-      _addressController.text = user.direccion ?? '';
+      _nameController.text = user['nombre'] ?? '';
+      _emailController.text = user['email'] ?? '';
+      _phoneController.text = user['telefono'] ?? '';
+      _addressController.text = user['direccion'] ?? '';
     }
   }
 
