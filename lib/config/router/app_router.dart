@@ -200,7 +200,7 @@ class AppRouter {
       
       // Rutas de detalle (pueden ser públicas pero con funcionalidades protegidas)
       GoRoute(
-        path: '/service/:id',
+        path: '/servicios/:id',
         builder: (context, state) {
           final serviceId = state.pathParameters['id']!;
           // Crear un ServiceModel mock basado en el ID
@@ -216,7 +216,7 @@ class AppRouter {
         },
       ),
       GoRoute(
-        path: '/product/:id',
+        path: '/productos/:id',
         builder: (context, state) {
           final productId = state.pathParameters['id']!;
           // Crear un Producto mock basado en el ID

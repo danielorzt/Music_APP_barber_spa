@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:music_app/core/widgets/back_button_interceptor.dart';
+import 'package:provider/provider.dart';
+import '../../auth/providers/auth_provider.dart';
+import '../../../core/services/user_management_api_service.dart';
 
 class HistoryScreen extends StatefulWidget {
   const HistoryScreen({super.key});
@@ -10,12 +12,18 @@ class HistoryScreen extends StatefulWidget {
 }
 
 class _HistoryScreenState extends State<HistoryScreen> with SingleTickerProviderStateMixin {
+  final UserManagementApiService _userService = UserManagementApiService();
   late TabController _tabController;
+  bool _isLoading = false;
+  List<Map<String, dynamic>> _appointments = [];
+  List<Map<String, dynamic>> _orders = [];
+  String? _error;
 
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 3, vsync: this);
+    _tabController = TabController(length: 2, vsync: this);
+    _loadHistory();
   }
 
   @override
@@ -24,459 +32,386 @@ class _HistoryScreenState extends State<HistoryScreen> with SingleTickerProvider
     super.dispose();
   }
 
+  Future<void> _loadHistory() async {
+    setState(() {
+      _isLoading = true;
+      _error = null;
+    });
+
+    try {
+      // Cargar citas y órdenes en paralelo
+      final results = await Future.wait([
+        _userService.getUserAppointments(),
+        _userService.getUserOrders(),
+      ]);
+
+      if (results[0]['success'] == true) {
+        setState(() {
+          _appointments = List<Map<String, dynamic>>.from(results[0]['data'] ?? []);
+        });
+      }
+
+      if (results[1]['success'] == true) {
+        setState(() {
+          _orders = List<Map<String, dynamic>>.from(results[1]['data'] ?? []);
+        });
+      }
+
+      if (results[0]['success'] != true && results[1]['success'] != true) {
+        setState(() {
+          _error = 'Error al cargar historial';
+        });
+      }
+    } catch (e) {
+      setState(() {
+        _error = 'Error de conexión: $e';
+      });
+    } finally {
+      setState(() {
+        _isLoading = false;
+      });
+    }
+  }
+
+  String _getStatusColor(String status) {
+    switch (status.toLowerCase()) {
+      case 'completado':
+      case 'completed':
+        return '#4CAF50';
+      case 'cancelado':
+      case 'cancelled':
+        return '#F44336';
+      case 'pendiente':
+      case 'pending':
+        return '#FF9800';
+      case 'en_proceso':
+      case 'in_progress':
+        return '#2196F3';
+      default:
+        return '#9E9E9E';
+    }
+  }
+
+  String _getStatusText(String status) {
+    switch (status.toLowerCase()) {
+      case 'completado':
+      case 'completed':
+        return 'Completado';
+      case 'cancelado':
+      case 'cancelled':
+        return 'Cancelado';
+      case 'pendiente':
+      case 'pending':
+        return 'Pendiente';
+      case 'en_proceso':
+      case 'in_progress':
+        return 'En proceso';
+      default:
+        return status;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
-    
-    return BackButtonInterceptor(
-      fallbackRoute: '/perfil',
-      child: Scaffold(
-        backgroundColor: theme.colorScheme.background,
-        appBar: AppBar(
-          title: Text(
-            'Historial',
-            style: TextStyle(
-              color: theme.colorScheme.onSurface,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-          backgroundColor: theme.colorScheme.surface,
-          elevation: 0,
-          leading: IconButton(
-            icon: Icon(Icons.arrow_back, color: theme.colorScheme.onSurface),
-            onPressed: () => context.go('/perfil'),
-          ),
-          bottom: TabBar(
-            controller: _tabController,
-            labelColor: const Color(0xFFDC3545),
-            unselectedLabelColor: theme.colorScheme.onSurface.withOpacity(0.7),
-            indicatorColor: const Color(0xFFDC3545),
-            dividerColor: theme.colorScheme.onSurface.withOpacity(0.1),
-            tabs: const [
-              Tab(text: 'Citas'),
-              Tab(text: 'Compras'),
-              Tab(text: 'Servicios'),
-            ],
-          ),
-        ),
-        body: TabBarView(
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Historial'),
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        bottom: TabBar(
           controller: _tabController,
-          children: [
-            _buildAppointmentsHistory(),
-            _buildPurchasesHistory(),
-            _buildServicesHistory(),
+          tabs: const [
+            Tab(text: 'Citas'),
+            Tab(text: 'Compras'),
           ],
         ),
       ),
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : _error != null
+              ? Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.error_outline, size: 64, color: Colors.grey[400]),
+                      const SizedBox(height: 16),
+                      Text(
+                        'Error al cargar historial',
+                        style: TextStyle(fontSize: 18, color: Colors.grey[600]),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        _error!,
+                        style: TextStyle(color: Colors.grey[500]),
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 16),
+                      ElevatedButton(
+                        onPressed: _loadHistory,
+                        child: const Text('Reintentar'),
+                      ),
+                    ],
+                  ),
+                )
+              : TabBarView(
+                  controller: _tabController,
+                  children: [
+                    _buildAppointmentsTab(),
+                    _buildOrdersTab(),
+                  ],
+                ),
     );
   }
 
-  Widget _buildAppointmentsHistory() {
-    final theme = Theme.of(context);
-    
-    // Datos mock de citas
-    final appointments = [
-      {
-        'id': '1',
-        'service': 'Corte + Barba',
-        'date': '2024-01-15',
-        'time': '10:00 AM',
-        'barber': 'Carlos Rodríguez',
-        'status': 'completada',
-        'price': 40.0,
-      },
-      {
-        'id': '2',
-        'service': 'Masaje Relajante',
-        'date': '2024-01-10',
-        'time': '2:00 PM',
-        'barber': 'Ana García',
-        'status': 'completada',
-        'price': 50.0,
-      },
-      {
-        'id': '3',
-        'service': 'Tratamiento Facial',
-        'date': '2024-01-05',
-        'time': '11:30 AM',
-        'barber': 'María López',
-        'status': 'cancelada',
-        'price': 60.0,
-      },
-    ];
+  Widget _buildAppointmentsTab() {
+    if (_appointments.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.calendar_today_outlined, size: 64, color: Colors.grey[400]),
+            const SizedBox(height: 16),
+            Text(
+              'No tienes citas en tu historial',
+              style: TextStyle(fontSize: 18, color: Colors.grey[600]),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Agenda tu primera cita',
+              style: TextStyle(color: Colors.grey[500]),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 24),
+            ElevatedButton.icon(
+              onPressed: () => context.push('/agendar'),
+              icon: const Icon(Icons.calendar_today),
+              label: const Text('Agendar cita'),
+            ),
+          ],
+        ),
+      );
+    }
 
-    return Container(
-      color: theme.colorScheme.background,
-      child: ListView.builder(
-        padding: const EdgeInsets.all(16),
-        itemCount: appointments.length,
-        itemBuilder: (context, index) {
-          final appointment = appointments[index];
-          return Card(
-            margin: const EdgeInsets.only(bottom: 12),
-            color: theme.cardTheme.color,
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Expanded(
-                        child: Text(
-                          appointment['service'] as String,
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
-                            color: theme.colorScheme.onSurface,
-                          ),
+    return ListView.builder(
+      padding: const EdgeInsets.all(16),
+      itemCount: _appointments.length,
+      itemBuilder: (context, index) {
+        final appointment = _appointments[index];
+        final status = appointment['estado']?.toString() ?? 'pendiente';
+        final statusColor = _getStatusColor(status);
+        
+        return Card(
+          margin: const EdgeInsets.only(bottom: 12),
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Icon(Icons.calendar_today, color: const Color(0xFFDC3545)),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        appointment['servicio_nombre'] ?? 'Servicio',
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
                         ),
                       ),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: appointment['status'] == 'completada'
-                              ? Colors.green.withOpacity(0.1)
-                              : Colors.red.withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Text(
-                          (appointment['status'] as String).toUpperCase(),
-                          style: TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w500,
-                            color: appointment['status'] == 'completada'
-                                ? Colors.green
-                                : Colors.red,
-                          ),
+                    ),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: Color(int.parse(statusColor.replaceAll('#', '0xFF'))),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Text(
+                        _getStatusText(status),
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500,
                         ),
                       ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  Row(
-                    children: [
-                      Icon(Icons.calendar_today, size: 16, color: theme.colorScheme.onSurface.withOpacity(0.7)),
-                      const SizedBox(width: 4),
-                      Text(
-                        '${appointment['date']} - ${appointment['time']}',
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: theme.colorScheme.onSurface.withOpacity(0.7),
-                        ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    Icon(Icons.location_on, size: 16, color: Colors.grey[600]),
+                    const SizedBox(width: 4),
+                    Expanded(
+                      child: Text(
+                        appointment['sucursal_nombre'] ?? 'Sucursal no especificada',
+                        style: TextStyle(color: Colors.grey[600]),
                       ),
-                    ],
-                  ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 4),
+                Row(
+                  children: [
+                    Icon(Icons.schedule, size: 16, color: Colors.grey[600]),
+                    const SizedBox(width: 4),
+                    Text(
+                      appointment['fecha_hora'] ?? 'Fecha no especificada',
+                      style: TextStyle(color: Colors.grey[600]),
+                    ),
+                  ],
+                ),
+                if (appointment['personal_nombre'] != null) ...[
                   const SizedBox(height: 4),
                   Row(
                     children: [
-                      Icon(Icons.person, size: 16, color: theme.colorScheme.onSurface.withOpacity(0.7)),
+                      Icon(Icons.person, size: 16, color: Colors.grey[600]),
                       const SizedBox(width: 4),
                       Text(
-                        appointment['barber'] as String,
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: theme.colorScheme.onSurface.withOpacity(0.7),
-                        ),
+                        appointment['personal_nombre'],
+                        style: TextStyle(color: Colors.grey[600]),
                       ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        '\$${appointment['price']}',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          color: const Color(0xFFDC3545),
-                        ),
-                      ),
-                      if (appointment['status'] == 'completada')
-                        TextButton(
-                          onPressed: () {
-                            // TODO: Navegar a reseña
-                          },
-                          child: const Text('Dejar Reseña'),
-                        ),
                     ],
                   ),
                 ],
-              ),
-            ),
-          );
-        },
-      ),
-    );
-  }
-
-  Widget _buildPurchasesHistory() {
-    final theme = Theme.of(context);
-    
-    // Datos mock de compras
-    final purchases = [
-      {
-        'id': '1',
-        'orderNumber': 'ORD-001',
-        'date': '2024-01-12',
-        'items': [
-          {'name': 'Aceite para Barba Premium', 'quantity': 1, 'price': 25.0},
-          {'name': 'Crema de Afeitar Suave', 'quantity': 2, 'price': 18.0},
-        ],
-        'total': 61.0,
-        'status': 'entregado',
-      },
-      {
-        'id': '2',
-        'orderNumber': 'ORD-002',
-        'date': '2024-01-08',
-        'items': [
-          {'name': 'Navaja de Afeitar Profesional', 'quantity': 1, 'price': 45.0},
-        ],
-        'total': 45.0,
-        'status': 'en_transito',
-      },
-    ];
-
-    return Container(
-      color: theme.colorScheme.background,
-      child: ListView.builder(
-        padding: const EdgeInsets.all(16),
-        itemCount: purchases.length,
-        itemBuilder: (context, index) {
-          final purchase = purchases[index];
-          final items = purchase['items'] as List<Map<String, dynamic>>;
-          
-          return Card(
-            margin: const EdgeInsets.only(bottom: 12),
-            color: theme.cardTheme.color,
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        'Orden ${purchase['orderNumber']}',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                          color: theme.colorScheme.onSurface,
-                        ),
-                      ),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: purchase['status'] == 'entregado'
-                              ? Colors.green.withOpacity(0.1)
-                              : Colors.orange.withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Text(
-                          purchase['status'] == 'entregado' ? 'ENTREGADO' : 'EN TRÁNSITO',
-                          style: TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w500,
-                            color: purchase['status'] == 'entregado'
-                                ? Colors.green
-                                : Colors.orange,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
+                if (appointment['precio'] != null) ...[
                   const SizedBox(height: 8),
                   Text(
-                    purchase['date'] as String,
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: theme.colorScheme.onSurface.withOpacity(0.7),
+                    '\$${appointment['precio']}',
+                    style: const TextStyle(
+                      color: Color(0xFFDC3545),
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
                     ),
-                  ),
-                  const SizedBox(height: 12),
-                  ...items.map((item) => Padding(
-                    padding: const EdgeInsets.only(bottom: 4),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Expanded(
-                          child: Text(
-                            '${item['quantity']}x ${item['name']}',
-                            style: TextStyle(
-                              fontSize: 14,
-                              color: theme.colorScheme.onSurface,
-                            ),
-                          ),
-                        ),
-                        Text(
-                          '\$${(item['price'] * item['quantity']).toStringAsFixed(2)}',
-                          style: TextStyle(
-                            fontSize: 14,
-                            color: theme.colorScheme.onSurface,
-                          ),
-                        ),
-                      ],
-                    ),
-                  )).toList(),
-                  const Divider(),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        'Total',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          color: theme.colorScheme.onSurface,
-                        ),
-                      ),
-                      Text(
-                        '\$${purchase['total']}',
-                        style: const TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          color: Color(0xFFDC3545),
-                        ),
-                      ),
-                    ],
                   ),
                 ],
-              ),
+              ],
             ),
-          );
-        },
-      ),
+          ),
+        );
+      },
     );
   }
 
-  Widget _buildServicesHistory() {
-    final theme = Theme.of(context);
-    
-    // Datos mock de servicios más utilizados
-    final services = [
-      {
-        'name': 'Corte + Barba',
-        'count': 12,
-        'lastUsed': '2024-01-15',
-        'avgRating': 4.8,
-        'totalSpent': 480.0,
-      },
-      {
-        'name': 'Masaje Relajante',
-        'count': 8,
-        'lastUsed': '2024-01-10',
-        'avgRating': 4.9,
-        'totalSpent': 400.0,
-      },
-      {
-        'name': 'Tratamiento Facial',
-        'count': 5,
-        'lastUsed': '2024-01-05',
-        'avgRating': 4.7,
-        'totalSpent': 300.0,
-      },
-    ];
+  Widget _buildOrdersTab() {
+    if (_orders.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.shopping_bag_outlined, size: 64, color: Colors.grey[400]),
+            const SizedBox(height: 16),
+            Text(
+              'No tienes compras en tu historial',
+              style: TextStyle(fontSize: 18, color: Colors.grey[600]),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Explora nuestros productos',
+              style: TextStyle(color: Colors.grey[500]),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 24),
+            ElevatedButton.icon(
+              onPressed: () => context.push('/products'),
+              icon: const Icon(Icons.shopping_bag),
+              label: const Text('Ver productos'),
+            ),
+          ],
+        ),
+      );
+    }
 
-    return Container(
-      color: theme.colorScheme.background,
-      child: ListView.builder(
-        padding: const EdgeInsets.all(16),
-        itemCount: services.length,
-        itemBuilder: (context, index) {
-          final service = services[index];
-          return Card(
-            margin: const EdgeInsets.only(bottom: 12),
-            color: theme.cardTheme.color,
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Expanded(
-                        child: Text(
-                          service['name'] as String,
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
-                            color: theme.colorScheme.onSurface,
-                          ),
+    return ListView.builder(
+      padding: const EdgeInsets.all(16),
+      itemCount: _orders.length,
+      itemBuilder: (context, index) {
+        final order = _orders[index];
+        final status = order['estado']?.toString() ?? 'pendiente';
+        final statusColor = _getStatusColor(status);
+        
+        return Card(
+          margin: const EdgeInsets.only(bottom: 12),
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Icon(Icons.shopping_bag, color: const Color(0xFFDC3545)),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'Orden #${order['numero_orden'] ?? order['id']}',
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
                         ),
                       ),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFDC3545).withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Text(
-                          '${service['count']} veces',
-                          style: const TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w500,
-                            color: Color(0xFFDC3545),
-                          ),
-                        ),
+                    ),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: Color(int.parse(statusColor.replaceAll('#', '0xFF'))),
+                        borderRadius: BorderRadius.circular(12),
                       ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  Row(
-                    children: [
-                      Icon(Icons.star, size: 16, color: Colors.amber),
-                      const SizedBox(width: 4),
-                      Text(
-                        '${service['avgRating']} promedio',
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: theme.colorScheme.onSurface.withOpacity(0.7),
-                        ),
-                      ),
-                      const SizedBox(width: 16),
-                      Icon(Icons.calendar_today, size: 16, color: theme.colorScheme.onSurface.withOpacity(0.7)),
-                      const SizedBox(width: 4),
-                      Text(
-                        'Último: ${service['lastUsed']}',
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: theme.colorScheme.onSurface.withOpacity(0.7),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        'Total gastado: \$${service['totalSpent']}',
-                        style: TextStyle(
-                          fontSize: 14,
+                      child: Text(
+                        _getStatusText(status),
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 12,
                           fontWeight: FontWeight.w500,
-                          color: theme.colorScheme.onSurface,
                         ),
                       ),
-                      TextButton(
-                        onPressed: () {
-                          // TODO: Navegar a agendar este servicio
-                        },
-                        child: const Text('Agendar de Nuevo'),
-                      ),
-                    ],
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    Icon(Icons.calendar_today, size: 16, color: Colors.grey[600]),
+                    const SizedBox(width: 4),
+                    Text(
+                      order['fecha_orden'] ?? 'Fecha no especificada',
+                      style: TextStyle(color: Colors.grey[600]),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 4),
+                Row(
+                  children: [
+                    Icon(Icons.inventory, size: 16, color: Colors.grey[600]),
+                    const SizedBox(width: 4),
+                    Text(
+                      '${order['cantidad_productos'] ?? 0} productos',
+                      style: TextStyle(color: Colors.grey[600]),
+                    ),
+                  ],
+                ),
+                if (order['total'] != null) ...[
+                  const SizedBox(height: 8),
+                  Text(
+                    'Total: \$${order['total']}',
+                    style: const TextStyle(
+                      color: Color(0xFFDC3545),
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                    ),
                   ),
                 ],
-              ),
+                if (order['metodo_pago'] != null) ...[
+                  const SizedBox(height: 4),
+                  Text(
+                    'Pago: ${order['metodo_pago']}',
+                    style: TextStyle(color: Colors.grey[600], fontSize: 12),
+                  ),
+                ],
+              ],
             ),
-          );
-        },
-      ),
+          ),
+        );
+      },
     );
   }
 } 

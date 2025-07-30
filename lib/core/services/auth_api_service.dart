@@ -17,7 +17,7 @@ class AuthApiService {
   Future<Map<String, dynamic>> login(String email, String password) async {
     try {
       print('🔐 Intentando login con JWT...');
-      print('📍 URL: ${ApiConfig.baseUrl}${ApiConfig.loginEndpoint}');
+      print('📍 URL: ${DevConfig.getEndpoint('login')}');
       print('📧 Email: $email');
       
       final response = await _dio.post(
@@ -40,7 +40,7 @@ class AuthApiService {
       print('✅ Respuesta del servidor: ${response.statusCode}');
       print('📄 Datos: ${response.data}');
 
-      if (response.statusCode == 200) {
+      if (response.statusCode == 200 || response.statusCode == 201) {
         final data = response.data;
         
         // Extraer token y datos de usuario según la estructura de tu API
@@ -65,36 +65,36 @@ class AuthApiService {
           'user': userData,
           'token': token,
         };
-              } else {
-          // Manejar otros códigos de estado
-          String errorMessage = 'Error en el servidor';
-          if (response.data != null && response.data['message'] != null) {
-            errorMessage = response.data['message'];
-          }
-          
-          // Manejar errores específicos según el código de estado
-          switch (response.statusCode) {
-            case 500:
-              errorMessage = 'Error interno del servidor. El servidor está experimentando problemas técnicos.';
-              break;
-            case 401:
-              errorMessage = 'Credenciales incorrectas. Verifica tu email y contraseña.';
-              break;
-            case 422:
-              errorMessage = 'Datos inválidos. Verifica que todos los campos sean correctos.';
-              break;
-            default:
-              if (errorMessage.isEmpty) {
-                errorMessage = 'Error inesperado en el servidor';
-              }
-          }
-          
-          return {
-            'success': false,
-            'error': errorMessage,
-            'statusCode': response.statusCode,
-          };
+      } else {
+        // Manejar otros códigos de estado
+        String errorMessage = 'Error en el servidor';
+        if (response.data != null && response.data['message'] != null) {
+          errorMessage = response.data['message'];
         }
+        
+        // Manejar errores específicos según el código de estado
+        switch (response.statusCode) {
+          case 500:
+            errorMessage = 'Error interno del servidor. El servidor está experimentando problemas técnicos.';
+            break;
+          case 401:
+            errorMessage = 'Credenciales incorrectas. Verifica tu email y contraseña.';
+            break;
+          case 422:
+            errorMessage = 'Datos inválidos. Verifica que todos los campos sean correctos.';
+            break;
+          default:
+            if (errorMessage.isEmpty) {
+              errorMessage = 'Error inesperado en el servidor';
+            }
+        }
+        
+        return {
+          'success': false,
+          'error': errorMessage,
+          'statusCode': response.statusCode,
+        };
+      }
     } on DioException catch (e) {
       print('❌ Error de Dio: ${e.type}');
       print('📄 Respuesta del servidor: ${e.response?.data}');

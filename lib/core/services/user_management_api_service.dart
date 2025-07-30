@@ -1,422 +1,430 @@
 import 'dart:convert';
+import 'package:dio/dio.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../config/api_config.dart';
-import 'base_api_service.dart';
+import '../config/dev_config.dart';
 
-/// Servicio para gestión de usuarios y perfiles con la API real de Laravel
-class UserManagementApiService extends BaseApiService {
-  
-  /// GESTIÓN DE PERFIL
-  
-  /// Obtener perfil del usuario autenticado
-  Future<Map<String, dynamic>> getPerfil() async {
-    print('👤 Obteniendo perfil de usuario...');
-    
-    try {
-      final response = await get(ApiConfig.perfilEndpoint);
-      print('✅ Perfil obtenido exitosamente');
-      return response;
-    } catch (e) {
-      print('❌ Error obteniendo perfil: $e');
-      rethrow;
-    }
+class UserManagementApiService {
+  final Dio _dio = Dio();
+
+  UserManagementApiService() {
+    _dio.options.baseUrl = DevConfig.apiBaseUrl;
+    _dio.options.connectTimeout = DevConfig.defaultTimeout;
+    _dio.options.receiveTimeout = DevConfig.defaultTimeout;
   }
-  
-  /// Actualizar perfil del usuario
-  Future<Map<String, dynamic>> actualizarPerfil({
-    String? nombre,
-    String? telefono,
-    String? fechaNacimiento,
-    String? genero,
-    String? fotoPerfilUrl,
-    Map<String, dynamic>? datosAdicionales,
-  }) async {
-    print('👤 Actualizando perfil de usuario...');
-    
-    try {
-      final body = <String, dynamic>{};
-      
-      if (nombre != null) body['nombre'] = nombre;
-      if (telefono != null) body['telefono'] = telefono;
-      if (fechaNacimiento != null) body['fecha_nacimiento'] = fechaNacimiento;
-      if (genero != null) body['genero'] = genero;
-      if (fotoPerfilUrl != null) body['foto_perfil_url'] = fotoPerfilUrl;
-      if (datosAdicionales != null) body.addAll(datosAdicionales);
-      
-      final response = await put(ApiConfig.perfilEndpoint, body);
-      print('✅ Perfil actualizado exitosamente');
-      return response;
-    } catch (e) {
-      print('❌ Error actualizando perfil: $e');
-      rethrow;
-    }
+
+  /// Obtener token de autenticación
+  Future<String?> _getAuthToken() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString('jwt_token');
   }
-  
-  /// Cambiar contraseña
-  Future<Map<String, dynamic>> cambiarContrasena({
-    required String contrasenaActual,
-    required String nuevaContrasena,
-    required String confirmarContrasena,
-  }) async {
-    print('🔒 Cambiando contraseña...');
-    
-    try {
-      final body = {
-        'current_password': contrasenaActual,
-        'password': nuevaContrasena,
-        'password_confirmation': confirmarContrasena,
-      };
-      
-      final response = await put('${ApiConfig.perfilEndpoint}/cambiar-contrasena', body);
-      print('✅ Contraseña cambiada exitosamente');
-      return response;
-    } catch (e) {
-      print('❌ Error cambiando contraseña: $e');
-      rethrow;
-    }
+
+  /// Configurar headers de autenticación
+  Future<Options> _getAuthOptions() async {
+    final token = await _getAuthToken();
+    return Options(
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+        if (token != null) 'Authorization': 'Bearer $token',
+      },
+    );
   }
-  
-  /// PREFERENCIAS MUSICALES
-  
-  /// Obtener preferencias musicales del usuario
-  Future<Map<String, dynamic>> getPreferenciasMusicales() async {
-    print('🎵 Obteniendo preferencias musicales...');
-    
+
+  /// Obtener direcciones del usuario
+  Future<Map<String, dynamic>> getUserAddresses() async {
     try {
-      final response = await get(ApiConfig.preferenciasMusicaEndpoint);
-      print('✅ Preferencias musicales obtenidas exitosamente');
-      return response;
-    } catch (e) {
-      print('❌ Error obteniendo preferencias musicales: $e');
-      rethrow;
-    }
-  }
-  
-  /// Actualizar preferencias musicales
-  Future<Map<String, dynamic>> actualizarPreferenciasMusicales({
-    required List<String> generosMusicales,
-    String? artista,
-    String? cancion,
-    String? playlist,
-    bool? permitirMusicaAleatoria,
-    int? volumenPreferido,
-  }) async {
-    print('🎵 Actualizando preferencias musicales...');
-    
-    try {
-      final body = {
-        'generos_musicales': generosMusicales,
-        if (artista != null) 'artista': artista,
-        if (cancion != null) 'cancion': cancion,
-        if (playlist != null) 'playlist': playlist,
-        if (permitirMusicaAleatoria != null) 'permitir_musica_aleatoria': permitirMusicaAleatoria,
-        if (volumenPreferido != null) 'volumen_preferido': volumenPreferido,
-      };
-      
-      final response = await put(ApiConfig.preferenciasMusicaEndpoint, body);
-      print('✅ Preferencias musicales actualizadas exitosamente');
-      return response;
-    } catch (e) {
-      print('❌ Error actualizando preferencias musicales: $e');
-      rethrow;
-    }
-  }
-  
-  /// RESEÑAS Y CALIFICACIONES
-  
-  /// Obtener reseñas del usuario
-  Future<Map<String, dynamic>> getResenasUsuario({
-    int? page,
-    int? limit,
-  }) async {
-    print('⭐ Obteniendo reseñas del usuario...');
-    
-    try {
-      String endpoint = ApiConfig.resenasEndpoint;
-      List<String> params = [];
-      
-      if (page != null) params.add('page=$page');
-      if (limit != null) params.add('limit=$limit');
-      
-      if (params.isNotEmpty) {
-        endpoint += '?${params.join('&')}';
+      final options = await _getAuthOptions();
+      final response = await _dio.get(
+        DevConfig.getEndpoint('userAddresses')!,
+        options: options,
+      );
+
+      if (response.statusCode == 200) {
+        return {
+          'success': true,
+          'data': response.data['data'] ?? [],
+        };
+      } else {
+        return {
+          'success': false,
+          'error': 'Error al obtener direcciones',
+        };
       }
-      
-      final response = await get(endpoint);
-      print('✅ Reseñas obtenidas exitosamente');
-      return response;
-    } catch (e) {
-      print('❌ Error obteniendo reseñas: $e');
-      rethrow;
-    }
-  }
-  
-  /// Crear una nueva reseña
-  Future<Map<String, dynamic>> crearResena({
-    required String servicioId,
-    required int calificacion,
-    String? comentario,
-    String? agendamientoId,
-    List<String>? fotos,
-  }) async {
-    print('⭐ Creando nueva reseña...');
-    
-    try {
-      final body = {
-        'servicio_id': servicioId,
-        'calificacion': calificacion,
-        if (comentario != null) 'comentario': comentario,
-        if (agendamientoId != null) 'agendamiento_id': agendamientoId,
-        if (fotos != null) 'fotos': fotos,
+    } on DioException catch (e) {
+      return {
+        'success': false,
+        'error': 'Error de conexión: ${e.message}',
       };
-      
-      final response = await post(ApiConfig.resenasEndpoint, body);
-      print('✅ Reseña creada exitosamente');
-      return response;
     } catch (e) {
-      print('❌ Error creando reseña: $e');
-      rethrow;
+      return {
+        'success': false,
+        'error': 'Error inesperado: $e',
+      };
     }
   }
-  
-  /// Actualizar una reseña
-  Future<Map<String, dynamic>> actualizarResena(
-    String resenaId,
-    Map<String, dynamic> data,
-  ) async {
-    print('⭐ Actualizando reseña $resenaId...');
-    
+
+  /// Agregar dirección del usuario
+  Future<Map<String, dynamic>> addUserAddress(Map<String, String> addressData) async {
     try {
-      final response = await put('${ApiConfig.resenasEndpoint}/$resenaId', data);
-      print('✅ Reseña actualizada exitosamente');
-      return response;
-    } catch (e) {
-      print('❌ Error actualizando reseña: $e');
-      rethrow;
-    }
-  }
-  
-  /// Eliminar una reseña
-  Future<Map<String, dynamic>> eliminarResena(String resenaId) async {
-    print('⭐ Eliminando reseña $resenaId...');
-    
-    try {
-      final response = await delete('${ApiConfig.resenasEndpoint}/$resenaId');
-      print('✅ Reseña eliminada exitosamente');
-      return response;
-    } catch (e) {
-      print('❌ Error eliminando reseña: $e');
-      rethrow;
-    }
-  }
-  
-  /// RECORDATORIOS
-  
-  /// Obtener recordatorios del usuario
-  Future<Map<String, dynamic>> getRecordatorios({
-    String? tipo,
-    bool? soloActivos,
-  }) async {
-    print('🔔 Obteniendo recordatorios...');
-    
-    try {
-      String endpoint = ApiConfig.recordatoriosEndpoint;
-      List<String> params = [];
-      
-      if (tipo != null) params.add('tipo=$tipo');
-      if (soloActivos != null) params.add('solo_activos=$soloActivos');
-      
-      if (params.isNotEmpty) {
-        endpoint += '?${params.join('&')}';
+      final options = await _getAuthOptions();
+      final response = await _dio.post(
+        DevConfig.getEndpoint('userAddresses')!,
+        data: addressData,
+        options: options,
+      );
+
+      if (response.statusCode == 201 || response.statusCode == 200) {
+        return {
+          'success': true,
+          'data': response.data,
+        };
+      } else {
+        return {
+          'success': false,
+          'error': 'Error al agregar dirección',
+        };
       }
-      
-      final response = await get(endpoint);
-      print('✅ Recordatorios obtenidos exitosamente');
-      return response;
-    } catch (e) {
-      print('❌ Error obteniendo recordatorios: $e');
-      rethrow;
-    }
-  }
-  
-  /// Crear un recordatorio
-  Future<Map<String, dynamic>> crearRecordatorio({
-    required String tipo,
-    required String titulo,
-    required String fechaHora,
-    String? descripcion,
-    String? agendamientoId,
-    bool? activo,
-  }) async {
-    print('🔔 Creando recordatorio...');
-    
-    try {
-      final body = {
-        'tipo': tipo,
-        'titulo': titulo,
-        'fecha_hora': fechaHora,
-        if (descripcion != null) 'descripcion': descripcion,
-        if (agendamientoId != null) 'agendamiento_id': agendamientoId,
-        'activo': activo ?? true,
+    } on DioException catch (e) {
+      return {
+        'success': false,
+        'error': 'Error de conexión: ${e.message}',
       };
-      
-      final response = await post(ApiConfig.recordatoriosEndpoint, body);
-      print('✅ Recordatorio creado exitosamente');
-      return response;
     } catch (e) {
-      print('❌ Error creando recordatorio: $e');
-      rethrow;
+      return {
+        'success': false,
+        'error': 'Error inesperado: $e',
+      };
     }
   }
-  
-  /// Actualizar un recordatorio
-  Future<Map<String, dynamic>> actualizarRecordatorio(
-    String recordatorioId,
-    Map<String, dynamic> data,
-  ) async {
-    print('🔔 Actualizando recordatorio $recordatorioId...');
-    
+
+  /// Actualizar dirección del usuario
+  Future<Map<String, dynamic>> updateUserAddress(String addressId, Map<String, String> addressData) async {
     try {
-      final response = await put('${ApiConfig.recordatoriosEndpoint}/$recordatorioId', data);
-      print('✅ Recordatorio actualizado exitosamente');
-      return response;
-    } catch (e) {
-      print('❌ Error actualizando recordatorio: $e');
-      rethrow;
-    }
-  }
-  
-  /// Eliminar un recordatorio
-  Future<Map<String, dynamic>> eliminarRecordatorio(String recordatorioId) async {
-    print('🔔 Eliminando recordatorio $recordatorioId...');
-    
-    try {
-      final response = await delete('${ApiConfig.recordatoriosEndpoint}/$recordatorioId');
-      print('✅ Recordatorio eliminado exitosamente');
-      return response;
-    } catch (e) {
-      print('❌ Error eliminando recordatorio: $e');
-      rethrow;
-    }
-  }
-  
-  /// FAVORITOS
-  
-  /// Obtener servicios favoritos
-  Future<Map<String, dynamic>> getFavoritos({String? tipo}) async {
-    print('❤️ Obteniendo favoritos...');
-    
-    try {
-      String endpoint = ApiConfig.favoritosEndpoint;
-      if (tipo != null) {
-        endpoint += '?tipo=$tipo';
+      final options = await _getAuthOptions();
+      final response = await _dio.put(
+        '${DevConfig.getEndpoint('userAddresses')}/$addressId',
+        data: addressData,
+        options: options,
+      );
+
+      if (response.statusCode == 200) {
+        return {
+          'success': true,
+          'data': response.data,
+        };
+      } else {
+        return {
+          'success': false,
+          'error': 'Error al actualizar dirección',
+        };
       }
-      
-      final response = await get(endpoint);
-      print('✅ Favoritos obtenidos exitosamente');
-      return response;
-    } catch (e) {
-      print('❌ Error obteniendo favoritos: $e');
-      rethrow;
-    }
-  }
-  
-  /// Agregar a favoritos
-  Future<Map<String, dynamic>> agregarAFavoritos({
-    required String servicioId,
-    String? notas,
-  }) async {
-    print('❤️ Agregando a favoritos...');
-    
-    try {
-      final body = {
-        'servicio_id': servicioId,
-        if (notas != null) 'notas': notas,
+    } on DioException catch (e) {
+      return {
+        'success': false,
+        'error': 'Error de conexión: ${e.message}',
       };
-      
-      final response = await post(ApiConfig.favoritosEndpoint, body);
-      print('✅ Agregado a favoritos exitosamente');
-      return response;
     } catch (e) {
-      print('❌ Error agregando a favoritos: $e');
-      rethrow;
+      return {
+        'success': false,
+        'error': 'Error inesperado: $e',
+      };
     }
   }
-  
-  /// Eliminar de favoritos
-  Future<Map<String, dynamic>> eliminarDeFavoritos(String favoritoId) async {
-    print('❤️ Eliminando de favoritos...');
-    
+
+  /// Eliminar dirección del usuario
+  Future<Map<String, dynamic>> deleteUserAddress(String addressId) async {
     try {
-      final response = await delete('${ApiConfig.favoritosEndpoint}/$favoritoId');
-      print('✅ Eliminado de favoritos exitosamente');
-      return response;
+      final options = await _getAuthOptions();
+      final response = await _dio.delete(
+        '${DevConfig.getEndpoint('userAddresses')}/$addressId',
+        options: options,
+      );
+
+      if (response.statusCode == 200 || response.statusCode == 204) {
+        return {
+          'success': true,
+        };
+      } else {
+        return {
+          'success': false,
+          'error': 'Error al eliminar dirección',
+        };
+      }
+    } on DioException catch (e) {
+      return {
+        'success': false,
+        'error': 'Error de conexión: ${e.message}',
+      };
     } catch (e) {
-      print('❌ Error eliminando de favoritos: $e');
-      rethrow;
+      return {
+        'success': false,
+        'error': 'Error inesperado: $e',
+      };
     }
   }
-  
-  /// CONFIGURACIÓN DE NOTIFICACIONES
-  
-  /// Obtener configuración de notificaciones
-  Future<Map<String, dynamic>> getConfiguracionNotificaciones() async {
-    print('🔔 Obteniendo configuración de notificaciones...');
-    
+
+  /// Obtener favoritos del usuario
+  Future<Map<String, dynamic>> getUserFavorites() async {
     try {
-      final response = await get('${ApiConfig.perfilEndpoint}/notificaciones');
-      print('✅ Configuración obtenida exitosamente');
-      return response;
+      final options = await _getAuthOptions();
+      final response = await _dio.get(
+        DevConfig.getEndpoint('userFavorites')!,
+        options: options,
+      );
+
+      if (response.statusCode == 200) {
+        return {
+          'success': true,
+          'data': response.data['data'] ?? [],
+        };
+      } else {
+        return {
+          'success': false,
+          'error': 'Error al obtener favoritos',
+        };
+      }
+    } on DioException catch (e) {
+      return {
+        'success': false,
+        'error': 'Error de conexión: ${e.message}',
+      };
     } catch (e) {
-      print('❌ Error obteniendo configuración: $e');
-      rethrow;
+      return {
+        'success': false,
+        'error': 'Error inesperado: $e',
+      };
     }
   }
-  
-  /// Actualizar configuración de notificaciones
-  Future<Map<String, dynamic>> actualizarConfiguracionNotificaciones({
-    bool? recordatoriosCitas,
-    bool? promociones,
-    bool? nuevosServicios,
-    bool? confirmacionCitas,
-    bool? notificacionesSMS,
-    bool? notificacionesEmail,
-    bool? notificacionesPush,
-  }) async {
-    print('🔔 Actualizando configuración de notificaciones...');
-    
+
+  /// Eliminar favorito del usuario
+  Future<Map<String, dynamic>> removeUserFavorite(String favoriteId) async {
     try {
-      final body = <String, dynamic>{};
-      
-      if (recordatoriosCitas != null) body['recordatorios_citas'] = recordatoriosCitas;
-      if (promociones != null) body['promociones'] = promociones;
-      if (nuevosServicios != null) body['nuevos_servicios'] = nuevosServicios;
-      if (confirmacionCitas != null) body['confirmacion_citas'] = confirmacionCitas;
-      if (notificacionesSMS != null) body['notificaciones_sms'] = notificacionesSMS;
-      if (notificacionesEmail != null) body['notificaciones_email'] = notificacionesEmail;
-      if (notificacionesPush != null) body['notificaciones_push'] = notificacionesPush;
-      
-      final response = await put('${ApiConfig.perfilEndpoint}/notificaciones', body);
-      print('✅ Configuración actualizada exitosamente');
-      return response;
+      final options = await _getAuthOptions();
+      final response = await _dio.delete(
+        '${DevConfig.getEndpoint('userFavorites')}/$favoriteId',
+        options: options,
+      );
+
+      if (response.statusCode == 200 || response.statusCode == 204) {
+        return {
+          'success': true,
+        };
+      } else {
+        return {
+          'success': false,
+          'error': 'Error al eliminar favorito',
+        };
+      }
+    } on DioException catch (e) {
+      return {
+        'success': false,
+        'error': 'Error de conexión: ${e.message}',
+      };
     } catch (e) {
-      print('❌ Error actualizando configuración: $e');
-      rethrow;
+      return {
+        'success': false,
+        'error': 'Error inesperado: $e',
+      };
     }
   }
-  
-  /// ESTADÍSTICAS DEL USUARIO
-  
-  /// Obtener estadísticas generales del usuario
-  Future<Map<String, dynamic>> getEstadisticasUsuario() async {
-    print('📊 Obteniendo estadísticas de usuario...');
-    
+
+  /// Obtener citas del usuario
+  Future<Map<String, dynamic>> getUserAppointments() async {
     try {
-      final response = await get('${ApiConfig.perfilEndpoint}/estadisticas');
-      print('✅ Estadísticas obtenidas exitosamente');
-      return response;
+      final options = await _getAuthOptions();
+      final response = await _dio.get(
+        DevConfig.getEndpoint('userAppointments')!,
+        options: options,
+      );
+
+      if (response.statusCode == 200) {
+        return {
+          'success': true,
+          'data': response.data['data'] ?? [],
+        };
+      } else {
+        return {
+          'success': false,
+          'error': 'Error al obtener citas',
+        };
+      }
+    } on DioException catch (e) {
+      return {
+        'success': false,
+        'error': 'Error de conexión: ${e.message}',
+      };
     } catch (e) {
-      print('❌ Error obteniendo estadísticas: $e');
-      rethrow;
+      return {
+        'success': false,
+        'error': 'Error inesperado: $e',
+      };
+    }
+  }
+
+  /// Obtener órdenes del usuario
+  Future<Map<String, dynamic>> getUserOrders() async {
+    try {
+      final options = await _getAuthOptions();
+      final response = await _dio.get(
+        DevConfig.getEndpoint('userOrders')!,
+        options: options,
+      );
+
+      if (response.statusCode == 200) {
+        return {
+          'success': true,
+          'data': response.data['data'] ?? [],
+        };
+      } else {
+        return {
+          'success': false,
+          'error': 'Error al obtener órdenes',
+        };
+      }
+    } on DioException catch (e) {
+      return {
+        'success': false,
+        'error': 'Error de conexión: ${e.message}',
+      };
+    } catch (e) {
+      return {
+        'success': false,
+        'error': 'Error inesperado: $e',
+      };
+    }
+  }
+
+  /// Obtener métodos de pago del usuario
+  Future<Map<String, dynamic>> getUserPaymentMethods() async {
+    try {
+      final options = await _getAuthOptions();
+      final response = await _dio.get(
+        DevConfig.getEndpoint('userPaymentMethods')!,
+        options: options,
+      );
+
+      if (response.statusCode == 200) {
+        return {
+          'success': true,
+          'data': response.data['data'] ?? [],
+        };
+      } else {
+        return {
+          'success': false,
+          'error': 'Error al obtener métodos de pago',
+        };
+      }
+    } on DioException catch (e) {
+      return {
+        'success': false,
+        'error': 'Error de conexión: ${e.message}',
+      };
+    } catch (e) {
+      return {
+        'success': false,
+        'error': 'Error inesperado: $e',
+      };
+    }
+  }
+
+  /// Agregar método de pago del usuario
+  Future<Map<String, dynamic>> addUserPaymentMethod(Map<String, String> paymentData) async {
+    try {
+      final options = await _getAuthOptions();
+      final response = await _dio.post(
+        DevConfig.getEndpoint('userPaymentMethods')!,
+        data: paymentData,
+        options: options,
+      );
+
+      if (response.statusCode == 201 || response.statusCode == 200) {
+        return {
+          'success': true,
+          'data': response.data,
+        };
+      } else {
+        return {
+          'success': false,
+          'error': 'Error al agregar método de pago',
+        };
+      }
+    } on DioException catch (e) {
+      return {
+        'success': false,
+        'error': 'Error de conexión: ${e.message}',
+      };
+    } catch (e) {
+      return {
+        'success': false,
+        'error': 'Error inesperado: $e',
+      };
+    }
+  }
+
+  /// Actualizar método de pago del usuario
+  Future<Map<String, dynamic>> updateUserPaymentMethod(String paymentMethodId, Map<String, String> paymentData) async {
+    try {
+      final options = await _getAuthOptions();
+      final response = await _dio.put(
+        '${DevConfig.getEndpoint('userPaymentMethods')}/$paymentMethodId',
+        data: paymentData,
+        options: options,
+      );
+
+      if (response.statusCode == 200) {
+        return {
+          'success': true,
+          'data': response.data,
+        };
+      } else {
+        return {
+          'success': false,
+          'error': 'Error al actualizar método de pago',
+        };
+      }
+    } on DioException catch (e) {
+      return {
+        'success': false,
+        'error': 'Error de conexión: ${e.message}',
+      };
+    } catch (e) {
+      return {
+        'success': false,
+        'error': 'Error inesperado: $e',
+      };
+    }
+  }
+
+  /// Eliminar método de pago del usuario
+  Future<Map<String, dynamic>> deleteUserPaymentMethod(String paymentMethodId) async {
+    try {
+      final options = await _getAuthOptions();
+      final response = await _dio.delete(
+        '${DevConfig.getEndpoint('userPaymentMethods')}/$paymentMethodId',
+        options: options,
+      );
+
+      if (response.statusCode == 200 || response.statusCode == 204) {
+        return {
+          'success': true,
+        };
+      } else {
+        return {
+          'success': false,
+          'error': 'Error al eliminar método de pago',
+        };
+      }
+    } on DioException catch (e) {
+      return {
+        'success': false,
+        'error': 'Error de conexión: ${e.message}',
+      };
+    } catch (e) {
+      return {
+        'success': false,
+        'error': 'Error inesperado: $e',
+      };
     }
   }
 }

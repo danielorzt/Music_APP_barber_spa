@@ -282,7 +282,7 @@ class ProfileScreen extends StatelessWidget {
       {'icon': Icons.favorite, 'title': 'Mis Favoritos', 'route': '/profile/favorites'},
       {'icon': Icons.history, 'title': 'Historial', 'route': '/profile/history'},
       {'icon': Icons.payment, 'title': 'Métodos de Pago', 'route': '/profile/payment-methods'},
-      {'icon': Icons.help, 'title': 'Ayuda y Soporte', 'route': '/profile/help'},
+      {'icon': Icons.help, 'title': 'Ayuda y Soporte', 'route': '/profile/help-support'},
       {'icon': Icons.settings, 'title': 'Configuración', 'route': '/profile/settings'},
     ];
 
@@ -294,13 +294,7 @@ class ProfileScreen extends StatelessWidget {
           icon: item['icon'] as IconData,
           title: item['title'] as String,
           onTap: () {
-            // TODO: Implementar navegación
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text('${item['title']} - En desarrollo'),
-                backgroundColor: const Color(0xFFDC3545),
-              ),
-            );
+            context.push(item['route'] as String);
           },
         )).toList(),
       ),

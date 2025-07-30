@@ -40,6 +40,13 @@ class DevConfig {
     'direcciones': '/User_direcciones/direcciones',
     'favoritos': '/User_favoritos/favoritos',
     
+    // Gestión de usuario (nuevos endpoints)
+    'userAddresses': '/User_direcciones/direcciones',
+    'userFavorites': '/User_favoritos/favoritos',
+    'userAppointments': '/Agendamiento_citas/agendamientos',
+    'userOrders': '/Orders_ordenes/ordenes',
+    'userPaymentMethods': '/User_metodos_pago/metodos_pago',
+    
     // Sucursales
     'sucursales': '/Branches_sucursales/sucursales',
     'personal': '/Branches_personal/personal',

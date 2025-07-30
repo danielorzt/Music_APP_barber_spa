@@ -1,4 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
+import '../../auth/providers/auth_provider.dart';
+import '../../../core/services/user_management_api_service.dart';
 
 class AddressesScreen extends StatefulWidget {
   const AddressesScreen({super.key});
@@ -8,312 +12,144 @@ class AddressesScreen extends StatefulWidget {
 }
 
 class _AddressesScreenState extends State<AddressesScreen> {
-  final List<Map<String, dynamic>> _addresses = [
-    {
-      'id': 1,
-      'name': 'Casa',
-      'fullName': 'Juan Pérez',
-      'phone': '+57 300 123 4567',
-      'address': 'Calle 123 #45-67',
-      'city': 'Bogotá',
-      'state': 'Cundinamarca',
-      'zipCode': '110111',
-      'isDefault': true,
-    },
-    {
-      'id': 2,
-      'name': 'Oficina',
-      'fullName': 'Juan Pérez',
-      'phone': '+57 300 123 4567',
-      'address': 'Carrera 15 #93-47',
-      'city': 'Bogotá',
-      'state': 'Cundinamarca',
-      'zipCode': '110221',
-      'isDefault': false,
-    },
-    {
-      'id': 3,
-      'name': 'Apartamento',
-      'fullName': 'Juan Pérez',
-      'phone': '+57 300 123 4567',
-      'address': 'Avenida 68 #24-15',
-      'city': 'Bogotá',
-      'state': 'Cundinamarca',
-      'zipCode': '110231',
-      'isDefault': false,
-    },
-  ];
+  final UserManagementApiService _userService = UserManagementApiService();
+  bool _isLoading = false;
+  List<Map<String, dynamic>> _addresses = [];
+  String? _error;
 
   @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Mis Direcciones'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.add),
-            onPressed: () {
-              _showAddAddressDialog();
-            },
-          ),
-        ],
-      ),
-      body: _addresses.isEmpty
-          ? _buildEmptyState()
-          : ListView.builder(
-              padding: const EdgeInsets.all(16),
-              itemCount: _addresses.length,
-              itemBuilder: (context, index) {
-                return _buildAddressCard(_addresses[index]);
-              },
-            ),
-    );
+  void initState() {
+    super.initState();
+    _loadAddresses();
   }
 
-  Widget _buildEmptyState() {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            Icons.location_on_outlined,
-            size: 80,
-            color: Colors.grey.shade400,
-          ),
-          const SizedBox(height: 16),
-          Text(
-            'No tienes direcciones guardadas',
-            style: TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-              color: Colors.grey.shade600,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'Agrega una dirección para recibir tus pedidos',
-            style: TextStyle(
-              color: Colors.grey.shade500,
-            ),
-          ),
-          const SizedBox(height: 24),
-          ElevatedButton.icon(
-            onPressed: () {
-              _showAddAddressDialog();
-            },
-            icon: const Icon(Icons.add),
-            label: const Text('Agregar Dirección'),
-          ),
-        ],
-      ),
-    );
-  }
+  Future<void> _loadAddresses() async {
+    setState(() {
+      _isLoading = true;
+      _error = null;
+    });
 
-  Widget _buildAddressCard(Map<String, dynamic> address) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 16),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: address['isDefault'] 
-              ? Theme.of(context).primaryColor 
-              : Colors.grey.shade200,
-          width: address['isDefault'] ? 2 : 1,
-        ),
-        color: Colors.white,
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: address['isDefault'] 
-                        ? Theme.of(context).primaryColor.withOpacity(0.1)
-                        : Colors.grey.shade100,
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Text(
-                    address['name'],
-                    style: TextStyle(
-                      color: address['isDefault'] 
-                          ? Theme.of(context).primaryColor
-                          : Colors.grey.shade600,
-                      fontWeight: FontWeight.w500,
-                      fontSize: 12,
-                    ),
-                  ),
-                ),
-                if (address['isDefault']) ...[
-                  const SizedBox(width: 8),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: Colors.green.shade100,
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Text(
-                      'Predeterminada',
-                      style: TextStyle(
-                        color: Colors.green.shade600,
-                        fontWeight: FontWeight.w500,
-                        fontSize: 12,
-                      ),
-                    ),
-                  ),
-                ],
-                const Spacer(),
-                PopupMenuButton<String>(
-                  onSelected: (value) {
-                    _handleAddressAction(value, address);
-                  },
-                  itemBuilder: (context) => [
-                    const PopupMenuItem(
-                      value: 'edit',
-                      child: Row(
-                        children: [
-                          Icon(Icons.edit),
-                          SizedBox(width: 8),
-                          Text('Editar'),
-                        ],
-                      ),
-                    ),
-                    if (!address['isDefault'])
-                      const PopupMenuItem(
-                        value: 'set_default',
-                        child: Row(
-                          children: [
-                            Icon(Icons.star),
-                            SizedBox(width: 8),
-                            Text('Establecer como predeterminada'),
-                          ],
-                        ),
-                      ),
-                    const PopupMenuItem(
-                      value: 'delete',
-                      child: Row(
-                        children: [
-                          Icon(Icons.delete, color: Colors.red),
-                          SizedBox(width: 8),
-                          Text('Eliminar', style: TextStyle(color: Colors.red)),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            Text(
-              address['fullName'],
-              style: const TextStyle(
-                fontWeight: FontWeight.bold,
-                fontSize: 16,
-              ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              address['phone'],
-              style: TextStyle(color: Colors.grey.shade600),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              address['address'],
-              style: const TextStyle(fontSize: 14),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              '${address['city']}, ${address['state']} ${address['zipCode']}',
-              style: TextStyle(color: Colors.grey.shade600),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  void _handleAddressAction(String action, Map<String, dynamic> address) {
-    switch (action) {
-      case 'edit':
-        _showEditAddressDialog(address);
-        break;
-      case 'set_default':
-        _setDefaultAddress(address['id']);
-        break;
-      case 'delete':
-        _showDeleteConfirmation(address);
-        break;
+    try {
+      final response = await _userService.getUserAddresses();
+      if (response['success'] == true) {
+        setState(() {
+          _addresses = List<Map<String, dynamic>>.from(response['data'] ?? []);
+        });
+      } else {
+        setState(() {
+          _error = response['error'] ?? 'Error al cargar direcciones';
+        });
+      }
+    } catch (e) {
+      setState(() {
+        _error = 'Error de conexión: $e';
+      });
+    } finally {
+      setState(() {
+        _isLoading = false;
+      });
     }
   }
 
-  void _setDefaultAddress(int addressId) {
-    setState(() {
-      for (var address in _addresses) {
-        address['isDefault'] = address['id'] == addressId;
+  Future<void> _addAddress() async {
+    final result = await _showAddressDialog();
+    if (result != null) {
+      try {
+        final response = await _userService.addUserAddress(result);
+        if (response['success'] == true) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Dirección agregada exitosamente')),
+          );
+          _loadAddresses();
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(response['error'] ?? 'Error al agregar dirección')),
+          );
+        }
+      } catch (e) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error: $e')),
+        );
       }
-    });
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Dirección predeterminada actualizada')),
-    );
+    }
   }
 
-  void _showDeleteConfirmation(Map<String, dynamic> address) {
-    showDialog(
+  Future<void> _editAddress(Map<String, dynamic> address) async {
+    final result = await _showAddressDialog(address: address);
+    if (result != null) {
+      try {
+        final response = await _userService.updateUserAddress(address['id'].toString(), result);
+        if (response['success'] == true) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Dirección actualizada exitosamente')),
+          );
+          _loadAddresses();
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(response['error'] ?? 'Error al actualizar dirección')),
+          );
+        }
+      } catch (e) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error: $e')),
+        );
+      }
+    }
+  }
+
+  Future<void> _deleteAddress(String addressId) async {
+    final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Eliminar Dirección'),
-        content: Text(
-          '¿Estás seguro de que quieres eliminar la dirección "${address['name']}"?',
-        ),
+        title: const Text('Eliminar dirección'),
+        content: const Text('¿Estás seguro de que quieres eliminar esta dirección?'),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context),
+            onPressed: () => Navigator.of(context).pop(false),
             child: const Text('Cancelar'),
           ),
-          TextButton(
-            onPressed: () {
-              setState(() {
-                _addresses.removeWhere((a) => a['id'] == address['id']);
-              });
-              Navigator.pop(context);
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Dirección eliminada')),
-              );
-            },
-            style: TextButton.styleFrom(foregroundColor: Colors.red),
-            child: const Text('Eliminar'),
+          ElevatedButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            child: const Text('Eliminar', style: TextStyle(color: Colors.white)),
           ),
         ],
       ),
     );
+
+    if (confirmed == true) {
+      try {
+        final response = await _userService.deleteUserAddress(addressId);
+        if (response['success'] == true) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Dirección eliminada exitosamente')),
+          );
+          _loadAddresses();
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(response['error'] ?? 'Error al eliminar dirección')),
+          );
+        }
+      } catch (e) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error: $e')),
+        );
+      }
+    }
   }
 
-  void _showAddAddressDialog() {
-    _showAddressFormDialog();
-  }
+  Future<Map<String, String>?> _showAddressDialog({Map<String, dynamic>? address}) async {
+    final nameController = TextEditingController(text: address?['nombre'] ?? '');
+    final streetController = TextEditingController(text: address?['calle'] ?? '');
+    final cityController = TextEditingController(text: address?['ciudad'] ?? '');
+    final stateController = TextEditingController(text: address?['estado'] ?? '');
+    final zipController = TextEditingController(text: address?['codigo_postal'] ?? '');
+    final phoneController = TextEditingController(text: address?['telefono'] ?? '');
 
-  void _showEditAddressDialog(Map<String, dynamic> address) {
-    _showAddressFormDialog(address: address);
-  }
-
-  void _showAddressFormDialog({Map<String, dynamic>? address}) {
-    final isEditing = address != null;
-    final nameController = TextEditingController(text: address?['name'] ?? '');
-    final fullNameController = TextEditingController(text: address?['fullName'] ?? '');
-    final phoneController = TextEditingController(text: address?['phone'] ?? '');
-    final addressController = TextEditingController(text: address?['address'] ?? '');
-    final cityController = TextEditingController(text: address?['city'] ?? '');
-    final stateController = TextEditingController(text: address?['state'] ?? '');
-    final zipCodeController = TextEditingController(text: address?['zipCode'] ?? '');
-
-    showDialog(
+    return showDialog<Map<String, String>>(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text(isEditing ? 'Editar Dirección' : 'Agregar Dirección'),
+        title: Text(address == null ? 'Agregar dirección' : 'Editar dirección'),
         content: SingleChildScrollView(
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -322,14 +158,39 @@ class _AddressesScreenState extends State<AddressesScreen> {
                 controller: nameController,
                 decoration: const InputDecoration(
                   labelText: 'Nombre de la dirección',
-                  hintText: 'Ej: Casa, Oficina',
+                  hintText: 'Ej: Casa, Trabajo',
                 ),
               ),
               const SizedBox(height: 16),
               TextField(
-                controller: fullNameController,
+                controller: streetController,
                 decoration: const InputDecoration(
-                  labelText: 'Nombre completo',
+                  labelText: 'Calle y número',
+                  hintText: 'Ej: Av. Principal 123',
+                ),
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: cityController,
+                decoration: const InputDecoration(
+                  labelText: 'Ciudad',
+                  hintText: 'Ej: Ciudad de México',
+                ),
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: stateController,
+                decoration: const InputDecoration(
+                  labelText: 'Estado',
+                  hintText: 'Ej: CDMX',
+                ),
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: zipController,
+                decoration: const InputDecoration(
+                  labelText: 'Código Postal',
+                  hintText: 'Ej: 12345',
                 ),
               ),
               const SizedBox(height: 16),
@@ -337,102 +198,162 @@ class _AddressesScreenState extends State<AddressesScreen> {
                 controller: phoneController,
                 decoration: const InputDecoration(
                   labelText: 'Teléfono',
+                  hintText: 'Ej: 555-123-4567',
                 ),
-                keyboardType: TextInputType.phone,
-              ),
-              const SizedBox(height: 16),
-              TextField(
-                controller: addressController,
-                decoration: const InputDecoration(
-                  labelText: 'Dirección',
-                ),
-                maxLines: 2,
-              ),
-              const SizedBox(height: 16),
-              Row(
-                children: [
-                  Expanded(
-                    child: TextField(
-                      controller: cityController,
-                      decoration: const InputDecoration(
-                        labelText: 'Ciudad',
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: TextField(
-                      controller: stateController,
-                      decoration: const InputDecoration(
-                        labelText: 'Departamento',
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 16),
-              TextField(
-                controller: zipCodeController,
-                decoration: const InputDecoration(
-                  labelText: 'Código Postal',
-                ),
-                keyboardType: TextInputType.number,
               ),
             ],
           ),
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context),
+            onPressed: () => Navigator.of(context).pop(),
             child: const Text('Cancelar'),
           ),
           ElevatedButton(
             onPressed: () {
-              // TODO: Validar campos
-              if (isEditing) {
-                // Actualizar dirección existente
-                final index = _addresses.indexWhere((a) => a['id'] == address['id']);
-                if (index != -1) {
-                  setState(() {
-                    _addresses[index] = {
-                      ..._addresses[index],
-                      'name': nameController.text,
-                      'fullName': fullNameController.text,
-                      'phone': phoneController.text,
-                      'address': addressController.text,
-                      'city': cityController.text,
-                      'state': stateController.text,
-                      'zipCode': zipCodeController.text,
-                    };
-                  });
-                }
-              } else {
-                // Agregar nueva dirección
-                setState(() {
-                  _addresses.add({
-                    'id': DateTime.now().millisecondsSinceEpoch,
-                    'name': nameController.text,
-                    'fullName': fullNameController.text,
-                    'phone': phoneController.text,
-                    'address': addressController.text,
-                    'city': cityController.text,
-                    'state': stateController.text,
-                    'zipCode': zipCodeController.text,
-                    'isDefault': _addresses.isEmpty,
-                  });
+              if (nameController.text.isNotEmpty && streetController.text.isNotEmpty) {
+                Navigator.of(context).pop({
+                  'nombre': nameController.text,
+                  'calle': streetController.text,
+                  'ciudad': cityController.text,
+                  'estado': stateController.text,
+                  'codigo_postal': zipController.text,
+                  'telefono': phoneController.text,
                 });
               }
-              Navigator.pop(context);
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(isEditing ? 'Dirección actualizada' : 'Dirección agregada'),
-                ),
-              );
             },
-            child: Text(isEditing ? 'Actualizar' : 'Agregar'),
+            child: Text(address == null ? 'Agregar' : 'Actualizar'),
           ),
         ],
       ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Mis Direcciones'),
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+      ),
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : _error != null
+              ? Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.error_outline, size: 64, color: Colors.grey[400]),
+                      const SizedBox(height: 16),
+                      Text(
+                        'Error al cargar direcciones',
+                        style: TextStyle(fontSize: 18, color: Colors.grey[600]),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        _error!,
+                        style: TextStyle(color: Colors.grey[500]),
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 16),
+                      ElevatedButton(
+                        onPressed: _loadAddresses,
+                        child: const Text('Reintentar'),
+                      ),
+                    ],
+                  ),
+                )
+              : _addresses.isEmpty
+                  ? Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.location_off, size: 64, color: Colors.grey[400]),
+                          const SizedBox(height: 16),
+                          Text(
+                            'No tienes direcciones guardadas',
+                            style: TextStyle(fontSize: 18, color: Colors.grey[600]),
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            'Agrega una dirección para facilitar tus pedidos',
+                            style: TextStyle(color: Colors.grey[500]),
+                            textAlign: TextAlign.center,
+                          ),
+                          const SizedBox(height: 24),
+                          ElevatedButton.icon(
+                            onPressed: _addAddress,
+                            icon: const Icon(Icons.add),
+                            label: const Text('Agregar dirección'),
+                          ),
+                        ],
+                      ),
+                    )
+                  : ListView.builder(
+                      padding: const EdgeInsets.all(16),
+                      itemCount: _addresses.length,
+                      itemBuilder: (context, index) {
+                        final address = _addresses[index];
+                        return Card(
+                          margin: const EdgeInsets.only(bottom: 12),
+                          child: ListTile(
+                            leading: const Icon(Icons.location_on, color: Color(0xFFDC3545)),
+                            title: Text(
+                              address['nombre'] ?? 'Dirección',
+                              style: const TextStyle(fontWeight: FontWeight.bold),
+                            ),
+                            subtitle: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(address['calle'] ?? ''),
+                                if (address['ciudad'] != null) Text('${address['ciudad']}, ${address['estado'] ?? ''}'),
+                                if (address['codigo_postal'] != null) Text('CP: ${address['codigo_postal']}'),
+                                if (address['telefono'] != null) Text('Tel: ${address['telefono']}'),
+                              ],
+                            ),
+                            trailing: PopupMenuButton(
+                              itemBuilder: (context) => [
+                                const PopupMenuItem(
+                                  value: 'edit',
+                                  child: Row(
+                                    children: [
+                                      Icon(Icons.edit),
+                                      SizedBox(width: 8),
+                                      Text('Editar'),
+                                    ],
+                                  ),
+                                ),
+                                const PopupMenuItem(
+                                  value: 'delete',
+                                  child: Row(
+                                    children: [
+                                      Icon(Icons.delete, color: Colors.red),
+                                      SizedBox(width: 8),
+                                      Text('Eliminar', style: TextStyle(color: Colors.red)),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                              onSelected: (value) {
+                                if (value == 'edit') {
+                                  _editAddress(address);
+                                } else if (value == 'delete') {
+                                  _deleteAddress(address['id'].toString());
+                                }
+                              },
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+      floatingActionButton: _addresses.isNotEmpty
+          ? FloatingActionButton(
+              onPressed: _addAddress,
+              backgroundColor: const Color(0xFFDC3545),
+              child: const Icon(Icons.add, color: Colors.white),
+            )
+          : null,
     );
   }
 } 
