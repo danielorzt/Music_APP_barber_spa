@@ -4,6 +4,8 @@ import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:music_app/core/models/producto.dart';
 import 'package:music_app/features/products/providers/products_provider.dart';
+import '../../../core/widgets/auth_guard.dart';
+import '../../../features/auth/providers/auth_provider.dart';
 
 class ProductDetailScreen extends StatefulWidget {
   final Producto product;
@@ -142,6 +144,19 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
                         style: TextStyle(
                           color: Colors.grey[600],
                           fontSize: 14,
+                        ),
+                      ),
+                      const Spacer(),
+                      TextButton.icon(
+                        onPressed: () {
+                          context.push(
+                            '/reviews/product/${widget.product.id}?name=${Uri.encodeComponent(widget.product.nombre)}&image=${Uri.encodeComponent(widget.product.urlImagen)}',
+                          );
+                        },
+                        icon: const Icon(Icons.rate_review, size: 16),
+                        label: const Text('Ver Reseñas'),
+                        style: TextButton.styleFrom(
+                          foregroundColor: const Color(0xFF00D4AA),
                         ),
                       ),
                     ],
@@ -450,31 +465,42 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
           
           // Botón agregar al carrito
           Expanded(
-            child: ElevatedButton(
-              onPressed: () {
-                // TODO: Implementar agregar al carrito
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Producto agregado al carrito'),
-                    backgroundColor: Color(0xFFDC3545),
+            child: Consumer<AuthProvider>(
+              builder: (context, authProvider, child) {
+                return AuthRequiredButton(
+                  isAuthenticated: authProvider.isAuthenticated,
+                  onPressed: () {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('${widget.product.nombre} agregado al carrito'),
+                        backgroundColor: const Color(0xFFDC3545),
+                        action: SnackBarAction(
+                          label: 'Ver Carrito',
+                          textColor: Colors.white,
+                          onPressed: () => context.push('/cart'),
+                        ),
+                      ),
+                    );
+                  },
+                  child: Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFDC3545),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: const Text(
+                      'Agregar al Carrito',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
+                    ),
                   ),
                 );
               },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFFDC3545),
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
-                ),
-              ),
-              child: const Text(
-                'Agregar al Carrito',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
             ),
           ),
         ],

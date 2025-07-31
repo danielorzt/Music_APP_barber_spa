@@ -20,11 +20,11 @@ class Servicio extends Equatable {
 
   factory Servicio.fromJson(Map<String, dynamic> json) {
     return Servicio(
-      id: json['id'] as int,
-      nombre: json['nombre'] as String,
-      descripcion: json['descripcion'] as String,
-      precio: (json['precio'] as num).toDouble(),
-      duracionEnMinutos: json['duracionEnMinutos'] as int,
+      id: int.tryParse(json['id']?.toString() ?? '0') ?? 0,
+      nombre: json['nombre']?.toString() ?? json['name']?.toString() ?? 'Servicio',
+      descripcion: json['descripcion']?.toString() ?? json['description']?.toString() ?? '',
+      precio: double.tryParse(json['precio_base']?.toString() ?? json['precio']?.toString() ?? '0') ?? 0.0,
+      duracionEnMinutos: int.tryParse(json['duracion_minutos']?.toString() ?? json['duracionEnMinutos']?.toString() ?? '60') ?? 60,
     );
   }
 

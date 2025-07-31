@@ -3,6 +3,8 @@ import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:music_app/features/services/models/service_model.dart';
 import 'package:music_app/features/services/providers/services_provider.dart';
+import '../../../core/widgets/auth_guard.dart';
+import '../../../features/auth/providers/auth_provider.dart';
 
 class ServiceDetailScreen extends StatefulWidget {
   final ServiceModel service;
@@ -154,6 +156,19 @@ class _ServiceDetailScreenState extends State<ServiceDetailScreen>
                         style: TextStyle(
                           color: Colors.grey[600],
                           fontSize: 14,
+                        ),
+                      ),
+                      const Spacer(),
+                      TextButton.icon(
+                        onPressed: () {
+                          context.push(
+                            '/reviews/service/${widget.service.id}?name=${Uri.encodeComponent(widget.service.name)}&image=${Uri.encodeComponent(widget.service.imagen ?? 'https://images.unsplash.com/photo-1503951914875-452162b0f3f1?w=300&h=200&fit=crop')}',
+                          );
+                        },
+                        icon: const Icon(Icons.rate_review, size: 16),
+                        label: const Text('Ver Reseñas'),
+                        style: TextButton.styleFrom(
+                          foregroundColor: const Color(0xFF00D4AA),
                         ),
                       ),
                     ],
@@ -444,25 +459,32 @@ class _ServiceDetailScreenState extends State<ServiceDetailScreen>
           // Botón agendar
           Expanded(
             flex: 2,
-            child: ElevatedButton(
-              onPressed: () {
-                context.push('/agendar', extra: widget.service);
+            child: Consumer<AuthProvider>(
+              builder: (context, authProvider, child) {
+                return AuthRequiredButton(
+                  isAuthenticated: authProvider.isAuthenticated,
+                  onPressed: () {
+                    context.push('/agendar', extra: widget.service);
+                  },
+                  child: Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFDC3545),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: const Text(
+                      'Agendar Cita',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ),
+                );
               },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFFDC3545),
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
-                ),
-              ),
-              child: const Text(
-                'Agendar Cita',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
             ),
           ),
         ],

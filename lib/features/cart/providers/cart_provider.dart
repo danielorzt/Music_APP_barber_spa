@@ -1,160 +1,214 @@
 // lib/features/cart/providers/cart_provider.dart
 import 'package:flutter/foundation.dart';
-import '../models/cart_item_model.dart';
-import '../repositories/cart_repository.dart';
-import '../../products/models/product_model.dart';
+import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
+
+class CartItem {
+  final String id;
+  final String name;
+  final double price;
+  final String image;
+  final String type; // 'product' o 'service'
+  int quantity;
+
+  CartItem({
+    required this.id,
+    required this.name,
+    required this.price,
+    required this.image,
+    required this.type,
+    this.quantity = 1,
+  });
+
+  double get total => price * quantity;
+
+  CartItem copyWith({
+    String? id,
+    String? name,
+    double? price,
+    String? image,
+    String? type,
+    int? quantity,
+  }) {
+    return CartItem(
+      id: id ?? this.id,
+      name: name ?? this.name,
+      price: price ?? this.price,
+      image: image ?? this.image,
+      type: type ?? this.type,
+      quantity: quantity ?? this.quantity,
+    );
+  }
+}
 
 class CartProvider with ChangeNotifier {
-  final CartRepository _repository = CartRepository();
-  List<CartItem> _items = [];
-  bool _isLoading = false;
-  String? _error;
+  final List<CartItem> _items = [];
 
-  // Getters
-  List<CartItem> get items => _items;
-  bool get isLoading => _isLoading;
-  String? get error => _error;
+  List<CartItem> get items => List.unmodifiable(_items);
+
   int get itemCount => _items.length;
-  double get totalAmount => _items.fold(0, (sum, item) => sum + item.total);
 
-  CartProvider() {
-    _loadCart();
+  double get subtotal {
+    return _items.fold(0.0, (sum, item) => sum + item.total);
   }
 
-  Future<void> _loadCart() async {
-    _isLoading = true;
-    notifyListeners();
+  double get tax => subtotal * 0.16; // 16% IVA
 
-    try {
-      _items = await _repository.getCartFromLocal();
-      _error = null;
-    } catch (e) {
-      _error = e.toString();
-    }
+  double get shipping => subtotal > 1000 ? 0.0 : 50.0; // Envío gratis por compras > $1000
 
-    _isLoading = false;
-    notifyListeners();
+  double get total => subtotal + tax + shipping;
+
+  bool get isEmpty => _items.isEmpty;
+
+  // Agregar producto al carrito y navegar automáticamente
+  void addItemAndNavigate(String id, String name, double price, String image, String type, BuildContext context) {
+    addItem(id, name, price, image, type);
+    
+    // Navegar automáticamente al carrito después de agregar un item
+    Future.delayed(const Duration(milliseconds: 500), () {
+      if (context.mounted) {
+        context.go('/cart');
+      }
+    });
   }
 
-  Future<void> addItem(Product product, double quantity) async {
-    // Buscar si el producto ya está en el carrito
-    final existingItemIndex = _items.indexWhere(
-            (item) => item.productoId == product.id
-    );
-
-    if (existingItemIndex >= 0) {
-      // Actualizar cantidad si ya existe
-      final existingItem = _items[existingItemIndex];
-      final newQuantity = existingItem.cantidad + quantity.toInt();
-      final newTotal = product.precio * newQuantity;
-
-      _items[existingItemIndex] = CartItem(
-        id: existingItem.id,
-        nombre: product.nombreproducto,
-        cantidad: newQuantity,
-        precio: product.precio,
-        total: newTotal,
-        productoId: product.id,
-      );
+  // Agregar producto al carrito
+  void addItem(String id, String name, double price, String image, String type) {
+    final existingIndex = _items.indexWhere((item) => item.id == id && item.type == type);
+    
+    if (existingIndex >= 0) {
+      // Si ya existe, aumentar cantidad
+      _items[existingIndex].quantity++;
     } else {
-      // Agregar nuevo item
+      // Si no existe, agregar nuevo item
       _items.add(CartItem(
-        id: DateTime.now().millisecondsSinceEpoch, // Generar un id temporal
-        nombre: product.nombreproducto,
-        cantidad: quantity.toInt(),
-        precio: product.precio,
-        total: product.precio * quantity,
-        productoId: product.id,
+        id: id,
+        name: name,
+        price: price,
+        image: image,
+        type: type,
       ));
     }
-
-    await _repository.saveCartToLocal(_items);
     notifyListeners();
   }
 
-  Future<void> removeItem(int productId) async {
-    _items.removeWhere((item) => item.productoId == productId);
-    await _repository.saveCartToLocal(_items);
-    notifyListeners();
-  }
-
-  Future<void> updateItemQuantity(int productId, double quantity) async {
-    final index = _items.indexWhere((item) => item.productoId == productId);
-
+  // Actualizar cantidad
+  void updateQuantity(String id, String type, int quantity) {
+    final index = _items.indexWhere((item) => item.id == id && item.type == type);
+    
     if (index >= 0) {
-      final item = _items[index];
-      final newQuantity = quantity.toInt();
-      _items[index] = CartItem(
-        id: item.id,
-        nombre: item.nombre,
-        cantidad: newQuantity,
-        precio: item.precio,
-        total: item.precio * newQuantity,
-        productoId: item.productoId,
-      );
-
-      await _repository.saveCartToLocal(_items);
+      if (quantity <= 0) {
+        _items.removeAt(index);
+      } else {
+        _items[index].quantity = quantity;
+      }
       notifyListeners();
     }
   }
 
-  Future<void> clearCart() async {
-    _items = [];
-    await _repository.saveCartToLocal(_items);
-    notifyListeners();
-  }
-
-  Future<Map<String, dynamic>?> checkout(int userId) async {
-    _isLoading = true;
-    _error = null;
-    notifyListeners();
-
-    try {
-      final result = await _repository.createOrder(_items, userId);
-      // Limpiar el carrito después de crear la orden
-      await clearCart();
-      _isLoading = false;
+  // Eliminar item del carrito
+  void removeItem(String id, String type) {
+    final index = _items.indexWhere((item) => item.id == id && item.type == type);
+    
+    if (index >= 0) {
+      _items.removeAt(index);
       notifyListeners();
-      return result;
-    } catch (e) {
-      _error = e.toString();
-      _isLoading = false;
-      notifyListeners();
-      return null;
     }
   }
 
-  Future<String?> payWithPayPal(int orderId) async {
-    _isLoading = true;
+  // Limpiar carrito
+  void clear() {
+    _items.clear();
     notifyListeners();
+  }
 
-    try {
-      final paypalUrl = await _repository.processPayPalPayment(orderId);
-      _isLoading = false;
-      notifyListeners();
-      return paypalUrl;
-    } catch (e) {
-      _error = e.toString();
-      _isLoading = false;
-      notifyListeners();
-      return null;
+  // Verificar si un item está en el carrito
+  bool isInCart(String id, String type) {
+    return _items.any((item) => item.id == id && item.type == type);
+  }
+
+  // Obtener cantidad de un item
+  int getItemQuantity(String id, String type) {
+    final item = _items.firstWhere(
+      (item) => item.id == id && item.type == type,
+      orElse: () => CartItem(id: '', name: '', price: 0, image: '', type: ''),
+    );
+    return item.id.isNotEmpty ? item.quantity : 0;
+  }
+
+  // Navegar al carrito desde cualquier parte de la app
+  void navigateToCart(BuildContext context) {
+    if (context.mounted) {
+      context.go('/cart');
     }
   }
 
-  Future<String?> payWithMercadoPago(int orderId) async {
-    _isLoading = true;
-    notifyListeners();
-
-    try {
-      final status = await _repository.processMercadoPagoPayment(orderId, totalAmount);
-      _isLoading = false;
-      notifyListeners();
-      return status;
-    } catch (e) {
-      _error = e.toString();
-      _isLoading = false;
-      notifyListeners();
-      return null;
+  // Agregar múltiples items de una vez
+  void addMultipleItems(List<CartItem> items) {
+    for (final item in items) {
+      addItem(item.id, item.name, item.price, item.image, item.type);
     }
+  }
+
+  // Obtener items por tipo
+  List<CartItem> getItemsByType(String type) {
+    return _items.where((item) => item.type == type).toList();
+  }
+
+  // Obtener total por tipo
+  double getTotalByType(String type) {
+    return _items
+        .where((item) => item.type == type)
+        .fold(0.0, (sum, item) => sum + item.total);
+  }
+
+  // Verificar si el carrito tiene items de un tipo específico
+  bool hasItemsOfType(String type) {
+    return _items.any((item) => item.type == type);
+  }
+
+  // Obtener resumen del carrito
+  Map<String, dynamic> getCartSummary() {
+    final products = getItemsByType('product');
+    final services = getItemsByType('service');
+    
+    return {
+      'total_items': itemCount,
+      'products_count': products.length,
+      'services_count': services.length,
+      'subtotal': subtotal,
+      'tax': tax,
+      'shipping': shipping,
+      'total': total,
+      'has_products': products.isNotEmpty,
+      'has_services': services.isNotEmpty,
+    };
+  }
+
+  // Validar carrito antes del checkout
+  bool isValidForCheckout() {
+    // Verificar que hay al menos un item
+    if (_items.isEmpty) return false;
+    
+    // Verificar que todos los items tienen información válida
+    for (final item in _items) {
+      if (item.name.isEmpty || item.price <= 0) {
+        return false;
+      }
+    }
+    
+    return true;
+  }
+
+  // Obtener items para checkout
+  List<Map<String, dynamic>> getItemsForCheckout() {
+    return _items.map((item) => {
+      'id': item.id,
+      'name': item.name,
+      'price': item.price,
+      'quantity': item.quantity,
+      'type': item.type,
+      'total': item.total,
+    }).toList();
   }
 }

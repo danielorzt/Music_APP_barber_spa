@@ -20,11 +20,14 @@ class Producto extends Equatable {
 
   factory Producto.fromJson(Map<String, dynamic> json) {
     return Producto(
-      id: json['id'] as int,
-      nombre: json['nombre'] as String,
-      descripcion: json['descripcion'] as String,
-      precio: (json['precio'] as num).toDouble(),
-      urlImagen: json['urlImagen'] as String,
+      id: int.tryParse(json['id']?.toString() ?? '0') ?? 0,
+      nombre: json['nombre']?.toString() ?? json['name']?.toString() ?? 'Producto',
+      descripcion: json['descripcion']?.toString() ?? json['description']?.toString() ?? '',
+      precio: double.tryParse(json['precio']?.toString() ?? '0') ?? 0.0,
+      urlImagen: json['urlImagen']?.toString() ?? 
+                json['imagen']?.toString() ?? 
+                json['image']?.toString() ?? 
+                'https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?w=400&h=400&fit=crop',
     );
   }
 

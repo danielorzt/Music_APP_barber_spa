@@ -1,52 +1,48 @@
 // lib/features/appointments/providers/appointments_provider.dart
 import 'package:flutter/foundation.dart';
-import '../../../core/services/appointments_real_api_service.dart';
+import '../../../core/services/appointments_api_service.dart';
+import '../../../core/models/agendamiento.dart';
+
+enum AppointmentsState { initial, loading, loaded, error }
 
 class AppointmentsProvider with ChangeNotifier {
-  final AppointmentsRealApiService _apiService = AppointmentsRealApiService();
+  final AppointmentsApiService _apiService = AppointmentsApiService();
   
-  List<Map<String, dynamic>> _appointments = [];
-  bool _isLoading = false;
+  List<Agendamiento> _appointments = [];
+  AppointmentsState _state = AppointmentsState.initial;
   String? _error;
   bool _hasLoaded = false; // Flag para evitar cargas múltiples
 
   // Getters
-  List<Map<String, dynamic>> get appointments => _appointments;
-  bool get isLoading => _isLoading;
+  List<Agendamiento> get appointments => _appointments;
+  AppointmentsState get state => _state;
   String? get error => _error;
+  bool get isLoading => _state == AppointmentsState.loading;
   bool get hasLoaded => _hasLoaded;
 
   // Obtener todas las citas del usuario (solo una vez)
   Future<void> fetchAppointments() async {
     // Evitar cargas múltiples
-    if (_isLoading || _hasLoaded) {
+    if (_state == AppointmentsState.loading || _hasLoaded) {
       print('⚠️ AppointmentsProvider: Ya está cargando o ya se cargó');
       return;
     }
 
-    _isLoading = true;
-    _error = null;
-    notifyListeners();
+    _setState(AppointmentsState.loading);
 
     try {
       print('🔍 AppointmentsProvider: Cargando agendamientos...');
-      final result = await _apiService.getAgendamientos();
+      final agendamientos = await _apiService.getMisAgendamientos();
       
-      if (result['success'] == true && result['data'] != null) {
-        _appointments = List<Map<String, dynamic>>.from(result['data']);
-        _hasLoaded = true;
-        print('✅ AppointmentsProvider: ${_appointments.length} citas cargadas');
-      } else {
-        _error = result['error'] ?? 'Error al cargar las citas';
-        print('❌ AppointmentsProvider: ${result['error']}');
-      }
+      _appointments = agendamientos;
+      _hasLoaded = true;
+      _setState(AppointmentsState.loaded);
+      print('✅ AppointmentsProvider: ${_appointments.length} citas cargadas');
     } catch (e) {
       _error = e.toString();
+      _setState(AppointmentsState.error);
       print('❌ AppointmentsProvider: Error cargando citas: $e');
     }
-
-    _isLoading = false;
-    notifyListeners();
   }
 
   // Obtener citas de un usuario específico (alias para fetchAppointments)
@@ -63,165 +59,195 @@ class AppointmentsProvider with ChangeNotifier {
   }
 
   // Crear una nueva cita
-  Future<Map<String, dynamic>> createAppointment(Map<String, dynamic> appointmentData) async {
-    _isLoading = true;
-    _error = null;
-    notifyListeners();
+  Future<bool> createAppointment(Agendamiento appointmentData) async {
+    _setState(AppointmentsState.loading);
 
     try {
       print('🔍 AppointmentsProvider: Creando nueva cita...');
-      final result = await _apiService.createAgendamiento(appointmentData);
+      final agendamientoCreado = await _apiService.crearAgendamiento(appointmentData);
       
-      if (result['success'] == true) {
-        // Recargar las citas después de crear una nueva
-        await refreshAppointments();
-        print('✅ AppointmentsProvider: Cita creada exitosamente');
-      } else {
-        _error = result['error'] ?? 'Error al crear la cita';
-        print('❌ AppointmentsProvider: ${result['error']}');
-      }
-      
-      return result;
+      // Agregar la nueva cita a la lista
+      _appointments.add(agendamientoCreado);
+      _setState(AppointmentsState.loaded);
+      print('✅ AppointmentsProvider: Cita creada exitosamente');
+      return true;
     } catch (e) {
       _error = e.toString();
+      _setState(AppointmentsState.error);
       print('❌ AppointmentsProvider: Error creando cita: $e');
-      return {
-        'success': false,
-        'error': e.toString(),
-      };
-    } finally {
-      _isLoading = false;
-      notifyListeners();
+      return false;
     }
   }
 
   // Cancelar una cita
-  Future<Map<String, dynamic>> cancelAppointment(String appointmentId) async {
-    _isLoading = true;
-    _error = null;
-    notifyListeners();
+  Future<bool> cancelAppointment(int appointmentId, {String? motivo}) async {
+    _setState(AppointmentsState.loading);
 
     try {
       print('🔍 AppointmentsProvider: Cancelando cita $appointmentId...');
-      final result = await _apiService.cancelAgendamiento(appointmentId);
+      final success = await _apiService.cancelarAgendamiento(appointmentId, motivo: motivo);
       
-      if (result['success'] == true) {
-        // Recargar las citas después de cancelar
-        await refreshAppointments();
+      if (success) {
+        // Actualizar el estado de la cita en la lista local
+        final index = _appointments.indexWhere((a) => a.id == appointmentId);
+        if (index != -1) {
+          _appointments[index] = _appointments[index].copyWith(
+            estado: 'CANCELADO',
+            motivoCancelacion: motivo,
+          );
+        }
+        _setState(AppointmentsState.loaded);
         print('✅ AppointmentsProvider: Cita cancelada exitosamente');
+        return true;
       } else {
-        _error = result['error'] ?? 'Error al cancelar la cita';
-        print('❌ AppointmentsProvider: ${result['error']}');
+        _error = 'No se pudo cancelar la cita';
+        _setState(AppointmentsState.error);
+        return false;
       }
-      
-      return result;
     } catch (e) {
       _error = e.toString();
+      _setState(AppointmentsState.error);
       print('❌ AppointmentsProvider: Error cancelando cita: $e');
-      return {
-        'success': false,
-        'error': e.toString(),
-      };
-    } finally {
-      _isLoading = false;
-      notifyListeners();
+      return false;
+    }
+  }
+
+  // Actualizar una cita
+  Future<bool> updateAppointment(int appointmentId, Map<String, dynamic> data) async {
+    _setState(AppointmentsState.loading);
+
+    try {
+      print('🔍 AppointmentsProvider: Actualizando cita $appointmentId...');
+      final agendamientoActualizado = await _apiService.actualizarAgendamiento(appointmentId, data);
+      
+      // Actualizar la cita en la lista local
+      final index = _appointments.indexWhere((a) => a.id == appointmentId);
+      if (index != -1) {
+        _appointments[index] = agendamientoActualizado;
+      }
+      _setState(AppointmentsState.loaded);
+      print('✅ AppointmentsProvider: Cita actualizada exitosamente');
+      return true;
+    } catch (e) {
+      _error = e.toString();
+      _setState(AppointmentsState.error);
+      print('❌ AppointmentsProvider: Error actualizando cita: $e');
+      return false;
     }
   }
 
   // Obtener horarios disponibles
-  Future<Map<String, dynamic>> getAvailableSlots({
-    required String servicioId,
-    required String sucursalId,
-    required String fecha,
+  Future<List<Map<String, dynamic>>> getAvailableSlots({
+    required DateTime fecha,
+    required int servicioId,
   }) async {
     try {
       print('🔍 AppointmentsProvider: Obteniendo horarios disponibles...');
-      final result = await _apiService.getHorariosDisponibles(
-        servicioId: servicioId,
-        sucursalId: sucursalId,
-        fecha: fecha,
-      );
-      
-      if (result['success'] == true) {
-        print('✅ AppointmentsProvider: Horarios obtenidos exitosamente');
-      } else {
-        print('❌ AppointmentsProvider: Error obteniendo horarios');
-      }
-      
-      return result;
+      final disponibilidad = await _apiService.getDisponibilidad(fecha, servicioId);
+      print('✅ AppointmentsProvider: Horarios obtenidos exitosamente');
+      return disponibilidad;
     } catch (e) {
       print('❌ AppointmentsProvider: Error obteniendo horarios: $e');
-      return {
-        'success': false,
-        'error': e.toString(),
-      };
+      return [];
     }
   }
 
-  // Obtener personal disponible
-  Future<Map<String, dynamic>> getAvailableStaff({
-    required String servicioId,
-    required String sucursalId,
-    required String fecha,
-    required String hora,
-  }) async {
+  // Obtener una cita específica
+  Future<Agendamiento?> getAppointment(int appointmentId) async {
     try {
-      print('🔍 AppointmentsProvider: Obteniendo personal disponible...');
-      final result = await _apiService.getPersonalDisponible(
-        servicioId: servicioId,
-        sucursalId: sucursalId,
-        fecha: fecha,
-        hora: hora,
-      );
-      
-      if (result['success'] == true) {
-        print('✅ AppointmentsProvider: Personal obtenido exitosamente');
-      } else {
-        print('❌ AppointmentsProvider: Error obteniendo personal');
-      }
-      
-      return result;
+      print('🔍 AppointmentsProvider: Obteniendo cita $appointmentId...');
+      final agendamiento = await _apiService.getAgendamiento(appointmentId);
+      print('✅ AppointmentsProvider: Cita obtenida exitosamente');
+      return agendamiento;
     } catch (e) {
-      print('❌ AppointmentsProvider: Error obteniendo personal: $e');
-      return {
-        'success': false,
-        'error': e.toString(),
-      };
+      print('❌ AppointmentsProvider: Error obteniendo cita: $e');
+      return null;
     }
   }
 
   void clearError() {
     _error = null;
-    notifyListeners();
+    if (_state == AppointmentsState.error) {
+      _setState(AppointmentsState.loaded);
+    }
   }
 
   // Limpiar datos (para logout)
   void clearData() {
     _appointments = [];
-    _isLoading = false;
+    _state = AppointmentsState.initial;
     _error = null;
     _hasLoaded = false;
     notifyListeners();
   }
 
+  // Método privado para actualizar el estado
+  void _setState(AppointmentsState newState) {
+    _state = newState;
+    notifyListeners();
+  }
+
   // Obtener citas próximas
-  List<Map<String, dynamic>> get upcomingAppointments {
+  List<Agendamiento> get upcomingAppointments {
     final now = DateTime.now();
     return _appointments.where((appointment) {
-      final appointmentDate = DateTime.tryParse(appointment['fecha_hora'] ?? '') ?? DateTime.now();
-      return appointmentDate.isAfter(now) && 
-             appointment['estado'] != 'CANCELADA_CLIENTE' &&
-             appointment['estado'] != 'CANCELADA_PERSONAL';
-    }).toList();
+      return appointment.fechaHora.isAfter(now) && appointment.isActive;
+    }).toList()
+      ..sort((a, b) => a.fechaHora.compareTo(b.fechaHora));
   }
 
   // Obtener citas pasadas
-  List<Map<String, dynamic>> get pastAppointments {
+  List<Agendamiento> get pastAppointments {
     final now = DateTime.now();
     return _appointments.where((appointment) {
-      final appointmentDate = DateTime.tryParse(appointment['fecha_hora'] ?? '') ?? DateTime.now();
-      return appointmentDate.isBefore(now) || 
-             appointment['estado'] == 'COMPLETADA';
-    }).toList();
+      return appointment.fechaHora.isBefore(now) || appointment.isCompleted;
+    }).toList()
+      ..sort((a, b) => b.fechaHora.compareTo(a.fechaHora));
+  }
+
+  // Obtener citas canceladas
+  List<Agendamiento> get cancelledAppointments {
+    return _appointments.where((appointment) => appointment.isCancelled).toList()
+      ..sort((a, b) => b.fechaHora.compareTo(a.fechaHora));
+  }
+
+  // Obtener citas para hoy
+  List<Agendamiento> get todayAppointments {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final tomorrow = today.add(const Duration(days: 1));
+    
+    return _appointments.where((appointment) {
+      return appointment.fechaHora.isAfter(today) && 
+             appointment.fechaHora.isBefore(tomorrow) &&
+             appointment.isActive;
+    }).toList()
+      ..sort((a, b) => a.fechaHora.compareTo(b.fechaHora));
+  }
+
+  // Obtener citas para esta semana
+  List<Agendamiento> get thisWeekAppointments {
+    final now = DateTime.now();
+    final startOfWeek = now.subtract(Duration(days: now.weekday - 1));
+    final endOfWeek = startOfWeek.add(const Duration(days: 7));
+    
+    return _appointments.where((appointment) {
+      return appointment.fechaHora.isAfter(startOfWeek) && 
+             appointment.fechaHora.isBefore(endOfWeek) &&
+             appointment.isActive;
+    }).toList()
+      ..sort((a, b) => a.fechaHora.compareTo(b.fechaHora));
+  }
+
+  // Obtener estadísticas
+  Map<String, int> get statistics {
+    return {
+      'total': _appointments.length,
+      'upcoming': upcomingAppointments.length,
+      'past': pastAppointments.length,
+      'cancelled': cancelledAppointments.length,
+      'today': todayAppointments.length,
+      'thisWeek': thisWeekAppointments.length,
+    };
   }
 }

@@ -1,10 +1,10 @@
 // lib/features/products/providers/products_provider.dart
 import 'package:flutter/foundation.dart';
 import '../../../core/models/producto.dart';
-import '../../../core/repositories/product_repository.dart';
+import '../../../core/services/bmspa_api_service.dart';
 
 class ProductsProvider with ChangeNotifier {
-  final ProductRepository _repository = ProductRepository();
+  final BMSPAApiService _apiService = BMSPAApiService();
   List<Producto> _products = [];
   Producto? _selectedProduct;
   bool _isLoading = false;
@@ -22,8 +22,8 @@ class ProductsProvider with ChangeNotifier {
     notifyListeners();
 
     try {
-      _products = await _repository.getProducts();
-      print('✅ ProductsProvider: ${_products.length} productos cargados');
+      _products = await _apiService.getProductos();
+      print('✅ ProductsProvider: ${_products.length} productos cargados desde API');
     } catch (e) {
       _error = e.toString();
       print('❌ ProductsProvider: Error cargando productos: $e');
@@ -39,11 +39,16 @@ class ProductsProvider with ChangeNotifier {
     notifyListeners();
 
     try {
-      // Buscar en la lista actual de productos
-      _selectedProduct = _products.firstWhere(
-        (product) => product.id == id,
-        orElse: () => throw Exception('Producto no encontrado'),
-      );
+      // Intentar obtener desde la API
+      _selectedProduct = await _apiService.getProducto(id);
+      if (_selectedProduct == null) {
+        // Si no se encuentra en la API, buscar en la lista local
+        _selectedProduct = _products.firstWhere(
+          (product) => product.id == id,
+          orElse: () => throw Exception('Producto no encontrado'),
+        );
+      }
+      print('✅ ProductsProvider: Producto $id obtenido desde API');
     } catch (e) {
       _error = e.toString();
       print('❌ ProductsProvider: Error obteniendo producto: $e');

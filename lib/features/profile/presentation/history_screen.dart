@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:provider/provider.dart';
-import '../../auth/providers/auth_provider.dart';
-import '../../../core/services/user_management_api_service.dart';
+import '../../../core/services/orders_api_service.dart';
+import '../../../core/services/appointments_api_service.dart';
 
 class HistoryScreen extends StatefulWidget {
   const HistoryScreen({super.key});
@@ -12,12 +11,14 @@ class HistoryScreen extends StatefulWidget {
 }
 
 class _HistoryScreenState extends State<HistoryScreen> with SingleTickerProviderStateMixin {
-  final UserManagementApiService _userService = UserManagementApiService();
+  final OrdersApiService _ordersService = OrdersApiService();
+  final AppointmentsApiService _appointmentsService = AppointmentsApiService();
+  
   late TabController _tabController;
   bool _isLoading = false;
-  List<Map<String, dynamic>> _appointments = [];
-  List<Map<String, dynamic>> _orders = [];
-  String? _error;
+  
+  Map<String, dynamic>? _purchaseHistory;
+  Map<String, dynamic>? _appointmentHistory;
 
   @override
   void initState() {
@@ -33,81 +34,29 @@ class _HistoryScreenState extends State<HistoryScreen> with SingleTickerProvider
   }
 
   Future<void> _loadHistory() async {
-    setState(() {
-      _isLoading = true;
-      _error = null;
-    });
-
+    setState(() => _isLoading = true);
+    
     try {
-      // Cargar citas y órdenes en paralelo
-      final results = await Future.wait([
-        _userService.getUserAppointments(),
-        _userService.getUserOrders(),
-      ]);
-
-      if (results[0]['success'] == true) {
+      // Cargar historial de compras
+      final purchaseResult = await _ordersService.getPurchaseHistory();
+      if (purchaseResult['success']) {
         setState(() {
-          _appointments = List<Map<String, dynamic>>.from(results[0]['data'] ?? []);
+          _purchaseHistory = purchaseResult;
         });
       }
-
-      if (results[1]['success'] == true) {
-        setState(() {
-          _orders = List<Map<String, dynamic>>.from(results[1]['data'] ?? []);
-        });
-      }
-
-      if (results[0]['success'] != true && results[1]['success'] != true) {
-        setState(() {
-          _error = 'Error al cargar historial';
-        });
-      }
+      
+      // Cargar historial de citas
+      final appointmentResult = await _appointmentsService.getMisAgendamientos();
+      setState(() {
+        _appointmentHistory = {
+          'success': true,
+          'agendamientos': appointmentResult.map((a) => a.toJson()).toList(),
+        };
+      });
     } catch (e) {
-      setState(() {
-        _error = 'Error de conexión: $e';
-      });
+      print('❌ Error cargando historial: $e');
     } finally {
-      setState(() {
-        _isLoading = false;
-      });
-    }
-  }
-
-  String _getStatusColor(String status) {
-    switch (status.toLowerCase()) {
-      case 'completado':
-      case 'completed':
-        return '#4CAF50';
-      case 'cancelado':
-      case 'cancelled':
-        return '#F44336';
-      case 'pendiente':
-      case 'pending':
-        return '#FF9800';
-      case 'en_proceso':
-      case 'in_progress':
-        return '#2196F3';
-      default:
-        return '#9E9E9E';
-    }
-  }
-
-  String _getStatusText(String status) {
-    switch (status.toLowerCase()) {
-      case 'completado':
-      case 'completed':
-        return 'Completado';
-      case 'cancelado':
-      case 'cancelled':
-        return 'Cancelado';
-      case 'pendiente':
-      case 'pending':
-        return 'Pendiente';
-      case 'en_proceso':
-      case 'in_progress':
-        return 'En proceso';
-      default:
-        return status;
+      setState(() => _isLoading = false);
     }
   }
 
@@ -115,303 +64,417 @@ class _HistoryScreenState extends State<HistoryScreen> with SingleTickerProvider
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Historial'),
+        title: const Text('Mi Historial'),
         backgroundColor: Colors.transparent,
         elevation: 0,
         bottom: TabBar(
           controller: _tabController,
+          labelColor: const Color(0xFFDC3545),
+          unselectedLabelColor: Colors.grey,
+          indicatorColor: const Color(0xFFDC3545),
           tabs: const [
-            Tab(text: 'Citas'),
-            Tab(text: 'Compras'),
+            Tab(
+              icon: Icon(Icons.shopping_bag),
+              text: 'Compras',
+            ),
+            Tab(
+              icon: Icon(Icons.calendar_today),
+              text: 'Citas',
+            ),
           ],
         ),
       ),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : _error != null
-              ? Center(
+      body: TabBarView(
+        controller: _tabController,
+        children: [
+          _buildPurchaseHistoryTab(),
+          _buildAppointmentHistoryTab(),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPurchaseHistoryTab() {
+    if (_isLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    if (_purchaseHistory == null || 
+        _purchaseHistory!['ordenes'] == null ||
+        _purchaseHistory!['ordenes'].isEmpty) {
+      return _buildEmptyState(
+        icon: Icons.shopping_bag,
+        title: 'No tienes compras',
+        subtitle: 'Aún no has realizado ninguna compra',
+      );
+    }
+
+    final orders = _purchaseHistory!['ordenes'] as List;
+
+    return RefreshIndicator(
+      onRefresh: _loadHistory,
+      child: ListView.builder(
+        padding: const EdgeInsets.all(16),
+        itemCount: orders.length,
+        itemBuilder: (context, index) {
+          final order = orders[index];
+          return _buildOrderCard(order);
+        },
+      ),
+    );
+  }
+
+  Widget _buildAppointmentHistoryTab() {
+    if (_isLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    if (_appointmentHistory == null || 
+        _appointmentHistory!['agendamientos'] == null ||
+        _appointmentHistory!['agendamientos'].isEmpty) {
+      return _buildEmptyState(
+        icon: Icons.calendar_today,
+        title: 'No tienes citas',
+        subtitle: 'Aún no has agendado ninguna cita',
+      );
+    }
+
+    final appointments = _appointmentHistory!['agendamientos'] as List;
+
+    return RefreshIndicator(
+      onRefresh: _loadHistory,
+      child: ListView.builder(
+        padding: const EdgeInsets.all(16),
+        itemCount: appointments.length,
+        itemBuilder: (context, index) {
+          final appointment = appointments[index];
+          return _buildAppointmentCard(appointment);
+        },
+      ),
+    );
+  }
+
+  Widget _buildOrderCard(Map<String, dynamic> order) {
+    final fecha = DateTime.tryParse(order['fecha_orden'] ?? '');
+    final fechaStr = fecha != null 
+        ? '${fecha.day}/${fecha.month}/${fecha.year}'
+        : 'Fecha no disponible';
+    
+    final status = order['estado_orden'] ?? 'PENDIENTE';
+    final statusColor = _getOrderStatusColor(status);
+    final statusIcon = _getOrderStatusIcon(status);
+
+    return Card(
+      margin: const EdgeInsets.only(bottom: 12),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                CircleAvatar(
+                  backgroundColor: statusColor,
+                  child: Icon(statusIcon, color: Colors.white, size: 16),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
                   child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Icon(Icons.error_outline, size: 64, color: Colors.grey[400]),
-                      const SizedBox(height: 16),
                       Text(
-                        'Error al cargar historial',
-                        style: TextStyle(fontSize: 18, color: Colors.grey[600]),
+                        'Orden ${order['numero_orden'] ?? ''}',
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
-                      const SizedBox(height: 8),
                       Text(
-                        _error!,
-                        style: TextStyle(color: Colors.grey[500]),
-                        textAlign: TextAlign.center,
-                      ),
-                      const SizedBox(height: 16),
-                      ElevatedButton(
-                        onPressed: _loadHistory,
-                        child: const Text('Reintentar'),
+                        fechaStr,
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: Colors.grey.shade600,
+                        ),
                       ),
                     ],
                   ),
-                )
-              : TabBarView(
-                  controller: _tabController,
-                  children: [
-                    _buildAppointmentsTab(),
-                    _buildOrdersTab(),
-                  ],
                 ),
-    );
-  }
-
-  Widget _buildAppointmentsTab() {
-    if (_appointments.isEmpty) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.calendar_today_outlined, size: 64, color: Colors.grey[400]),
-            const SizedBox(height: 16),
-            Text(
-              'No tienes citas en tu historial',
-              style: TextStyle(fontSize: 18, color: Colors.grey[600]),
+                Text(
+                  '\$${(order['total_orden'] ?? 0).toStringAsFixed(2)}',
+                  style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFFDC3545),
+                  ),
+                ),
+              ],
             ),
-            const SizedBox(height: 8),
-            Text(
-              'Agenda tu primera cita',
-              style: TextStyle(color: Colors.grey[500]),
-              textAlign: TextAlign.center,
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              decoration: BoxDecoration(
+                color: statusColor.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: statusColor),
+              ),
+              child: Text(
+                status,
+                style: TextStyle(
+                  color: statusColor,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 12,
+                ),
+              ),
             ),
-            const SizedBox(height: 24),
-            ElevatedButton.icon(
-              onPressed: () => context.push('/agendar'),
-              icon: const Icon(Icons.calendar_today),
-              label: const Text('Agendar cita'),
-            ),
-          ],
-        ),
-      );
-    }
-
-    return ListView.builder(
-      padding: const EdgeInsets.all(16),
-      itemCount: _appointments.length,
-      itemBuilder: (context, index) {
-        final appointment = _appointments[index];
-        final status = appointment['estado']?.toString() ?? 'pendiente';
-        final statusColor = _getStatusColor(status);
-        
-        return Card(
-          margin: const EdgeInsets.only(bottom: 12),
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Icon(Icons.calendar_today, color: const Color(0xFFDC3545)),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        appointment['servicio_nombre'] ?? 'Servicio',
-                        style: const TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 16,
-                        ),
-                      ),
-                    ),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: Color(int.parse(statusColor.replaceAll('#', '0xFF'))),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Text(
-                        _getStatusText(status),
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 12,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ),
-                  ],
+            if (order['detalles'] != null && order['detalles'].isNotEmpty) ...[
+              const SizedBox(height: 12),
+              const Divider(),
+              const SizedBox(height: 8),
+              Text(
+                'Productos:',
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.grey.shade700,
                 ),
-                const SizedBox(height: 12),
-                Row(
-                  children: [
-                    Icon(Icons.location_on, size: 16, color: Colors.grey[600]),
-                    const SizedBox(width: 4),
-                    Expanded(
-                      child: Text(
-                        appointment['sucursal_nombre'] ?? 'Sucursal no especificada',
-                        style: TextStyle(color: Colors.grey[600]),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 4),
-                Row(
-                  children: [
-                    Icon(Icons.schedule, size: 16, color: Colors.grey[600]),
-                    const SizedBox(width: 4),
-                    Text(
-                      appointment['fecha_hora'] ?? 'Fecha no especificada',
-                      style: TextStyle(color: Colors.grey[600]),
-                    ),
-                  ],
-                ),
-                if (appointment['personal_nombre'] != null) ...[
-                  const SizedBox(height: 4),
-                  Row(
+              ),
+              const SizedBox(height: 8),
+              ...(order['detalles'] as List).take(3).map((detail) => 
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 4),
+                  child: Row(
                     children: [
-                      Icon(Icons.person, size: 16, color: Colors.grey[600]),
-                      const SizedBox(width: 4),
                       Text(
-                        appointment['personal_nombre'],
-                        style: TextStyle(color: Colors.grey[600]),
+                        '• ${detail['nombre_producto'] ?? 'Producto'}',
+                        style: const TextStyle(fontSize: 12),
+                      ),
+                      const Spacer(),
+                      Text(
+                        'x${detail['cantidad'] ?? 1}',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.grey.shade600,
+                        ),
                       ),
                     ],
                   ),
-                ],
-                if (appointment['precio'] != null) ...[
-                  const SizedBox(height: 8),
-                  Text(
-                    '\$${appointment['precio']}',
-                    style: const TextStyle(
-                      color: Color(0xFFDC3545),
-                      fontWeight: FontWeight.bold,
-                      fontSize: 16,
+                ),
+              ),
+              if ((order['detalles'] as List).length > 3)
+                Padding(
+                  padding: const EdgeInsets.only(top: 4),
+                  child: Text(
+                    '... y ${(order['detalles'] as List).length - 3} más',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Colors.grey.shade600,
+                      fontStyle: FontStyle.italic,
                     ),
                   ),
-                ],
-              ],
-            ),
-          ),
-        );
-      },
+                ),
+            ],
+          ],
+        ),
+      ),
     );
   }
 
-  Widget _buildOrdersTab() {
-    if (_orders.isEmpty) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.shopping_bag_outlined, size: 64, color: Colors.grey[400]),
-            const SizedBox(height: 16),
-            Text(
-              'No tienes compras en tu historial',
-              style: TextStyle(fontSize: 18, color: Colors.grey[600]),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Explora nuestros productos',
-              style: TextStyle(color: Colors.grey[500]),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 24),
-            ElevatedButton.icon(
-              onPressed: () => context.push('/products'),
-              icon: const Icon(Icons.shopping_bag),
-              label: const Text('Ver productos'),
-            ),
-          ],
-        ),
-      );
-    }
+  Widget _buildAppointmentCard(Map<String, dynamic> appointment) {
+    final fecha = DateTime.tryParse(appointment['fecha_hora'] ?? '');
+    final fechaStr = fecha != null 
+        ? '${fecha.day}/${fecha.month}/${fecha.year} ${fecha.hour}:${fecha.minute.toString().padLeft(2, '0')}'
+        : 'Fecha no disponible';
+    
+    final status = appointment['estado'] ?? 'PENDIENTE';
+    final statusColor = _getAppointmentStatusColor(status);
+    final statusIcon = _getAppointmentStatusIcon(status);
 
-    return ListView.builder(
-      padding: const EdgeInsets.all(16),
-      itemCount: _orders.length,
-      itemBuilder: (context, index) {
-        final order = _orders[index];
-        final status = order['estado']?.toString() ?? 'pendiente';
-        final statusColor = _getStatusColor(status);
-        
-        return Card(
-          margin: const EdgeInsets.only(bottom: 12),
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+    return Card(
+      margin: const EdgeInsets.only(bottom: 12),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
               children: [
-                Row(
-                  children: [
-                    Icon(Icons.shopping_bag, color: const Color(0xFFDC3545)),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        'Orden #${order['numero_orden'] ?? order['id']}',
+                CircleAvatar(
+                  backgroundColor: statusColor,
+                  child: Icon(statusIcon, color: Colors.white, size: 16),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        appointment['nombre_servicio'] ?? 'Servicio',
                         style: const TextStyle(
-                          fontWeight: FontWeight.bold,
                           fontSize: 16,
+                          fontWeight: FontWeight.bold,
                         ),
                       ),
-                    ),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: Color(int.parse(statusColor.replaceAll('#', '0xFF'))),
-                        borderRadius: BorderRadius.circular(12),
+                      Text(
+                        appointment['nombre_sucursal'] ?? 'Sucursal',
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: Colors.grey.shade600,
+                        ),
                       ),
-                      child: Text(
-                        _getStatusText(status),
-                        style: const TextStyle(
-                          color: Colors.white,
+                      Text(
+                        fechaStr,
+                        style: TextStyle(
                           fontSize: 12,
-                          fontWeight: FontWeight.w500,
+                          color: Colors.grey.shade500,
                         ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
-                const SizedBox(height: 12),
-                Row(
-                  children: [
-                    Icon(Icons.calendar_today, size: 16, color: Colors.grey[600]),
-                    const SizedBox(width: 4),
-                    Text(
-                      order['fecha_orden'] ?? 'Fecha no especificada',
-                      style: TextStyle(color: Colors.grey[600]),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 4),
-                Row(
-                  children: [
-                    Icon(Icons.inventory, size: 16, color: Colors.grey[600]),
-                    const SizedBox(width: 4),
-                    Text(
-                      '${order['cantidad_productos'] ?? 0} productos',
-                      style: TextStyle(color: Colors.grey[600]),
-                    ),
-                  ],
-                ),
-                if (order['total'] != null) ...[
-                  const SizedBox(height: 8),
+                if (appointment['precio'] != null)
                   Text(
-                    'Total: \$${order['total']}',
+                    '\$${appointment['precio'].toStringAsFixed(2)}',
                     style: const TextStyle(
-                      color: Color(0xFFDC3545),
-                      fontWeight: FontWeight.bold,
                       fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFFDC3545),
                     ),
                   ),
-                ],
-                if (order['metodo_pago'] != null) ...[
-                  const SizedBox(height: 4),
-                  Text(
-                    'Pago: ${order['metodo_pago']}',
-                    style: TextStyle(color: Colors.grey[600], fontSize: 12),
-                  ),
-                ],
               ],
             ),
-          ),
-        );
-      },
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              decoration: BoxDecoration(
+                color: statusColor.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: statusColor),
+              ),
+              child: Text(
+                status,
+                style: TextStyle(
+                  color: statusColor,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 12,
+                ),
+              ),
+            ),
+            if (appointment['nombre_personal'] != null) ...[
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  Icon(Icons.person, size: 16, color: Colors.grey.shade600),
+                  const SizedBox(width: 4),
+                  Text(
+                    'Profesional: ${appointment['nombre_personal']}',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Colors.grey.shade600,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ],
+        ),
+      ),
     );
+  }
+
+  Widget _buildEmptyState({
+    required IconData icon,
+    required String title,
+    required String subtitle,
+  }) {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            icon,
+            size: 80,
+            color: Colors.grey.shade400,
+          ),
+          const SizedBox(height: 16),
+          Text(
+            title,
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: Colors.grey.shade600,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            subtitle,
+            style: TextStyle(
+              fontSize: 14,
+              color: Colors.grey.shade500,
+            ),
+            textAlign: TextAlign.center,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Color _getOrderStatusColor(String status) {
+    switch (status.toUpperCase()) {
+      case 'COMPLETADA':
+      case 'ENTREGADA':
+        return Colors.green;
+      case 'PENDIENTE':
+      case 'PROCESANDO':
+        return Colors.orange;
+      case 'CANCELADA':
+        return Colors.red;
+      default:
+        return Colors.grey;
+    }
+  }
+
+  IconData _getOrderStatusIcon(String status) {
+    switch (status.toUpperCase()) {
+      case 'COMPLETADA':
+      case 'ENTREGADA':
+        return Icons.check_circle;
+      case 'PENDIENTE':
+      case 'PROCESANDO':
+        return Icons.schedule;
+      case 'CANCELADA':
+        return Icons.cancel;
+      default:
+        return Icons.shopping_bag;
+    }
+  }
+
+  Color _getAppointmentStatusColor(String status) {
+    switch (status.toUpperCase()) {
+      case 'CONFIRMADA':
+      case 'COMPLETADA':
+        return Colors.green;
+      case 'PENDIENTE':
+      case 'PROGRAMADA':
+        return Colors.orange;
+      case 'CANCELADA':
+        return Colors.red;
+      default:
+        return Colors.grey;
+    }
+  }
+
+  IconData _getAppointmentStatusIcon(String status) {
+    switch (status.toUpperCase()) {
+      case 'CONFIRMADA':
+      case 'COMPLETADA':
+        return Icons.check_circle;
+      case 'PENDIENTE':
+      case 'PROGRAMADA':
+        return Icons.schedule;
+      case 'CANCELADA':
+        return Icons.cancel;
+      default:
+        return Icons.help;
+    }
   }
 } 

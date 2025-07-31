@@ -1,7 +1,9 @@
 // lib/features/cart/presentation/cart_screen.dart
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
 import 'package:music_app/core/widgets/back_button_interceptor.dart';
+import 'package:music_app/features/cart/providers/cart_provider.dart';
 
 class CartScreen extends StatefulWidget {
   const CartScreen({super.key});
@@ -11,42 +13,6 @@ class CartScreen extends StatefulWidget {
 }
 
 class _CartScreenState extends State<CartScreen> {
-  // Datos mock del carrito
-  List<Map<String, dynamic>> _cartItems = [
-    {
-      'id': '1',
-      'name': 'Sérum Vitamina C Premium',
-      'price': 450.0,
-      'quantity': 1,
-      'image': 'https://plus.unsplash.com/premium_photo-1675827055984-3588a445749a?q=80&w=300&auto=format&fit=crop',
-      'type': 'product',
-    },
-    {
-      'id': '2',
-      'name': 'Crema Hidratante Facial',
-      'price': 380.0,
-      'quantity': 2,
-      'image': 'https://images.unsplash.com/photo-1620916566398-39f1143ab7be?q=80&w=300&auto=format&fit=crop',
-      'type': 'product',
-    },
-  ];
-
-  double get _subtotal {
-    return _cartItems.fold(0.0, (sum, item) => sum + (item['price'] * item['quantity']));
-  }
-
-  double get _tax {
-    return _subtotal * 0.16; // 16% IVA
-  }
-
-  double get _shipping {
-    return _subtotal > 1000 ? 0.0 : 50.0; // Envío gratis por compras > $1000
-  }
-
-  double get _total {
-    return _subtotal + _tax + _shipping;
-  }
-
   @override
   Widget build(BuildContext context) {
     return BackButtonInterceptor(
@@ -63,17 +29,31 @@ class _CartScreenState extends State<CartScreen> {
             },
           ),
           actions: [
-            if (_cartItems.isNotEmpty)
-              TextButton(
-                onPressed: () {
-                  _showClearCartDialog();
-                },
-                child: const Text('Limpiar'),
-              ),
+            Consumer<CartProvider>(
+              builder: (context, cart, child) {
+                if (cart.items.isNotEmpty) {
+                  return TextButton(
+                    onPressed: () {
+                      _showClearCartDialog(context);
+                    },
+                    child: const Text('Limpiar'),
+                  );
+                }
+                return const SizedBox.shrink();
+              },
+            ),
           ],
         ),
-        body: _cartItems.isEmpty ? _buildEmptyCart() : _buildCartContent(),
-        bottomNavigationBar: _cartItems.isNotEmpty ? _buildCheckoutButton() : null,
+        body: Consumer<CartProvider>(
+          builder: (context, cart, child) {
+            return cart.items.isEmpty ? _buildEmptyCart() : _buildCartContent(cart);
+          },
+        ),
+        bottomNavigationBar: Consumer<CartProvider>(
+          builder: (context, cart, child) {
+            return cart.items.isNotEmpty ? _buildCheckoutButton(cart) : const SizedBox.shrink();
+          },
+        ),
       ),
     );
   }
@@ -125,28 +105,28 @@ class _CartScreenState extends State<CartScreen> {
     );
   }
 
-  Widget _buildCartContent() {
+  Widget _buildCartContent(CartProvider cart) {
     return Column(
       children: [
         // Lista de productos
         Expanded(
           child: ListView.builder(
             padding: const EdgeInsets.all(16),
-            itemCount: _cartItems.length,
+            itemCount: cart.items.length,
             itemBuilder: (context, index) {
-              final item = _cartItems[index];
+              final item = cart.items[index];
               return _buildCartItemCard(item, index);
             },
           ),
         ),
         
         // Resumen de precio
-        _buildPriceSummary(),
+        _buildPriceSummary(cart),
       ],
     );
   }
 
-  Widget _buildCartItemCard(Map<String, dynamic> item, int index) {
+  Widget _buildCartItemCard(CartItem item, int index) {
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
       elevation: 2,
@@ -161,7 +141,7 @@ class _CartScreenState extends State<CartScreen> {
             ClipRRect(
               borderRadius: BorderRadius.circular(8),
               child: Image.network(
-                item['image'],
+                item.image,
                 width: 80,
                 height: 80,
                 fit: BoxFit.cover,
@@ -187,7 +167,7 @@ class _CartScreenState extends State<CartScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    item['name'],
+                    item.name,
                     style: const TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w600,
@@ -199,7 +179,7 @@ class _CartScreenState extends State<CartScreen> {
                   const SizedBox(height: 4),
                   
                   Text(
-                    '\$${item['price'].toStringAsFixed(2)}',
+                    '\$${item.price.toStringAsFixed(2)}',
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
@@ -215,14 +195,15 @@ class _CartScreenState extends State<CartScreen> {
                       _buildQuantityButton(
                         icon: Icons.remove,
                         onPressed: () {
-                          _updateQuantity(index, item['quantity'] - 1);
+                          final cart = context.read<CartProvider>();
+                          cart.updateQuantity(item.id, item.type, item.quantity - 1);
                         },
                       ),
                       
                       Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 16),
                         child: Text(
-                          '${item['quantity']}',
+                          '${item.quantity}',
                           style: const TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.bold,
@@ -233,7 +214,8 @@ class _CartScreenState extends State<CartScreen> {
                       _buildQuantityButton(
                         icon: Icons.add,
                         onPressed: () {
-                          _updateQuantity(index, item['quantity'] + 1);
+                          final cart = context.read<CartProvider>();
+                          cart.updateQuantity(item.id, item.type, item.quantity + 1);
                         },
                       ),
                       
@@ -242,7 +224,14 @@ class _CartScreenState extends State<CartScreen> {
                       // Botón eliminar
                       IconButton(
                         onPressed: () {
-                          _removeItem(index);
+                          final cart = context.read<CartProvider>();
+                          cart.removeItem(item.id, item.type);
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('Producto eliminado del carrito'),
+                              duration: Duration(seconds: 2),
+                            ),
+                          );
                         },
                         icon: const Icon(Icons.delete_outline),
                         color: Colors.red[400],
@@ -275,7 +264,7 @@ class _CartScreenState extends State<CartScreen> {
     );
   }
 
-  Widget _buildPriceSummary() {
+  Widget _buildPriceSummary(CartProvider cart) {
     final theme = Theme.of(context);
     
     return Container(
@@ -288,11 +277,11 @@ class _CartScreenState extends State<CartScreen> {
       ),
       child: Column(
         children: [
-          _buildPriceRow('Subtotal:', _subtotal),
-          _buildPriceRow('IVA (16%):', _tax),
-          _buildPriceRow('Envío:', _shipping, showFree: _shipping == 0),
+          _buildPriceRow('Subtotal:', cart.subtotal),
+          _buildPriceRow('IVA (16%):', cart.tax),
+          _buildPriceRow('Envío:', cart.shipping, showFree: cart.shipping == 0),
           Divider(height: 20, color: theme.colorScheme.onSurface.withOpacity(0.1)),
-          _buildPriceRow('Total:', _total, isTotal: true),
+          _buildPriceRow('Total:', cart.total, isTotal: true),
         ],
       ),
     );
@@ -350,7 +339,7 @@ class _CartScreenState extends State<CartScreen> {
     );
   }
 
-  Widget _buildCheckoutButton() {
+  Widget _buildCheckoutButton(CartProvider cart) {
     return Container(
       padding: const EdgeInsets.all(16),
       child: ElevatedButton(
@@ -369,7 +358,7 @@ class _CartScreenState extends State<CartScreen> {
             const Icon(Icons.payment),
             const SizedBox(width: 8),
             Text(
-              'Proceder al Pago - \$${_total.toStringAsFixed(2)}',
+              'Proceder al Pago - \$${cart.total.toStringAsFixed(2)}',
               style: const TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.bold,
@@ -381,31 +370,7 @@ class _CartScreenState extends State<CartScreen> {
     );
   }
 
-  void _updateQuantity(int index, int newQuantity) {
-    if (newQuantity <= 0) {
-      _removeItem(index);
-      return;
-    }
-    
-    setState(() {
-      _cartItems[index]['quantity'] = newQuantity;
-    });
-  }
-
-  void _removeItem(int index) {
-    setState(() {
-      _cartItems.removeAt(index);
-    });
-    
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Producto eliminado del carrito'),
-        duration: Duration(seconds: 2),
-      ),
-    );
-  }
-
-  void _showClearCartDialog() {
+  void _showClearCartDialog(BuildContext context) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -418,9 +383,7 @@ class _CartScreenState extends State<CartScreen> {
           ),
           TextButton(
             onPressed: () {
-              setState(() {
-                _cartItems.clear();
-              });
+              context.read<CartProvider>().clear();
               Navigator.of(context).pop();
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(

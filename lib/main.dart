@@ -10,6 +10,7 @@ import 'features/auth/providers/auth_provider.dart';
 import 'features/appointments/providers/appointments_provider.dart';
 import 'features/services/providers/services_provider.dart';
 import 'features/products/providers/products_provider.dart';
+import 'features/cart/providers/cart_provider.dart';
 import 'config/router/app_router.dart';
 import 'features/splash/presentation/splash_screen.dart';
 
@@ -51,6 +52,7 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => AppointmentsProvider()),
         ChangeNotifierProvider(create: (_) => ServicesProvider()),
         ChangeNotifierProvider(create: (_) => ProductsProvider()),
+        ChangeNotifierProvider(create: (_) => CartProvider()),
       ],
       child: Consumer<SettingsProvider>(
         builder: (context, settings, child) {

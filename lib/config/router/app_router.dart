@@ -31,6 +31,12 @@ import '../../features/profile/presentation/payment_methods_screen.dart';
 import '../../features/profile/presentation/help_support_screen.dart';
 import '../../features/profile/presentation/settings_screen.dart';
 
+// Screens - Test
+import '../../features/test/presentation/connection_test_screen.dart';
+
+// Screens - Reviews
+import '../../features/reviews/presentation/reviews_screen.dart';
+
 // Providers
 import '../../features/auth/providers/auth_provider.dart';
 import '../../features/services/models/service_model.dart';
@@ -97,7 +103,7 @@ class AppRouter {
   static final _shellNavigatorKey = GlobalKey<NavigatorState>();
 
   static final router = GoRouter(
-    initialLocation: '/',
+    initialLocation: '/main',
     navigatorKey: _rootNavigatorKey,
     redirect: (context, state) {
       final authProvider = Provider.of<AuthProvider>(context, listen: false);
@@ -105,15 +111,6 @@ class AppRouter {
       // Si está en la pantalla de splash, no redirigir
       if (state.matchedLocation == '/') {
         return null;
-      }
-      
-      // Si no está autenticado y no está en rutas públicas, redirigir a login
-      if (!authProvider.isAuthenticated && 
-          !state.matchedLocation.startsWith('/login') &&
-          !state.matchedLocation.startsWith('/register') &&
-          !state.matchedLocation.startsWith('/api-test') &&
-          !state.matchedLocation.startsWith('/onboarding')) {
-        return '/login';
       }
       
       // Si está autenticado y está en login/register, redirigir a main
@@ -165,8 +162,26 @@ class AppRouter {
         path: '/products',
         builder: (context, state) => const ProductsScreen(),
       ),
-      
-      // Rutas protegidas que requieren autenticación
+      GoRoute(
+        path: '/promotions',
+        builder: (context, state) => const PlaceholderScreen(title: 'Ofertas y Promociones'),
+      ),
+      GoRoute(
+        path: '/reviews/:type/:id',
+        builder: (context, state) {
+          final type = state.pathParameters['type']!;
+          final id = state.pathParameters['id']!;
+          final name = state.uri.queryParameters['name'] ?? 'Item';
+          final image = state.uri.queryParameters['image'] ?? 'https://images.unsplash.com/photo-1503951914875-452162b0f3f1?w=300&h=200&fit=crop';
+          
+          return ReviewsScreen(
+            itemId: id,
+            itemName: name,
+            itemType: type,
+            itemImage: image,
+          );
+        },
+      ),
       GoRoute(
         path: '/appointments',
         builder: (context, state) => AuthGuard(
@@ -214,6 +229,12 @@ class AppRouter {
           );
           return ServiceDetailScreen(service: service);
         },
+      ),
+      
+      // Ruta de prueba de conexión
+      GoRoute(
+        path: '/test-connection',
+        builder: (context, state) => const ConnectionTestScreen(),
       ),
       GoRoute(
         path: '/productos/:id',
@@ -266,6 +287,26 @@ class AppRouter {
         path: '/profile/settings',
         builder: (context, state) => AuthGuard(
           child: const SettingsScreen(),
+        ),
+      ),
+      
+      // Nuevas rutas para funcionalidades mejoradas
+      GoRoute(
+        path: '/orders',
+        builder: (context, state) => AuthGuard(
+          child: const HistoryScreen(), // Usar la misma pantalla de historial
+        ),
+      ),
+      GoRoute(
+        path: '/edit-profile',
+        builder: (context, state) => AuthGuard(
+          child: const PlaceholderScreen(title: 'Editar Perfil'),
+        ),
+      ),
+      GoRoute(
+        path: '/change-password',
+        builder: (context, state) => AuthGuard(
+          child: const PlaceholderScreen(title: 'Cambiar Contraseña'),
         ),
       ),
     ],

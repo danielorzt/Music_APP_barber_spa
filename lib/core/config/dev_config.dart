@@ -4,58 +4,61 @@ import 'api_config.dart';
 /// Configuración específica para desarrollo con el servidor BMSPA
 class DevConfig {
   // Configuración del servidor de desarrollo
-  static const String serverUrl = 'https://c21dae5133a1.ngrok-free.app';
+  static const String serverUrl = 'https://8985f960eef9.ngrok-free.app';
   static const String apiBaseUrl = '$serverUrl/api';
   
-  // Endpoints específicos de BMSPA
+  // Endpoints específicos de BMSPA - Actualizados según la API proporcionada
   static const Map<String, String> endpoints = {
-    // Autenticación JWT
-    'login': '/Client_usuarios/auth/login',
-    'register': '/Client_usuarios/auth/register',
-    'logout': '/Client_usuarios/auth/logout',
-    'currentUser': '/Client_usuarios/auth/oauth/me',
+    // 🔐 AUTENTICACIÓN Y PERFIL
+    'login': 'Client_usuarios/auth/login',
+    'register': 'Client_usuarios/auth/register',
+    'logout': 'Client_usuarios/auth/logout',
+    'currentUser': 'Client_usuarios/auth/oauth/me',
     
-    // Autenticación OAuth2
-    'oauthLogin': '/Client_usuarios/auth/oauth/login',
-    'oauthRefresh': '/Client_usuarios/auth/oauth/refresh',
-    'oauthLogout': '/Client_usuarios/auth/oauth/logout',
+    // 📅 CITAS Y AGENDAMIENTO
+    'agendamientos': '/Scheduling_agendamientos/agendamientos',
+    'agendamiento': '/Scheduling_agendamientos/agendamientos/{id}',
     
-    // Catálogo
+    // 🛍️ SERVICIOS Y PRODUCTOS
     'servicios': '/Catalog_servicios/servicios',
+    'servicio': '/Catalog_servicios/servicios/{id}',
     'productos': '/Catalog_productos/productos',
-    'categorias': '/Catalog_categorias/categorias',
+    'producto': '/Catalog_productos/productos/{id}',
     
-    // Agendamiento
-    'agendamientos': '/Agendamiento_citas/agendamientos',
-    'horarios': '/Agendamiento_horarios/horarios',
-    'disponibilidad': '/Agendamiento_disponibilidad/disponibilidad',
+    // 💳 COMPRAS Y ÓRDENES
+    'ordenes': '/Client_ordenes/ordenes',
+    'orden': '/Client_ordenes/ordenes/{id}',
     
-    // Órdenes
-    'ordenes': '/Orders_ordenes/ordenes',
-    'detalleOrdenes': '/Orders_detalle_ordenes/detalle_ordenes',
-    'carrito': '/Orders_carrito/carrito',
+    // 📍 DIRECCIONES
+    'direcciones': '/Client_direcciones/direcciones',
+    'direccion': '/Client_direcciones/direcciones/{id}',
+    'direccionDefault': '/Client_direcciones/direcciones/{id}/default',
     
-    // Usuario
-    'perfil': '/User_perfil/perfil',
-    'direcciones': '/User_direcciones/direcciones',
-    'favoritos': '/User_favoritos/favoritos',
+    // ⭐ RESEÑAS Y CALIFICACIONES
+    'reseñas': '/Client_reseñas/reseñas',
+    'reseña': '/Client_reseñas/reseñas/{id}',
+    'reseñasPublic': '/Client_reseñas/reseñas/public',
     
-    // Gestión de usuario (nuevos endpoints)
-    'userAddresses': '/User_direcciones/direcciones',
-    'userFavorites': '/User_favoritos/favoritos',
-    'userAppointments': '/Agendamiento_citas/agendamientos',
-    'userOrders': '/Orders_ordenes/ordenes',
-    'userPaymentMethods': '/User_metodos_pago/metodos_pago',
+    // 🔔 RECORDATORIOS Y NOTIFICACIONES
+    'recordatorios': '/Client_recordatorios/recordatorios',
+    'recordatorio': '/Client_recordatorios/recordatorios/{id}',
     
-    // Sucursales
-    'sucursales': '/Branches_sucursales/sucursales',
-    'personal': '/Branches_personal/personal',
+    // 📊 DATOS ADICIONALES
+    'sucursales': '/Admin_sucursales/sucursales',
+    'personal': '/Admin_personal/personal',
+    'categorias': '/Admin_categorias/categorias',
+    'promociones': '/Admin_promociones/promociones',
     
-    // Pagos
-    'pagos': '/Payments_transacciones_pago/transacciones_pago',
+    // 🛒 CARRITO (si existe)
+    'carrito': '/Client_carrito/carrito',
     
-    // Recordatorios
-    'recordatorios': '/Reminders_recordatorios/recordatorios',
+    // 💳 MÉTODOS DE PAGO
+    'metodosPago': '/Client_metodos_pago/metodos_pago',
+    'metodoPago': '/Client_metodos_pago/metodos_pago/{id}',
+    
+    // ⭐ FAVORITOS
+    'favoritos': '/Client_favoritos/favoritos',
+    'favorito': '/Client_favoritos/favoritos/{id}',
   };
   
   // Credenciales de prueba
@@ -85,12 +88,29 @@ class DevConfig {
   
   /// Obtener URL completa para un endpoint
   static String getFullUrl(String endpoint) {
-    return '$apiBaseUrl$endpoint';
+    // Asegurar que el endpoint esté formateado correctamente
+    if (endpoint.isEmpty) {
+      throw ArgumentError('Endpoint cannot be empty');
+    }
+    
+    // Si el endpoint no comienza con '/', agregarlo
+    final formattedEndpoint = endpoint.startsWith('/') ? endpoint : '/$endpoint';
+    
+    return '$apiBaseUrl$formattedEndpoint';
   }
   
   /// Obtener endpoint por nombre
   static String? getEndpoint(String name) {
-    return endpoints[name];
+    final endpoint = endpoints[name];
+    if (endpoint == null) return null;
+    
+    // Si el endpoint ya comienza con '/', lo devolvemos tal como está
+    if (endpoint.startsWith('/')) {
+      return endpoint;
+    }
+    
+    // Si no, agregamos el prefijo '/'
+    return '/$endpoint';
   }
   
   /// Verificar si un endpoint requiere autenticación
@@ -98,8 +118,7 @@ class DevConfig {
     final publicEndpoints = [
       endpoints['login'],
       endpoints['register'],
-      endpoints['oauthLogin'],
-      endpoints['oauthRefresh'],
+      endpoints['reseñasPublic'],
     ];
     
     return !publicEndpoints.contains(endpoint);

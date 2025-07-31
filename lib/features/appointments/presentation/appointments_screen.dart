@@ -2,6 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
+import 'package:go_router/go_router.dart';
 import '../providers/appointments_provider.dart';
 import '../../auth/providers/auth_provider.dart';
 import '../models/appointment_model.dart';
@@ -14,28 +15,26 @@ class AppointmentsScreen extends StatefulWidget {
 }
 
 class _AppointmentsScreenState extends State<AppointmentsScreen> {
-  late Future<List<Map<String, dynamic>>> _futureAppointments;
+  Future<List<Map<String, dynamic>>>? _futureAppointments;
   bool _isRefreshing = false;
 
   @override
   void initState() {
     super.initState();
-    // Solo se llama una vez al inicializar
-    _futureAppointments = _loadAppointments();
+    // Usar addPostFrameCallback para evitar setState durante build
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        setState(() {
+          _futureAppointments = _loadAppointments();
+        });
+      }
+    });
   }
 
-  /// Cargar agendamientos una sola vez
+  /// Cargar agendamientos del usuario
   Future<List<Map<String, dynamic>>> _loadAppointments() async {
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
-    
-    if (!authProvider.isAuthenticated || authProvider.currentUser == null) {
-      return [];
-    }
-
-    final userId = authProvider.currentUser!['id']?.toString();
-    if (userId == null) {
-      return [];
-    }
+    final userId = authProvider.currentUser?['id']?.toString() ?? '';
 
     try {
       final appointmentsProvider = Provider.of<AppointmentsProvider>(context, listen: false);
@@ -45,7 +44,24 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> {
         throw Exception(appointmentsProvider.error);
       }
       
-      return appointmentsProvider.appointments;
+      // Convertir List<Agendamiento> a List<Map<String, dynamic>>
+      return appointmentsProvider.appointments.map((appointment) => {
+        'id': appointment.id,
+        'fecha_hora': appointment.fechaHora.toIso8601String(),
+        'usuario_id': appointment.usuarioId,
+        'servicio_id': appointment.servicioId,
+        'sucursal_id': appointment.sucursalId,
+        'estado': appointment.estado,
+        'personal_id': appointment.personalId,
+        'notas': appointment.notas,
+        'motivo_cancelacion': appointment.motivoCancelacion,
+        'precio': appointment.precio,
+        'duracion_minutos': appointment.duracionMinutos,
+        'nombre_servicio': appointment.nombreServicio,
+        'nombre_sucursal': appointment.nombreSucursal,
+        'nombre_personal': appointment.nombrePersonal,
+        'nombre_usuario': appointment.nombreUsuario,
+      }).toList();
     } catch (e) {
       print('❌ Error cargando agendamientos: $e');
       return [];
@@ -100,7 +116,7 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> {
               const SizedBox(height: 24),
               ElevatedButton(
                 onPressed: () {
-                  Navigator.pushNamed(context, '/login');
+                  context.push('/login');
                 },
                 child: const Text('Iniciar Sesión'),
               ),
@@ -117,18 +133,29 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> {
           IconButton(
             icon: const Icon(Icons.add),
             onPressed: () {
-              Navigator.pushNamed(context, '/book-appointment');
+              context.push('/agendar');
             },
           ),
         ],
       ),
       body: RefreshIndicator(
         onRefresh: _refreshAppointments,
-        child: FutureBuilder<List<Map<String, dynamic>>>(
-          future: _futureAppointments,
-          builder: (context, snapshot) {
-            // Mostrar loading
-            if (snapshot.connectionState == ConnectionState.waiting) {
+        child: _futureAppointments == null
+          ? const Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  CircularProgressIndicator(),
+                  SizedBox(height: 16),
+                  Text('Inicializando...'),
+                ],
+              ),
+            )
+          : FutureBuilder<List<Map<String, dynamic>>>(
+              future: _futureAppointments,
+              builder: (context, snapshot) {
+                // Mostrar loading
+                if (snapshot.connectionState == ConnectionState.waiting) {
               return const Center(
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
@@ -213,7 +240,7 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> {
                     const SizedBox(height: 24),
                     ElevatedButton(
                       onPressed: () {
-                        Navigator.pushNamed(context, '/book-appointment');
+                        context.push('/agendar');
                       },
                       child: const Text('Agendar Cita'),
                     ),
@@ -231,12 +258,12 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> {
                 return _buildAppointmentCard(context, appointment);
               },
             );
-          },
-        ),
+              },
+            ),
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () {
-          Navigator.pushNamed(context, '/book-appointment');
+          context.push('/agendar');
         },
         tooltip: 'Agendar Cita',
         child: const Icon(Icons.add),
@@ -517,7 +544,7 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> {
   }
 
   Future<void> _cancelAppointment(Map<String, dynamic> appointment) async {
-    final appointmentId = appointment['id']?.toString();
+    final appointmentId = appointment['id'];
     if (appointmentId == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Error: No se pudo identificar la cita')),
@@ -527,9 +554,9 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> {
 
     try {
       final appointmentsProvider = Provider.of<AppointmentsProvider>(context, listen: false);
-      final result = await appointmentsProvider.cancelAppointment(appointmentId);
+      final success = await appointmentsProvider.cancelAppointment(appointmentId);
       
-      if (result['success'] == true) {
+      if (success) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Cita cancelada exitosamente')),
         );
@@ -539,7 +566,7 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> {
         });
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: ${result['error']}')),
+          SnackBar(content: Text('Error: ${appointmentsProvider.error}')),
         );
       }
     } catch (e) {

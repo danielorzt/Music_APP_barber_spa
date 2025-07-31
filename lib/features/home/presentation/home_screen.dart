@@ -5,7 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'package:music_app/features/auth/providers/auth_provider.dart';
 import 'package:music_app/core/widgets/back_button_interceptor.dart';
 import 'package:music_app/core/widgets/simple_carousel.dart';
-import 'package:music_app/core/services/catalog_api_service.dart';
+import 'package:music_app/core/services/bmspa_api_service.dart';
 import 'package:music_app/core/widgets/loading_indicator.dart';
 import 'package:music_app/core/services/stories_api_service.dart';
 import 'package:music_app/core/services/news_api_service.dart';
@@ -58,7 +58,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   late Animation<double> _pulseAnimation;
   
   // Servicios API
-  final CatalogApiService _catalogService = CatalogApiService();
+  final BMSPAApiService _apiService = BMSPAApiService();
   final StoriesApiService _storiesService = StoriesApiService();
   final NewsApiService _newsService = NewsApiService();
   
@@ -148,42 +148,61 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     setState(() => _isLoadingServices = true);
     
     try {
-      final response = await _catalogService.getServiciosDestacados();
-      if (response['success'] == true) {
-        final servicesData = response['data'] ?? [];
+      final servicesData = await _apiService.getServicios();
+      if (servicesData.isNotEmpty) {
+        // Filtrar servicios destacados o tomar los primeros 4
+        final featuredServices = servicesData.where((service) {
+          // Buscar servicios que contengan palabras clave de destacados
+          final nombre = service['nombre']?.toString().toLowerCase() ?? '';
+          final descripcion = service['descripcion']?.toString().toLowerCase() ?? '';
+          
+          return nombre.contains('premium') || 
+                 nombre.contains('exclusivo') || 
+                 nombre.contains('especial') ||
+                 descripcion.contains('premium') ||
+                 descripcion.contains('exclusivo') ||
+                 descripcion.contains('especial');
+        }).toList();
+        
+        // Si no hay destacados, tomar los primeros 4
+        final servicesToShow = featuredServices.isNotEmpty 
+            ? featuredServices.take(4).toList()
+            : servicesData.take(4).toList();
+        
         if (mounted) {
           setState(() {
-            _featuredServices = List<Map<String, dynamic>>.from(servicesData);
+            _featuredServices = servicesToShow;
           });
         }
+        print('✅ Home: ${_featuredServices.length} servicios destacados cargados');
       }
     } catch (e) {
-      print('Error cargando servicios destacados: $e');
-      // Mantener datos mock como fallback
+      print('❌ Error cargando servicios: $e');
+      // Fallback con datos mock
       _featuredServices = [
         {
-          'id': '1',
-          'nombre': 'Corte Clásico',
+          'id': 1,
+          'nombre': 'Corte Clásico Premium',
           'precio': 25.0,
           'imagen': 'https://images.unsplash.com/photo-1503951914875-452162b0f3f1?w=300&h=200&fit=crop',
         },
         {
-          'id': '2',
-          'nombre': 'Corte + Barba',
+          'id': 2,
+          'nombre': 'Corte + Barba Exclusivo',
           'precio': 40.0,
           'imagen': 'https://images.unsplash.com/photo-1585747860715-2ba37e788b70?w=300&h=200&fit=crop',
         },
         {
-          'id': '3',
-          'nombre': 'Tratamiento Facial',
-          'precio': 35.0,
+          'id': 7,
+          'nombre': 'HIFU Facial Premium',
+          'precio': 200.0,
           'imagen': 'https://images.unsplash.com/photo-1570172619644-dfd03ed5d881?w=300&h=200&fit=crop',
         },
         {
-          'id': '4',
-          'nombre': 'Masaje Relajante',
-          'precio': 60.0,
-          'imagen': 'https://images.unsplash.com/photo-1544161512-4ab64f436453?w=300&h=200&fit=crop',
+          'id': 16,
+          'nombre': 'Arreglo y Diseño de Barba',
+          'precio': 20.0,
+          'imagen': 'https://images.unsplash.com/photo-1585747860715-2ba37e788b70?w=300&h=200&fit=crop',
         },
       ];
     } finally {
@@ -193,47 +212,70 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     }
   }
 
-  /// Cargar productos populares
+  /// Cargar productos destacados
   Future<void> _loadPopularProducts() async {
     setState(() => _isLoadingProducts = true);
     
     try {
-      final response = await _catalogService.getProductosDestacados();
-      if (response['success'] == true) {
-        final productsData = response['data'] ?? [];
+      final productsData = await _apiService.getProductos();
+      if (productsData.isNotEmpty) {
+        // Convertir productos a Map y filtrar destacados
+        final productsAsMap = productsData.map((producto) => {
+          'id': producto.id,
+          'nombre': producto.nombre,
+          'precio': producto.precio,
+          'imagen': producto.urlImagen,
+        }).toList();
+        
+        // Filtrar productos destacados
+        final featuredProducts = productsAsMap.where((product) {
+          final nombre = product['nombre']?.toString().toLowerCase() ?? '';
+          return nombre.contains('premium') || 
+                 nombre.contains('royal') || 
+                 nombre.contains('exclusivo') ||
+                 nombre.contains('kit') ||
+                 nombre.contains('set');
+        }).toList();
+        
+        // Si no hay destacados, tomar los primeros 4
+        final productsToShow = featuredProducts.isNotEmpty 
+            ? featuredProducts.take(4).toList()
+            : productsAsMap.take(4).toList();
+        
         if (mounted) {
           setState(() {
-            _popularProducts = List<Map<String, dynamic>>.from(productsData);
+            _popularProducts = productsToShow;
           });
         }
+        print('✅ Home: ${_popularProducts.length} productos destacados cargados');
       }
     } catch (e) {
-      print('Error cargando productos populares: $e');
-      // Mantener datos mock como fallback
+      print('❌ Error cargando productos: $e');
+      // Fallback con datos mock
       _popularProducts = [
         {
-          'id': '1',
-          'nombre': 'Aceite para Barba Premium',
-          'precio': 25.0,
+          'id': 1,
+          'nombre': 'Bálsamo Clásico Premium',
+          'precio': 29.35,
           'imagen': 'https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?w=300&h=200&fit=crop',
         },
         {
-          'id': '2',
-          'nombre': 'Pomada para Cabello',
-          'precio': 18.0,
+          'id': 6,
+          'nombre': 'Pomada Base Agua Royal Barber',
+          'precio': 26.41,
           'imagen': 'https://images.unsplash.com/photo-1522335789203-aabd1fc54bc9?w=300&h=200&fit=crop',
         },
         {
-          'id': '3',
-          'nombre': 'Kit de Afeitado',
-          'precio': 45.0,
-          'imagen': 'https://images.unsplash.com/photo-1582735689369-4fe89db7114c?w=300&h=200&fit=crop',
+          'id': 26,
+          'nombre': 'Shampoo de Barba Premium',
+          'precio': 21.76,
+          'imagen': 'https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?w=300&h=200&fit=crop',
         },
         {
-          'id': '4',
-          'nombre': 'Crema Hidratante',
-          'precio': 22.0,
-          'imagen': 'https://images.unsplash.com/photo-1556228720-195a672e8a03?w=300&h=200&fit=crop',
+          'id': 45,
+          'nombre': 'Kit Premium de 2 Meses',
+          'precio': 52.88,
+          'imagen': 'https://images.unsplash.com/photo-1522335789203-aabd1fc54bc9?w=300&h=200&fit=crop',
         },
       ];
     } finally {
@@ -248,27 +290,27 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     setState(() => _isLoadingPromotions = true);
     
     try {
-      final response = await _catalogService.getOfertas();
-      if (response['success'] == true) {
-        final promotionsData = response['data'] ?? [];
+      final promotionsData = await _apiService.getPromociones();
+      if (promotionsData.isNotEmpty) {
         if (mounted) {
           setState(() {
-            _promotions = List<Map<String, dynamic>>.from(promotionsData);
+            _promotions = promotionsData;
           });
         }
+        print('✅ Home: ${_promotions.length} promociones cargadas');
       }
     } catch (e) {
-      print('Error cargando promociones: $e');
-      // Mantener datos mock como fallback
+      print('❌ Error cargando promociones: $e');
+      // Fallback con datos mock
       _promotions = [
         {
-          'id': '1',
+          'id': 1,
           'titulo': 'Descuento 20%',
           'descripcion': 'En todos los cortes de cabello',
           'imagen': 'https://images.unsplash.com/photo-1503951914875-452162b0f3f1?w=400&h=200&fit=crop',
         },
         {
-          'id': '2',
+          'id': 2,
           'titulo': '2x1 en Productos',
           'descripcion': 'Lleva 2 productos por el precio de 1',
           'imagen': 'https://images.unsplash.com/photo-1582735689369-4fe89db7114c?w=400&h=200&fit=crop',
@@ -677,7 +719,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                 ),
               ),
               TextButton(
-                onPressed: () => context.go('/servicios'),
+                onPressed: () => context.go('/services'),
                 child: const Text(
                   'Ver todos',
                   style: TextStyle(
@@ -797,7 +839,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                 ),
               ),
               TextButton(
-                onPressed: () => context.go('/productos'),
+                onPressed: () => context.go('/products'),
                 child: const Text(
                   'Ver todos',
                   style: TextStyle(
@@ -906,79 +948,137 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         'title': 'Servicios',
         'icon': Icons.spa,
         'color': const Color(0xFFE74C3C),
-        'route': '/servicios',
+        'route': '/services',
       },
       {
         'title': 'Productos',
         'icon': Icons.shopping_bag,
         'color': const Color(0xFF3498DB),
-        'route': '/productos',
+        'route': '/products',
       },
       {
         'title': 'Citas',
         'icon': Icons.calendar_today,
         'color': const Color(0xFF2ECC71),
-        'route': '/citas',
+        'route': '/appointments',
+      },
+      {
+        'title': 'Carrito',
+        'icon': Icons.shopping_cart,
+        'color': const Color(0xFF9B59B6),
+        'route': '/cart',
       },
       {
         'title': 'Ofertas',
         'icon': Icons.local_offer,
         'color': const Color(0xFFF39C12),
-        'route': '/ofertas',
+        'route': '/promotions',
       },
     ];
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 20),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-        children: categories.map((category) {
-          return Expanded(
-            child: Container(
-              margin: const EdgeInsets.symmetric(horizontal: 6),
-              child: InkWell(
-                onTap: () => context.go(category['route'] as String),
-                borderRadius: BorderRadius.circular(16),
+      child: Column(
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: categories.take(4).map((category) {
+              return Expanded(
                 child: Container(
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  decoration: BoxDecoration(
-                    color: (category['color'] as Color).withOpacity(0.1),
+                  margin: const EdgeInsets.symmetric(horizontal: 6),
+                  child: InkWell(
+                    onTap: () => context.go(category['route'] as String),
                     borderRadius: BorderRadius.circular(16),
-                    border: Border.all(
-                      color: (category['color'] as Color).withOpacity(0.3),
-                      width: 1,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      decoration: BoxDecoration(
+                        color: (category['color'] as Color).withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(
+                          color: (category['color'] as Color).withOpacity(0.3),
+                          width: 1,
+                        ),
+                      ),
+                      child: Column(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: category['color'] as Color,
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Icon(
+                              category['icon'] as IconData,
+                              color: Colors.white,
+                              size: 24,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            category['title'] as String,
+                            style: TextStyle(
+                              fontWeight: FontWeight.w600,
+                              fontSize: 12,
+                              color: category['color'] as Color,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                        ],
+                      ),
                     ),
                   ),
-                  child: Column(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: category['color'] as Color,
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Icon(
-                          category['icon'] as IconData,
-                          color: Colors.white,
-                          size: 24,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        category['title'] as String,
-                        style: TextStyle(
-                          fontWeight: FontWeight.w600,
-                          fontSize: 12,
-                          color: category['color'] as Color,
-                        ),
-                      ),
-                    ],
+                ),
+              );
+            }).toList(),
+          ),
+          const SizedBox(height: 12),
+          // Botón de ofertas en una fila separada
+          Container(
+            margin: const EdgeInsets.symmetric(horizontal: 6),
+            child: InkWell(
+              onTap: () => context.go('/promotions'),
+              borderRadius: BorderRadius.circular(16),
+              child: Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF39C12).withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(
+                    color: const Color(0xFFF39C12).withOpacity(0.3),
+                    width: 1,
                   ),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFF39C12),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: const Icon(
+                        Icons.local_offer,
+                        color: Colors.white,
+                        size: 20,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    const Text(
+                      'Ofertas',
+                      style: TextStyle(
+                        fontWeight: FontWeight.w600,
+                        fontSize: 14,
+                        color: Color(0xFFF39C12),
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ),
-          );
-        }).toList(),
+          ),
+        ],
       ),
     );
   }

@@ -2,341 +2,568 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
 import '../../auth/providers/auth_provider.dart';
+import '../../../core/theme/theme_provider.dart';
+import '../../../core/services/orders_api_service.dart';
+import '../../../core/services/appointments_api_service.dart';
 
-class ProfileScreen extends StatelessWidget {
+class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Theme.of(context).brightness == Brightness.dark 
-          ? Colors.black 
-          : Colors.white,
-      appBar: AppBar(
-        title: const Text('Mi Perfil'),
-        backgroundColor: Theme.of(context).brightness == Brightness.dark 
-            ? Colors.black 
-            : Colors.white,
-        foregroundColor: Theme.of(context).brightness == Brightness.dark 
-            ? Colors.white 
-            : Colors.black,
-        elevation: 0,
-      ),
-      body: Consumer<AuthProvider>(
-        builder: (context, authProvider, child) {
-          if (!authProvider.isAuthenticated) {
-            return _buildLoginPrompt(context);
-          }
+  State<ProfileScreen> createState() => _ProfileScreenState();
+}
 
-          return SingleChildScrollView(
-            child: Column(
-              children: [
-                _buildProfileHeader(context, authProvider),
-                const SizedBox(height: 20),
-                _buildQuickStats(context),
-                const SizedBox(height: 20),
-                _buildMenuItems(context),
-              ],
-            ),
-          );
-        },
-      ),
-    );
+class _ProfileScreenState extends State<ProfileScreen> {
+  final OrdersApiService _ordersService = OrdersApiService();
+  final AppointmentsApiService _appointmentsService = AppointmentsApiService();
+  
+  bool _isLoadingHistory = false;
+  Map<String, dynamic>? _purchaseHistory;
+  Map<String, dynamic>? _appointmentHistory;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadHistory();
   }
 
-  Widget _buildLoginPrompt(BuildContext context) {
-    final theme = Theme.of(context);
-    final isDarkMode = theme.brightness == Brightness.dark;
+  Future<void> _loadHistory() async {
+    setState(() => _isLoadingHistory = true);
     
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.person_outline,
-              size: 100,
-              color: isDarkMode ? Colors.white70 : Colors.grey[400],
-            ),
-            const SizedBox(height: 24),
-            Text(
-              'Inicia sesión para acceder a tu perfil',
-              style: theme.textTheme.headlineSmall?.copyWith(
-                fontWeight: FontWeight.bold,
+    try {
+      // Cargar historial de compras
+      final purchaseResult = await _ordersService.getPurchaseHistory();
+      if (purchaseResult['success']) {
+        setState(() {
+          _purchaseHistory = purchaseResult;
+        });
+      }
+      
+      // Cargar historial de citas
+      final appointmentResult = await _appointmentsService.getMisAgendamientos();
+      setState(() {
+        _appointmentHistory = {
+          'success': true,
+          'agendamientos': appointmentResult.map((a) => a.toJson()).toList(),
+        };
+      });
+    } catch (e) {
+      print('❌ Error cargando historial: $e');
+    } finally {
+      setState(() => _isLoadingHistory = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final authProvider = Provider.of<AuthProvider>(context);
+    final themeProvider = Provider.of<ThemeProvider>(context);
+    
+    if (authProvider.currentUser == null) {
+      return Scaffold(
+        appBar: AppBar(
+          title: const Text('Mi Perfil'),
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+        ),
+        body: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(
+                Icons.lock,
+                size: 80,
+                color: Colors.grey,
               ),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 16),
-            Text(
-              'Gestiona tus citas, favoritos, historial y mucho más',
-              style: theme.textTheme.bodyLarge?.copyWith(
-                color: isDarkMode ? Colors.white70 : Colors.grey[600],
+              const SizedBox(height: 16),
+              const Text(
+                'Inicia sesión para ver tu perfil',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 32),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: () => context.push('/login'),
+              const SizedBox(height: 24),
+              ElevatedButton(
+                onPressed: () => context.go('/login'),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFFDC3545),
                   foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
                 ),
                 child: const Text('Iniciar Sesión'),
               ),
-            ),
-            const SizedBox(height: 16),
-            SizedBox(
-              width: double.infinity,
-              child: OutlinedButton(
-                onPressed: () => context.push('/register'),
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: const Color(0xFFDC3545),
-                  side: const BorderSide(color: Color(0xFFDC3545)),
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                ),
-                child: const Text('Crear Cuenta'),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildProfileHeader(BuildContext context, AuthProvider authProvider) {
-    final theme = Theme.of(context);
-    final isDarkMode = theme.brightness == Brightness.dark;
-    
-    if (authProvider.currentUser == null) {
-      return Container(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          children: [
-            const CircleAvatar(
-              radius: 50,
-              backgroundColor: Color(0xFFDC3545),
-              child: Icon(
-                Icons.person,
-                size: 50,
-                color: Colors.white,
-              ),
-            ),
-            const SizedBox(height: 16),
-            Text(
-              'No autenticado',
-              style: theme.textTheme.headlineSmall?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Inicia sesión para ver tu perfil',
-              style: theme.textTheme.bodyMedium?.copyWith(
-                color: isDarkMode ? Colors.white70 : Colors.grey[600],
-              ),
-            ),
-          ],
+            ],
+          ),
         ),
       );
     }
 
     final user = authProvider.currentUser!;
-    
-    return Container(
-      padding: const EdgeInsets.all(20),
-      child: Column(
-        children: [
-          CircleAvatar(
-            radius: 50,
-            backgroundColor: const Color(0xFFDC3545),
-            backgroundImage: user['avatar_url'] != null
-                ? NetworkImage(user['avatar_url'])
-                : null,
-            child: user['avatar_url'] == null
-                ? Text(
-                    user['nombre']?[0]?.toUpperCase() ?? 'U',
+
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Mi Perfil'),
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.logout),
+            onPressed: () async {
+              await authProvider.logout();
+              if (mounted) {
+                context.go('/login');
+              }
+            },
+          ),
+        ],
+      ),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Información del usuario
+            _buildUserInfo(user),
+            
+            const SizedBox(height: 24),
+            
+            // Configuración de tema
+            _buildThemeSection(themeProvider),
+            
+            const SizedBox(height: 24),
+            
+            // Historial de agendamientos
+            _buildAppointmentHistory(),
+            
+            const SizedBox(height: 24),
+            
+            // Historial de compras
+            _buildPurchaseHistory(),
+            
+            const SizedBox(height: 24),
+            
+            // Configuración de notificaciones
+            _buildNotificationSettings(),
+            
+            const SizedBox(height: 24),
+            
+            // Enlaces de ayuda
+            _buildHelpLinks(),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildUserInfo(Map<String, dynamic> user) {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                CircleAvatar(
+                  radius: 30,
+                  backgroundColor: const Color(0xFFDC3545),
+                  child: Text(
+                    (user['nombre'] ?? 'U').substring(0, 1).toUpperCase(),
                     style: const TextStyle(
                       color: Colors.white,
-                      fontSize: 24,
+                      fontSize: 20,
                       fontWeight: FontWeight.bold,
                     ),
-                  )
-                : null,
-          ),
-          const SizedBox(height: 16),
-          Text(
-            user['nombre'] ?? 'Usuario',
-            style: theme.textTheme.headlineSmall?.copyWith(
-              fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        user['nombre'] ?? 'Usuario',
+                        style: const TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      Text(
+                        user['email'] ?? '',
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: Colors.grey.shade600,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.edit),
+                  onPressed: () => context.push('/edit-profile'),
+                ),
+              ],
             ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            user['email'] ?? '',
-            style: theme.textTheme.bodyMedium?.copyWith(
-              color: isDarkMode ? Colors.white70 : Colors.grey[600],
-            ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
 
-  Widget _buildQuickStats(BuildContext context) {
-    final theme = Theme.of(context);
-    final isDarkMode = theme.brightness == Brightness.dark;
-    
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20),
-      child: Row(
-        children: [
-          Expanded(
-            child: _buildStatCard(
-              context,
-              icon: Icons.calendar_today,
-              title: 'Citas',
-              value: '12',
-              color: Colors.blue,
+  Widget _buildThemeSection(ThemeProvider themeProvider) {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Tema de la App',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+              ),
             ),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: _buildStatCard(
-              context,
-              icon: Icons.shopping_bag,
-              title: 'Compras',
-              value: '8',
-              color: Colors.green,
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                Expanded(
+                  child: ListTile(
+                    leading: const Icon(Icons.light_mode),
+                    title: const Text('Claro'),
+                    trailing: Radio<ThemeMode>(
+                      value: ThemeMode.light,
+                      groupValue: themeProvider.themeMode,
+                      onChanged: (ThemeMode? value) {
+                        if (value != null) {
+                          themeProvider.setThemeMode(value);
+                        }
+                      },
+                    ),
+                  ),
+                ),
+                Expanded(
+                  child: ListTile(
+                    leading: const Icon(Icons.dark_mode),
+                    title: const Text('Oscuro'),
+                    trailing: Radio<ThemeMode>(
+                      value: ThemeMode.dark,
+                      groupValue: themeProvider.themeMode,
+                      onChanged: (ThemeMode? value) {
+                        if (value != null) {
+                          themeProvider.setThemeMode(value);
+                        }
+                      },
+                    ),
+                  ),
+                ),
+                Expanded(
+                  child: ListTile(
+                    leading: const Icon(Icons.settings_system_daydream),
+                    title: const Text('Sistema'),
+                    trailing: Radio<ThemeMode>(
+                      value: ThemeMode.system,
+                      groupValue: themeProvider.themeMode,
+                      onChanged: (ThemeMode? value) {
+                        if (value != null) {
+                          themeProvider.setThemeMode(value);
+                        }
+                      },
+                    ),
+                  ),
+                ),
+              ],
             ),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: _buildStatCard(
-              context,
-              icon: Icons.favorite,
-              title: 'Favoritos',
-              value: '5',
-              color: Colors.red,
-            ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
 
-  Widget _buildStatCard(
-    BuildContext context, {
-    required IconData icon,
-    required String title,
-    required String value,
-    required Color color,
-  }) {
-    final theme = Theme.of(context);
-    final isDarkMode = theme.brightness == Brightness.dark;
-    
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: isDarkMode ? Colors.white10 : Colors.grey[50],
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: isDarkMode ? Colors.white.withOpacity(0.2) : Colors.grey[300]!,
+  Widget _buildAppointmentHistory() {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                const Icon(Icons.calendar_today, color: Color(0xFFDC3545)),
+                const SizedBox(width: 8),
+                const Text(
+                  'Historial de Agendamientos',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const Spacer(),
+                TextButton(
+                  onPressed: () => context.push('/appointments'),
+                  child: const Text('Ver todos'),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            if (_isLoadingHistory)
+              const Center(child: CircularProgressIndicator())
+            else if (_appointmentHistory != null && 
+                     _appointmentHistory!['agendamientos'] != null &&
+                     _appointmentHistory!['agendamientos'].isNotEmpty)
+              Column(
+                children: (_appointmentHistory!['agendamientos'] as List)
+                    .take(3)
+                    .map((appointment) => _buildAppointmentItem(appointment))
+                    .toList(),
+              )
+            else
+              const Text(
+                'No tienes citas agendadas',
+                style: TextStyle(color: Colors.grey),
+              ),
+          ],
         ),
-      ),
-      child: Column(
-        children: [
-          Icon(
-            icon,
-            color: color,
-            size: 24,
-          ),
-          const SizedBox(height: 8),
-          Text(
-            value,
-            style: theme.textTheme.headlineSmall?.copyWith(
-              fontWeight: FontWeight.bold,
-              color: color,
-            ),
-          ),
-          Text(
-            title,
-            style: theme.textTheme.bodySmall?.copyWith(
-              color: isDarkMode ? Colors.white70 : Colors.grey[600],
-            ),
-          ),
-        ],
       ),
     );
   }
 
-  Widget _buildMenuItems(BuildContext context) {
-    final theme = Theme.of(context);
-    final isDarkMode = theme.brightness == Brightness.dark;
+  Widget _buildAppointmentItem(Map<String, dynamic> appointment) {
+    final fecha = DateTime.tryParse(appointment['fecha_hora'] ?? '');
+    final fechaStr = fecha != null 
+        ? '${fecha.day}/${fecha.month}/${fecha.year} ${fecha.hour}:${fecha.minute.toString().padLeft(2, '0')}'
+        : 'Fecha no disponible';
     
-    final menuItems = [
-      {'icon': Icons.location_on, 'title': 'Mis Direcciones', 'route': '/profile/addresses'},
-      {'icon': Icons.favorite, 'title': 'Mis Favoritos', 'route': '/profile/favorites'},
-      {'icon': Icons.history, 'title': 'Historial', 'route': '/profile/history'},
-      {'icon': Icons.payment, 'title': 'Métodos de Pago', 'route': '/profile/payment-methods'},
-      {'icon': Icons.help, 'title': 'Ayuda y Soporte', 'route': '/profile/help-support'},
-      {'icon': Icons.settings, 'title': 'Configuración', 'route': '/profile/settings'},
-    ];
-
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20),
-      child: Column(
-        children: menuItems.map((item) => _buildMenuItem(
-          context,
-          icon: item['icon'] as IconData,
-          title: item['title'] as String,
-          onTap: () {
-            context.push(item['route'] as String);
-          },
-        )).toList(),
-      ),
-    );
-  }
-
-  Widget _buildMenuItem(
-    BuildContext context, {
-    required IconData icon,
-    required String title,
-    required VoidCallback onTap,
-  }) {
-    final theme = Theme.of(context);
-    final isDarkMode = theme.brightness == Brightness.dark;
-    
-    return Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      decoration: BoxDecoration(
-        color: isDarkMode ? Colors.white10 : Colors.grey[50],
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: isDarkMode ? Colors.white.withOpacity(0.2) : Colors.grey[300]!,
-        ),
-      ),
-      child: ListTile(
-        leading: Icon(
-          icon,
-          color: const Color(0xFFDC3545),
-        ),
-        title: Text(
-          title,
-          style: theme.textTheme.bodyLarge?.copyWith(
-            fontWeight: FontWeight.w500,
-          ),
-        ),
-        trailing: Icon(
-          Icons.arrow_forward_ios,
-          color: isDarkMode ? Colors.white70 : Colors.grey[600],
+    return ListTile(
+      leading: CircleAvatar(
+        backgroundColor: _getStatusColor(appointment['estado'] ?? ''),
+        child: Icon(
+          _getStatusIcon(appointment['estado'] ?? ''),
+          color: Colors.white,
           size: 16,
         ),
-        onTap: onTap,
+      ),
+      title: Text(appointment['nombre_servicio'] ?? 'Servicio'),
+      subtitle: Text(fechaStr),
+      trailing: Text(
+        appointment['estado'] ?? 'PENDIENTE',
+        style: TextStyle(
+          color: _getStatusColor(appointment['estado'] ?? ''),
+          fontWeight: FontWeight.bold,
+        ),
       ),
     );
+  }
+
+  Widget _buildPurchaseHistory() {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                const Icon(Icons.shopping_bag, color: Color(0xFFDC3545)),
+                const SizedBox(width: 8),
+                const Text(
+                  'Historial de Compras',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const Spacer(),
+                TextButton(
+                  onPressed: () => context.push('/orders'),
+                  child: const Text('Ver todos'),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            if (_isLoadingHistory)
+              const Center(child: CircularProgressIndicator())
+            else if (_purchaseHistory != null && 
+                     _purchaseHistory!['ordenes'] != null &&
+                     _purchaseHistory!['ordenes'].isNotEmpty)
+              Column(
+                children: (_purchaseHistory!['ordenes'] as List)
+                    .take(3)
+                    .map((order) => _buildOrderItem(order))
+                    .toList(),
+              )
+            else
+              const Text(
+                'No tienes compras realizadas',
+                style: TextStyle(color: Colors.grey),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildOrderItem(Map<String, dynamic> order) {
+    final fecha = DateTime.tryParse(order['fecha_orden'] ?? '');
+    final fechaStr = fecha != null 
+        ? '${fecha.day}/${fecha.month}/${fecha.year}'
+        : 'Fecha no disponible';
+    
+    return ListTile(
+      leading: CircleAvatar(
+        backgroundColor: _getOrderStatusColor(order['estado_orden'] ?? ''),
+        child: Icon(
+          _getOrderStatusIcon(order['estado_orden'] ?? ''),
+          color: Colors.white,
+          size: 16,
+        ),
+      ),
+      title: Text('Orden ${order['numero_orden'] ?? ''}'),
+      subtitle: Text(fechaStr),
+      trailing: Text(
+        '\$${(order['total_orden'] ?? 0).toStringAsFixed(2)}',
+        style: const TextStyle(
+          fontWeight: FontWeight.bold,
+          color: Color(0xFFDC3545),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildNotificationSettings() {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Notificaciones',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 12),
+            SwitchListTile(
+              title: const Text('Recordatorios de citas'),
+              subtitle: const Text('Recibe notificaciones antes de tus citas'),
+              value: true, // TODO: Implementar con SharedPreferences
+              onChanged: (bool value) {
+                // TODO: Implementar guardado de preferencias
+              },
+            ),
+            SwitchListTile(
+              title: const Text('Ofertas y promociones'),
+              subtitle: const Text('Recibe notificaciones de descuentos'),
+              value: false, // TODO: Implementar con SharedPreferences
+              onChanged: (bool value) {
+                // TODO: Implementar guardado de preferencias
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildHelpLinks() {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Ayuda y Soporte',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 12),
+            ListTile(
+              leading: const Icon(Icons.person),
+              title: const Text('Cambiar información de perfil'),
+              trailing: const Icon(Icons.arrow_forward_ios),
+              onTap: () => context.push('/edit-profile'),
+            ),
+            ListTile(
+              leading: const Icon(Icons.lock),
+              title: const Text('Cambiar contraseña'),
+              trailing: const Icon(Icons.arrow_forward_ios),
+              onTap: () => context.push('/change-password'),
+            ),
+            ListTile(
+              leading: const Icon(Icons.help),
+              title: const Text('Ayuda y soporte'),
+              trailing: const Icon(Icons.arrow_forward_ios),
+              onTap: () => context.push('/help-support'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Color _getStatusColor(String status) {
+    switch (status.toUpperCase()) {
+      case 'CONFIRMADA':
+      case 'COMPLETADA':
+        return Colors.green;
+      case 'PENDIENTE':
+      case 'PROGRAMADA':
+        return Colors.orange;
+      case 'CANCELADA':
+        return Colors.red;
+      default:
+        return Colors.grey;
+    }
+  }
+
+  IconData _getStatusIcon(String status) {
+    switch (status.toUpperCase()) {
+      case 'CONFIRMADA':
+      case 'COMPLETADA':
+        return Icons.check_circle;
+      case 'PENDIENTE':
+      case 'PROGRAMADA':
+        return Icons.schedule;
+      case 'CANCELADA':
+        return Icons.cancel;
+      default:
+        return Icons.help;
+    }
+  }
+
+  Color _getOrderStatusColor(String status) {
+    switch (status.toUpperCase()) {
+      case 'COMPLETADA':
+      case 'ENTREGADA':
+        return Colors.green;
+      case 'PENDIENTE':
+      case 'PROCESANDO':
+        return Colors.orange;
+      case 'CANCELADA':
+        return Colors.red;
+      default:
+        return Colors.grey;
+    }
+  }
+
+  IconData _getOrderStatusIcon(String status) {
+    switch (status.toUpperCase()) {
+      case 'COMPLETADA':
+      case 'ENTREGADA':
+        return Icons.check_circle;
+      case 'PENDIENTE':
+      case 'PROCESANDO':
+        return Icons.schedule;
+      case 'CANCELADA':
+        return Icons.cancel;
+      default:
+        return Icons.shopping_bag;
+    }
   }
 }
