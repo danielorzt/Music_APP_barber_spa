@@ -58,6 +58,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
                     width: double.infinity,
                     height: double.infinity,
                     fit: BoxFit.cover,
+                    productIndex: widget.product.id % 15, // Use product ID to determine image index
                   ),
                   // Gradiente para mejor legibilidad
                   Container(

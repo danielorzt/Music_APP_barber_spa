@@ -589,22 +589,6 @@ class _BookAppointmentScreenState extends State<BookAppointmentScreen> {
                       color: isSelected ? const Color(0xFFDC3545) : null,
                     ),
                   ),
-                  const SizedBox(height: 8),
-                  Text(
-                    sucursal['direccion'] ?? 'Sin dirección',
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: Colors.grey.shade600,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    sucursal['horario'] ?? 'Horario no disponible',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: Colors.grey.shade500,
-                    ),
-                  ),
                 ],
               ),
             ),
@@ -653,33 +637,6 @@ class _BookAppointmentScreenState extends State<BookAppointmentScreen> {
                       fontWeight: FontWeight.bold,
                       color: isSelected ? const Color(0xFFDC3545) : null,
                     ),
-                  ),
-                  const SizedBox(height: 8),
-                  Row(
-                    children: [
-                      Icon(
-                        Icons.schedule,
-                        size: 16,
-                        color: Colors.grey.shade600,
-                      ),
-                      const SizedBox(width: 4),
-                      Text(
-                        '${service['duracion'] ?? 0} min',
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: Colors.grey.shade600,
-                        ),
-                      ),
-                      const SizedBox(width: 16),
-                      Text(
-                        '\$${service['precio'] ?? 0}',
-                        style: const TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          color: Color(0xFFDC3545),
-                        ),
-                      ),
-                    ],
                   ),
                 ],
               ),

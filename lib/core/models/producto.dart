@@ -27,7 +27,7 @@ class Producto extends Equatable {
       urlImagen: json['urlImagen']?.toString() ?? 
                 json['imagen']?.toString() ?? 
                 json['image']?.toString() ?? 
-                'https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?w=400&h=400&fit=crop',
+                '', // Empty string to force ImageMapper to use dynamic Unsplash images
     );
   }
 

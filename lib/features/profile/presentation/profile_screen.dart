@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
+import 'dart:convert';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../auth/providers/auth_provider.dart';
 import '../../../core/providers/settings_provider.dart';
 import '../../../core/services/orders_api_service.dart';
@@ -21,11 +23,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
   bool _isLoadingHistory = false;
   Map<String, dynamic>? _purchaseHistory;
   Map<String, dynamic>? _appointmentHistory;
+  Map<String, dynamic>? _localProfileData;
 
   @override
   void initState() {
     super.initState();
     _loadHistory();
+    _loadLocalProfileData();
   }
 
   Future<void> _loadHistory() async {
@@ -64,6 +68,23 @@ class _ProfileScreenState extends State<ProfileScreen> {
       if (mounted) {
         setState(() => _isLoadingHistory = false);
       }
+    }
+  }
+
+  Future<void> _loadLocalProfileData() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final localData = prefs.getString('profile_data');
+      if (localData != null) {
+        final profileData = Map<String, dynamic>.from(jsonDecode(localData));
+        if (mounted) {
+          setState(() {
+            _localProfileData = profileData;
+          });
+        }
+      }
+    } catch (e) {
+      print('❌ Error cargando datos locales del perfil: $e');
     }
   }
 
@@ -170,6 +191,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Widget _buildUserInfo(Map<String, dynamic> user) {
+    // Usar datos locales si están disponibles, sino usar datos del usuario
+    final displayName = _localProfileData?['nombre'] ?? user['nombre'] ?? 'Usuario';
+    final displayEmail = _localProfileData?['email'] ?? user['email'] ?? '';
+    
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -182,7 +207,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   radius: 30,
                   backgroundColor: const Color(0xFFDC3545),
                   child: Text(
-                    (user['nombre'] ?? 'U').substring(0, 1).toUpperCase(),
+                    displayName.substring(0, 1).toUpperCase(),
                     style: const TextStyle(
                       color: Colors.white,
                       fontSize: 20,
@@ -196,14 +221,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        user['nombre'] ?? 'Usuario',
+                        displayName,
                         style: const TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
                       Text(
-                        user['email'] ?? '',
+                        displayEmail,
                         style: TextStyle(
                           fontSize: 14,
                           color: Colors.grey.shade600,

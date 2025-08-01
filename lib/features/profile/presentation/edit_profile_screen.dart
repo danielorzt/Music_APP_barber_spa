@@ -309,45 +309,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                       ),
                     ),
                     
-                    const SizedBox(height: 16),
-                    
-                    // Información adicional
-                    Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        color: Colors.blue.shade50,
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: Colors.blue.shade200),
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: [
-                              Icon(Icons.info, color: Colors.blue.shade700),
-                              const SizedBox(width: 8),
-                              Text(
-                                'Información',
-                                style: TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.blue.shade700,
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            'Los cambios se guardan localmente en tu dispositivo. Esta es una demostración de la funcionalidad de edición de perfil.',
-                            style: TextStyle(
-                              color: Colors.blue.shade700,
-                              fontSize: 14,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
+
                   ],
                 ),
               ),

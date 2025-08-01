@@ -175,8 +175,27 @@ class ImageMapper {
         .trim();
   }
 
-  /// Obtiene URL de imagen de Unsplash basada en el nombre
-  static String getUnsplashImage(String name, {bool isService = false}) {
+  /// Lista de imágenes de Unsplash relacionadas con barbería para productos
+  static const List<String> _barberProductImages = [
+    'https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?w=300&h=300&fit=crop&auto=format&q=80', // Productos de barbería
+    'https://images.unsplash.com/photo-1571781926291-c477ebfd024b?w=300&h=300&fit=crop&auto=format&q=80', // Shampoo y jabones
+    'https://images.unsplash.com/photo-1608248543803-ba4f8c70ae0b?w=300&h=300&fit=crop&auto=format&q=80', // Aceites y bálsamos
+    'https://images.unsplash.com/photo-1596755389378-c31d21fd1273?w=300&h=300&fit=crop&auto=format&q=80', // Cremas y tratamientos
+    'https://images.unsplash.com/photo-1612817159949-195b6eb9e31a?w=300&h=300&fit=crop&auto=format&q=80', // Productos de cuidado
+    'https://images.unsplash.com/photo-1580618672591-eb180b1a973f?w=300&h=300&fit=crop&auto=format&q=80', // Barbería vintage
+    'https://images.unsplash.com/photo-1503951914875-452162b0f3f1?w=300&h=300&fit=crop&auto=format&q=80', // Herramientas de barbería
+    'https://images.unsplash.com/photo-1621605815971-fbc98d665033?w=300&h=300&fit=crop&auto=format&q=80', // Barba y afeitado
+    'https://images.unsplash.com/photo-1562322140-8baeececf3df?w=300&h=300&fit=crop&auto=format&q=80', // Barbería moderna
+    'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=300&h=300&fit=crop&auto=format&q=80', // Productos de estilo
+    'https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?w=300&h=300&fit=crop&auto=format&q=80', // Cuidado facial
+    'https://images.unsplash.com/photo-1559599238-1c0d892d8e0b?w=300&h=300&fit=crop&auto=format&q=80', // Tratamientos
+    'https://images.unsplash.com/photo-1570172619644-dfd03ed5d881?w=300&h=300&fit=crop&auto=format&q=80', // Cuidado de la piel
+    'https://images.unsplash.com/photo-1544161515-4ab6ce6db874?w=300&h=300&fit=crop&auto=format&q=80', // Spa y relajación
+    'https://images.unsplash.com/photo-1580618864189-5c0b0c0c0c0c?w=300&h=300&fit=crop&auto=format&q=80', // Barbería clásica
+  ];
+
+  /// Obtiene URL de imagen de Unsplash basada en el nombre y el índice del producto
+  static String getUnsplashImage(String name, {bool isService = false, int? productIndex}) {
     final cleanName = name.toLowerCase().replaceAll(RegExp(r'[^a-zA-Z\s]'), '').trim();
     
     if (isService) {
@@ -197,7 +216,12 @@ class ImageMapper {
         return 'https://images.unsplash.com/photo-1562322140-8baeececf3df?w=300&h=300&fit=crop&auto=format&q=80';
       }
     } else {
-      // URLs específicas para productos
+      // Para productos, usar índice dinámico si está disponible
+      if (productIndex != null && productIndex < _barberProductImages.length) {
+        return _barberProductImages[productIndex];
+      }
+      
+      // Fallback a lógica específica por nombre
       if (cleanName.contains('pomada') || cleanName.contains('cera')) {
         return 'https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?w=300&h=300&fit=crop&auto=format&q=80';
       } else if (cleanName.contains('shampoo') || cleanName.contains('jabón')) {
@@ -207,7 +231,10 @@ class ImageMapper {
       } else if (cleanName.contains('crema') || cleanName.contains('tratamiento')) {
         return 'https://images.unsplash.com/photo-1596755389378-c31d21fd1273?w=300&h=300&fit=crop&auto=format&q=80';
       } else {
-        return 'https://images.unsplash.com/photo-1612817159949-195b6eb9e31a?w=300&h=300&fit=crop&auto=format&q=80';
+        // Usar índice basado en el hash del nombre para distribución uniforme
+        final hash = name.hashCode.abs();
+        final index = hash % _barberProductImages.length;
+        return _barberProductImages[index];
       }
     }
   }
@@ -221,6 +248,7 @@ class ImageMapper {
     double? height,
     BoxFit fit = BoxFit.cover,
     BorderRadius? borderRadius,
+    int? productIndex,
   }) {
     // Primero intentar imagen local
     final localImage = isService ? getServiceImage(itemName) : getProductImage(itemName);
@@ -234,16 +262,16 @@ class ImageMapper {
         height: height,
         fit: fit,
         errorBuilder: (context, error, stackTrace) {
-          // Si la imagen local falla, usar Unsplash
-          return Image.network(
-            getUnsplashImage(itemName, isService: isService),
-            width: width,
-            height: height,
-            fit: fit,
-            errorBuilder: (context, error, stackTrace) {
-              return _buildPlaceholder(width, height, isService);
-            },
-          );
+                  // Si la imagen local falla, usar Unsplash
+        return Image.network(
+          getUnsplashImage(itemName, isService: isService, productIndex: productIndex),
+          width: width,
+          height: height,
+          fit: fit,
+          errorBuilder: (context, error, stackTrace) {
+            return _buildPlaceholder(width, height, isService);
+          },
+        );
         },
       );
     } else if (networkUrl != null && networkUrl.isNotEmpty) {
@@ -256,7 +284,7 @@ class ImageMapper {
         errorBuilder: (context, error, stackTrace) {
           // Si la imagen de red falla, usar Unsplash
           return Image.network(
-            getUnsplashImage(itemName, isService: isService),
+            getUnsplashImage(itemName, isService: isService, productIndex: productIndex),
             width: width,
             height: height,
             fit: fit,
@@ -269,7 +297,7 @@ class ImageMapper {
     } else {
       // Como último recurso, usar imagen de Unsplash
       imageWidget = Image.network(
-        getUnsplashImage(itemName, isService: isService),
+        getUnsplashImage(itemName, isService: isService, productIndex: productIndex),
         width: width,
         height: height,
         fit: fit,

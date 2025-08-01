@@ -46,8 +46,10 @@ class CartItem {
 class CartProvider with ChangeNotifier {
   final List<CartItem> _items = [];
   static const String _cartKey = 'cart_items';
+  bool _shouldAnimate = false;
 
   List<CartItem> get items => List.unmodifiable(_items);
+  bool get shouldAnimate => _shouldAnimate;
 
   // Cargar carrito desde SharedPreferences
   Future<void> loadCart() async {
@@ -141,7 +143,17 @@ class CartProvider with ChangeNotifier {
         type: type,
       ));
     }
+    
+    // Trigger animation
+    _shouldAnimate = true;
     notifyListeners();
+    
+    // Reset animation flag after a short delay
+    Future.delayed(const Duration(milliseconds: 100), () {
+      _shouldAnimate = false;
+      notifyListeners();
+    });
+    
     _saveCart(); // Guardar automáticamente
   }
 

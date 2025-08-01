@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
 import 'package:music_app/core/widgets/back_button_interceptor.dart';
 import 'package:music_app/core/services/notification_service.dart';
 import 'package:music_app/core/services/local_history_service.dart';
+import 'package:music_app/features/cart/providers/cart_provider.dart';
+import 'package:music_app/core/utils/image_mapper.dart';
 
 class CheckoutScreen extends StatefulWidget {
   const CheckoutScreen({super.key});
@@ -44,7 +47,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     final theme = Theme.of(context);
     
     return BackButtonInterceptor(
-      fallbackRoute: '/carrito',
+      fallbackRoute: '/products',
       child: Scaffold(
         backgroundColor: theme.colorScheme.background,
         appBar: AppBar(
@@ -59,7 +62,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
           elevation: 0,
           leading: IconButton(
             icon: Icon(Icons.arrow_back, color: theme.colorScheme.onSurface),
-            onPressed: () => context.go('/carrito'),
+            onPressed: () => context.go('/products'),
           ),
         ),
         body: Form(
@@ -72,6 +75,8 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                 _buildDeliveryForm(),
                 const SizedBox(height: 24),
                 _buildPaymentMethodSection(),
+                const SizedBox(height: 24),
+                _buildCartItemsSection(),
                 const SizedBox(height: 24),
                 _buildOrderSummary(),
               ],
@@ -343,6 +348,100 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
           ],
         ],
       ),
+    );
+  }
+
+  Widget _buildCartItemsSection() {
+    final theme = Theme.of(context);
+    
+    return Consumer<CartProvider>(
+      builder: (context, cartProvider, child) {
+        return _buildSection(
+          'Artículos en el Carrito',
+          Column(
+            children: [
+              if (cartProvider.items.isEmpty)
+                Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Text(
+                    'Tu carrito está vacío. Por favor, agrega productos para continuar.',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      color: theme.colorScheme.onSurface.withOpacity(0.7),
+                    ),
+                  ),
+                )
+              else
+                ListView.builder(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  itemCount: cartProvider.items.length,
+                  itemBuilder: (context, index) {
+                    final item = cartProvider.items[index];
+                    return Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 8),
+                      child: Row(
+                        children: [
+                          // Imagen del producto usando ImageMapper
+                          ClipRRect(
+                            borderRadius: BorderRadius.circular(8),
+                            child: SizedBox(
+                              width: 60,
+                              height: 60,
+                              child: ImageMapper.buildImageWidget(
+                                item.image,
+                                item.name,
+                                false, // isService = false for products
+                                width: 60,
+                                height: 60,
+                                fit: BoxFit.cover,
+                                productIndex: index, // Usar el índice para imágenes dinámicas
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 16),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  item.name,
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w600,
+                                    color: theme.colorScheme.onSurface,
+                                  ),
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  'Cantidad: ${item.quantity}',
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    color: theme.colorScheme.onSurface.withOpacity(0.7),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          Text(
+                            '\$${(item.price * item.quantity).toStringAsFixed(2)}',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                              color: theme.colorScheme.onSurface,
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  },
+                ),
+            ],
+          ),
+        );
+      },
     );
   }
 

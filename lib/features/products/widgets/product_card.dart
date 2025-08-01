@@ -10,6 +10,7 @@ class ProductCard extends StatelessWidget {
   final String imageUrl;
   final String productId;
   final VoidCallback? onTap;
+  final int? productIndex;
 
   const ProductCard({
     super.key, 
@@ -18,6 +19,7 @@ class ProductCard extends StatelessWidget {
     required this.imageUrl,
     required this.productId,
     this.onTap,
+    this.productIndex,
   });
 
   @override
@@ -41,6 +43,7 @@ class ProductCard extends StatelessWidget {
                   width: double.infinity,
                   height: double.infinity,
                   fit: BoxFit.cover,
+                  productIndex: productIndex,
                 ),
               ),
             ),
