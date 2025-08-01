@@ -11,7 +11,7 @@ import '../../features/auth/presentation/api_test_screen.dart';
 // Screens - Main
 import '../../features/splash/presentation/splash_screen.dart';
 import '../../features/onboarding/presentation/onboarding_screen.dart';
-import '../../features/main/presentation/main_screen.dart';
+import '../../features/shared/main_screen.dart';
 import '../../features/home/presentation/home_screen.dart';
 
 // Screens - Cliente
@@ -151,19 +151,19 @@ class AppRouter {
       // Rutas principales (requieren autenticación)
       GoRoute(
         path: '/main',
-        builder: (context, state) => const MainScreen(),
+        builder: (context, state) => const MainScreen(initialPath: '/'),
       ),
       GoRoute(
         path: '/home',
-        builder: (context, state) => const HomeScreen(),
+        builder: (context, state) => const MainScreen(initialPath: '/home'),
       ),
       GoRoute(
         path: '/services',
-        builder: (context, state) => const ServicesScreen(),
+        builder: (context, state) => const MainScreen(initialPath: '/services'),
       ),
       GoRoute(
         path: '/products',
-        builder: (context, state) => const ProductsScreen(),
+        builder: (context, state) => const MainScreen(initialPath: '/products'),
       ),
       GoRoute(
         path: '/promotions',
@@ -194,7 +194,7 @@ class AppRouter {
       GoRoute(
         path: '/profile',
         builder: (context, state) => AuthGuard(
-          child: const ProfileScreen(),
+          child: const MainScreen(initialPath: '/profile'),
         ),
       ),
       GoRoute(

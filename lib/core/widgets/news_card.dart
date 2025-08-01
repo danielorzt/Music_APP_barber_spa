@@ -4,11 +4,15 @@ import 'package:url_launcher/url_launcher.dart';
 class NewsCard extends StatelessWidget {
   final Map<String, dynamic> article;
   final bool isFeatured;
+  final Map<String, dynamic>? news; // Parámetro adicional para compatibilidad
+  final VoidCallback? onTap; // Parámetro onTap para compatibilidad
 
   const NewsCard({
     super.key,
     required this.article,
     this.isFeatured = false,
+    this.news, // Parámetro opcional para compatibilidad
+    this.onTap, // Parámetro onTap opcional
   });
 
   @override
@@ -25,7 +29,7 @@ class NewsCard extends StatelessWidget {
           borderRadius: BorderRadius.circular(16),
         ),
         child: InkWell(
-          onTap: () => _openArticle(article['url']),
+          onTap: onTap ?? () => _openArticle(article['url']),
           borderRadius: BorderRadius.circular(16),
           child: isFeatured ? _buildFeaturedCard() : _buildRegularCard(),
         ),

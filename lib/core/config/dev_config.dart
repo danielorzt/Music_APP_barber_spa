@@ -4,7 +4,7 @@ import 'api_config.dart';
 /// Configuración específica para desarrollo con el servidor BMSPA
 class DevConfig {
   // Configuración del servidor de desarrollo
-  static const String serverUrl = 'https://bc3996b129b5.ngrok-free.app';
+  static const String serverUrl = 'http://192.168.39.148:8000'; // Nueva IP local
   static const String apiBaseUrl = '$serverUrl/api';
   
   // Endpoints específicos de BMSPA - Actualizados según la API proporcionada

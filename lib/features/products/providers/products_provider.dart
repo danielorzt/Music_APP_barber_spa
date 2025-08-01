@@ -1,5 +1,6 @@
 // lib/features/products/providers/products_provider.dart
 import 'package:flutter/foundation.dart';
+import 'package:flutter/widgets.dart';
 import '../../../core/models/producto.dart';
 import '../../../core/services/bmspa_api_service.dart';
 
@@ -15,6 +16,13 @@ class ProductsProvider with ChangeNotifier {
   Producto? get selectedProduct => _selectedProduct;
   bool get isLoading => _isLoading;
   String? get error => _error;
+
+  ProductsProvider() {
+    // Usar addPostFrameCallback para evitar setState durante build
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      fetchProducts();
+    });
+  }
 
   Future<void> fetchProducts() async {
     _isLoading = true;

@@ -85,7 +85,7 @@ class AppointmentsProvider with ChangeNotifier {
 
     try {
       print('🔍 AppointmentsProvider: Cancelando cita $appointmentId...');
-      final success = await _apiService.cancelarAgendamiento(appointmentId, motivo: motivo);
+      final success = await _apiService.cancelarAgendamiento(appointmentId);
       
       if (success) {
         // Actualizar el estado de la cita en la lista local

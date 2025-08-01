@@ -6,6 +6,7 @@ import '../../../core/widgets/loading_indicator.dart';
 import '../../../core/services/sucursales_api_service.dart';
 import '../../../core/services/appointments_api_service.dart';
 import '../../../core/services/services_api_service.dart';
+import '../../../core/services/bmspa_api_service.dart';
 import '../../auth/providers/auth_provider.dart';
 import '../../../core/models/agendamiento.dart'; // Added import for Agendamiento
 
@@ -27,15 +28,20 @@ class _BookAppointmentScreenState extends State<BookAppointmentScreen> {
   
   Map<String, dynamic>? _sucursalSeleccionada;
   Map<String, dynamic>? _servicioSeleccionado;
-  Map<String, dynamic>? _personalSeleccionado;
   DateTime? _fechaSeleccionada;
   TimeOfDay? _horaSeleccionada;
+  
+  // Parámetros del servicio seleccionado desde la URL
+  int? _preselectedServiceId;
+  String? _preselectedServiceName;
+  double? _preselectedServicePrice;
   
   bool _isLoadingSucursales = false;
   bool _isLoadingServicios = false;
   bool _isLoadingPersonal = false;
   bool _isLoadingHorarios = false;
   bool _isCreatingAppointment = false;
+  bool _isInit = true; // Flag para controlar la inicialización
   
   String? _errorMessage;
   String? _successMessage;
@@ -43,8 +49,113 @@ class _BookAppointmentScreenState extends State<BookAppointmentScreen> {
   @override
   void initState() {
     super.initState();
-    _loadSucursales();
-    _loadServicios();
+    // Remover todas las llamadas que dependen del context
+  }
+
+  @override
+  void didChangeDependencies() {
+    if (_isInit) {
+      _parseUrlParameters();
+      _checkAuthentication();
+      _loadSucursales();
+      _loadServicios();
+    }
+    _isInit = false;
+    super.didChangeDependencies();
+  }
+
+  /// Parsear parámetros de la URL
+  void _parseUrlParameters() {
+    final uri = GoRouterState.of(context).uri;
+    final params = uri.queryParameters;
+    
+    if (params.containsKey('servicio_id')) {
+      _preselectedServiceId = int.tryParse(params['servicio_id']!);
+    }
+    if (params.containsKey('servicio_nombre')) {
+      _preselectedServiceName = Uri.decodeComponent(params['servicio_nombre']!);
+    }
+    if (params.containsKey('servicio_precio')) {
+      _preselectedServicePrice = double.tryParse(params['servicio_precio']!);
+    }
+    
+    print('🔍 Parámetros URL parseados:');
+    print('  - ID: $_preselectedServiceId');
+    print('  - Nombre: $_preselectedServiceName');
+    print('  - Precio: $_preselectedServicePrice');
+  }
+
+  /// Verificar autenticación del usuario
+  void _checkAuthentication() {
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    if (!authProvider.isAuthenticated) {
+      // Mostrar diálogo de login requerido
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _showLoginRequiredDialog();
+      });
+    }
+  }
+
+  /// Mostrar diálogo de login requerido
+  void _showLoginRequiredDialog() {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          title: Row(
+            children: [
+              Icon(
+                Icons.lock_outline,
+                color: const Color(0xFFDC3545),
+                size: 28,
+              ),
+              const SizedBox(width: 8),
+              const Text(
+                'Inicio de Sesión Requerido',
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
+          ),
+          content: const Text(
+            'Para agendar una cita, necesitas iniciar sesión en tu cuenta.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+                context.go('/appointments');
+              },
+              child: const Text(
+                'Cancelar',
+                style: TextStyle(color: Colors.grey),
+              ),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+                context.go('/login');
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFFDC3545),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+              child: const Text(
+                'Iniciar Sesión',
+                style: TextStyle(color: Colors.white),
+              ),
+            ),
+          ],
+        );
+      },
+    );
   }
 
   /// Cargar sucursales desde la API
@@ -80,6 +191,23 @@ class _BookAppointmentScreenState extends State<BookAppointmentScreen> {
       if (serviciosData.isNotEmpty) {
         setState(() {
           _servicios = serviciosData;
+          // Auto-seleccionar servicio si viene desde URL
+          if (_preselectedServiceId != null) {
+            _servicioSeleccionado = _servicios.firstWhere(
+              (s) => s['id'] == _preselectedServiceId,
+              orElse: () => <String, dynamic>{},
+            );
+            if (_servicioSeleccionado!.isEmpty) {
+              // Si no se encuentra el servicio, crear uno temporal
+              _servicioSeleccionado = {
+                'id': _preselectedServiceId,
+                'nombre': _preselectedServiceName ?? 'Servicio',
+                'precio': _preselectedServicePrice ?? 0.0,
+                'duracion': 30,
+              };
+            }
+            print('✅ Servicio preseleccionado: ${_servicioSeleccionado!['nombre']}');
+          }
         });
         print('✅ BookAppointment: ${_servicios.length} servicios cargados desde API');
       } else {
@@ -161,32 +289,14 @@ class _BookAppointmentScreenState extends State<BookAppointmentScreen> {
     }
   }
   
-  /// Cargar personal de la sucursal seleccionada
-  Future<void> _loadPersonalSucursal(int sucursalId) async {
-    setState(() => _isLoadingPersonal = true);
-    
-    try {
-              final personalData = await _sucursalesService.getPersonalPorSucursal(sucursalId);
-      setState(() {
-        _personal = personalData;
-      });
-      print('✅ BookAppointment: ${_personal.length} empleados cargados');
-    } catch (e) {
-      print('❌ Error cargando personal: $e');
-      setState(() {
-        _errorMessage = 'Error cargando personal: $e';
-      });
-    } finally {
-      setState(() => _isLoadingPersonal = false);
-    }
-  }
   
   /// Cargar horarios de la sucursal seleccionada
   Future<void> _loadHorariosSucursal(int sucursalId) async {
     setState(() => _isLoadingHorarios = true);
     
     try {
-              final horariosData = await _sucursalesService.getHorariosPorSucursal(sucursalId);
+      final apiService = BMSPAApiService();
+      final horariosData = await apiService.getHorariosPorSucursal(sucursalId);
       setState(() {
         _horarios = horariosData;
       });
@@ -251,26 +361,38 @@ class _BookAppointmentScreenState extends State<BookAppointmentScreen> {
       print('🔍 DEBUG: Fecha y hora combinadas: $fechaHora');
       
       print('🔍 DEBUG: Creando objeto Agendamiento...');
-      // Crear objeto Agendamiento en lugar de Map
-      final agendamiento = Agendamiento(
-        id: 0, // Se asignará desde el servidor
-        fechaHora: fechaHora,
-        usuarioId: user['id'],
-        servicioId: _servicioSeleccionado!['id'],
-        sucursalId: _sucursalSeleccionada!['id'],
-        estado: 'PROGRAMADA',
-        personalId: _personalSeleccionado?['id'],
-        notas: 'Cita agendada desde la app móvil',
-      );
-      print('🔍 DEBUG: Objeto Agendamiento creado: ${agendamiento.toJson()}');
+      // Crear el agendamiento usando la API correcta de Laravel
+      final agendamientoData = {
+        'cliente_usuario_id': user['id'],
+        'servicio_id': _servicioSeleccionado!['id'],
+        'sucursal_id': _sucursalSeleccionada!['id'],
+        'fecha_hora_inicio': fechaHora.toIso8601String(),
+        'fecha_hora_fin': fechaHora.add(Duration(minutes: _servicioSeleccionado!['duracion'] ?? 30)).toIso8601String(),
+        'precio_final': _servicioSeleccionado!['precio'],
+        'estado': 'PROGRAMADA',
+        'notas_cliente': 'Cita agendada desde la app móvil',
+        // Sin personal_id - será asignado automáticamente
+      };
+      print('🔍 DEBUG: Datos del agendamiento creados: $agendamientoData');
       
       print('🔍 DEBUG: Llamando al servicio de agendamientos...');
-      final agendamientoCreado = await _appointmentsService.crearAgendamiento(agendamiento);
-      print('✅ DEBUG: Agendamiento creado exitosamente: ${agendamientoCreado.id}');
-      
-      setState(() {
-        _successMessage = 'Cita agendada exitosamente para ${_sucursalSeleccionada!['nombre']}';
-      });
+      final apiService = BMSPAApiService();
+      final response = await apiService.createAppointment(
+        sucursalId: _sucursalSeleccionada!['id'],
+        servicioId: _servicioSeleccionado!['id'],
+        fecha: '${fechaHora.year}-${fechaHora.month.toString().padLeft(2, '0')}-${fechaHora.day.toString().padLeft(2, '0')}',
+        hora: '${fechaHora.hour.toString().padLeft(2, '0')}:${fechaHora.minute.toString().padLeft(2, '0')}:00',
+        notas: 'Cita agendada desde la app móvil',
+      );
+      if (response['success'] == true) {
+        print('✅ DEBUG: Agendamiento creado exitosamente');
+        
+        setState(() {
+          _successMessage = 'Cita agendada exitosamente para ${_sucursalSeleccionada!['nombre']}';
+        });
+      } else {
+        throw Exception(response['error'] ?? 'Error desconocido al crear la cita');
+      }
       print('✅ DEBUG: Mensaje de éxito establecido');
       
       // Limpiar selecciones
@@ -301,7 +423,6 @@ class _BookAppointmentScreenState extends State<BookAppointmentScreen> {
     setState(() {
       _sucursalSeleccionada = null;
       _servicioSeleccionado = null;
-      _personalSeleccionado = null;
       _fechaSeleccionada = null;
       _horaSeleccionada = null;
       _personal = [];
@@ -397,12 +518,6 @@ class _BookAppointmentScreenState extends State<BookAppointmentScreen> {
             
             const SizedBox(height: 24),
             
-            // Selección de Personal (opcional)
-            if (_sucursalSeleccionada != null) ...[
-              _buildSectionTitle('Seleccionar Personal (Opcional)'),
-              _buildPersonalSelection(),
-              const SizedBox(height: 24),
-            ],
             
             // Selección de Fecha y Hora
             if (_servicioSeleccionado != null) ...[
@@ -448,11 +563,8 @@ class _BookAppointmentScreenState extends State<BookAppointmentScreen> {
             onTap: () {
               setState(() {
                 _sucursalSeleccionada = sucursal;
-                _personalSeleccionado = null;
-                _personal = [];
                 _horarios = [];
               });
-              _loadPersonalSucursal(sucursal['id']);
               _loadHorariosSucursal(sucursal['id']);
             },
             child: Container(
@@ -579,134 +691,6 @@ class _BookAppointmentScreenState extends State<BookAppointmentScreen> {
     );
   }
 
-  Widget _buildPersonalSelection() {
-    if (_isLoadingPersonal) {
-      return const Center(child: LoadingIndicator());
-    }
-    
-    if (_personal.isEmpty) {
-      return Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: Colors.grey.shade100,
-          borderRadius: BorderRadius.circular(8),
-        ),
-        child: const Text(
-          'No hay personal disponible en esta sucursal',
-          style: TextStyle(color: Colors.grey),
-        ),
-      );
-    }
-    
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      child: Row(
-        children: [
-          // Opción "Cualquiera"
-          GestureDetector(
-            onTap: () {
-              setState(() {
-                _personalSeleccionado = null;
-              });
-            },
-            child: Container(
-              width: 120,
-              margin: const EdgeInsets.only(right: 12),
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: _personalSeleccionado == null 
-                    ? const Color(0xFFDC3545).withOpacity(0.1) 
-                    : Colors.grey.shade100,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(
-                  color: _personalSeleccionado == null 
-                      ? const Color(0xFFDC3545) 
-                      : Colors.grey.shade300,
-                  width: _personalSeleccionado == null ? 2 : 1,
-                ),
-              ),
-              child: Column(
-                children: [
-                  const CircleAvatar(
-                    radius: 25,
-                    backgroundColor: Color(0xFFDC3545),
-                    child: Icon(Icons.person, color: Colors.white),
-                  ),
-                  const SizedBox(height: 8),
-                  const Text(
-                    'Cualquiera',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-          // Personal disponible
-          ..._personal.map((person) {
-            final isSelected = _personalSeleccionado?['id'] == person['id'];
-            
-            return GestureDetector(
-              onTap: () {
-                setState(() {
-                  _personalSeleccionado = person;
-                });
-              },
-              child: Container(
-                width: 120,
-                margin: const EdgeInsets.only(right: 12),
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: isSelected 
-                      ? const Color(0xFFDC3545).withOpacity(0.1) 
-                      : Colors.grey.shade100,
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                    color: isSelected 
-                        ? const Color(0xFFDC3545) 
-                        : Colors.grey.shade300,
-                    width: isSelected ? 2 : 1,
-                  ),
-                ),
-                child: Column(
-                  children: [
-                    CircleAvatar(
-                      radius: 25,
-                      backgroundImage: NetworkImage(person['imagen'] ?? ''),
-                      child: person['imagen'] == null 
-                          ? const Icon(Icons.person, color: Colors.white)
-                          : null,
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      person['nombre'] ?? 'Sin nombre',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.bold,
-                        color: isSelected ? const Color(0xFFDC3545) : null,
-                      ),
-                    ),
-                    Text(
-                      person['especialidad'] ?? '',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        fontSize: 10,
-                        color: Colors.grey.shade600,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            );
-          }).toList(),
-        ],
-      ),
-    );
-  }
 
   Widget _buildDateTimeSelection() {
     return Column(
@@ -782,13 +766,6 @@ class _BookAppointmentScreenState extends State<BookAppointmentScreen> {
            _servicioSeleccionado != null && 
            _fechaSeleccionada != null && 
            _horaSeleccionada != null;
-    
-    print('🔍 Validación de confirmación:');
-    print('  - Sucursal: ${_sucursalSeleccionada != null ? "✅" : "❌"}');
-    print('  - Servicio: ${_servicioSeleccionado != null ? "✅" : "❌"}');
-    print('  - Fecha: ${_fechaSeleccionada != null ? "✅" : "❌"}');
-    print('  - Hora: ${_horaSeleccionada != null ? "✅" : "❌"}');
-    print('  - Puede confirmar: ${canConfirm ? "✅" : "❌"}');
     
     return canConfirm;
   }

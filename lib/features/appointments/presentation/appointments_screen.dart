@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import '../providers/appointments_provider.dart';
 import '../../auth/providers/auth_provider.dart';
 import '../models/appointment_model.dart';
+import '../../../core/services/bmspa_api_service.dart';
 
 class AppointmentsScreen extends StatefulWidget {
   const AppointmentsScreen({super.key});
@@ -31,40 +32,44 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> {
     });
   }
 
-  /// Cargar agendamientos del usuario
+  /// Cargar agendamientos del usuario desde la API real
   Future<List<Map<String, dynamic>>> _loadAppointments() async {
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
-    final userId = authProvider.currentUser?['id']?.toString() ?? '';
+    
+    if (!authProvider.isAuthenticated) {
+      throw Exception('Usuario no autenticado');
+    }
 
     try {
-      final appointmentsProvider = Provider.of<AppointmentsProvider>(context, listen: false);
-      await appointmentsProvider.fetchUserAppointments(userId);
+      final apiService = BMSPAApiService();
+      final agendamientos = await apiService.getMisAgendamientos();
       
-      if (appointmentsProvider.error != null) {
-        throw Exception(appointmentsProvider.error);
-      }
-      
-      // Convertir List<Agendamiento> a List<Map<String, dynamic>>
-      return appointmentsProvider.appointments.map((appointment) => {
-        'id': appointment.id,
-        'fecha_hora': appointment.fechaHora.toIso8601String(),
-        'usuario_id': appointment.usuarioId,
-        'servicio_id': appointment.servicioId,
-        'sucursal_id': appointment.sucursalId,
-        'estado': appointment.estado,
-        'personal_id': appointment.personalId,
-        'notas': appointment.notas,
-        'motivo_cancelacion': appointment.motivoCancelacion,
-        'precio': appointment.precio,
-        'duracion_minutos': appointment.duracionMinutos,
-        'nombre_servicio': appointment.nombreServicio,
-        'nombre_sucursal': appointment.nombreSucursal,
-        'nombre_personal': appointment.nombrePersonal,
-        'nombre_usuario': appointment.nombreUsuario,
+      // Convertir List<Agendamiento> a List<Map<String, dynamic>> para compatibilidad
+      return agendamientos.map((agendamiento) => {
+        'id': agendamiento.id,
+        'fecha_hora': agendamiento.fechaHora.toIso8601String(),
+        'usuario_id': agendamiento.usuarioId,
+        'servicio_id': agendamiento.servicioId,
+        'sucursal_id': agendamiento.sucursalId,
+        'estado': agendamiento.estado,
+        'personal_id': agendamiento.personalId,
+        'notas': agendamiento.notas,
+        'precio': agendamiento.precio,
+        'servicio': {
+          'nombre': 'Servicio ID ${agendamiento.servicioId}',
+          'precio': agendamiento.precio,
+          'duracion': 30, // Valor por defecto
+        },
+        'sucursal': {
+          'nombre': 'Sucursal ID ${agendamiento.sucursalId}',
+        },
+        'personal': agendamiento.personalId != null ? {
+          'nombre': 'Personal ID ${agendamiento.personalId}',
+        } : null,
       }).toList();
     } catch (e) {
-      print('❌ Error cargando agendamientos: $e');
-      return [];
+      print('❌ Error cargando agendamientos desde API: $e');
+      throw Exception('Error al cargar las citas: $e');
     }
   }
 
@@ -553,12 +558,15 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> {
     }
 
     try {
-      final appointmentsProvider = Provider.of<AppointmentsProvider>(context, listen: false);
-      final success = await appointmentsProvider.cancelAppointment(appointmentId);
+      final apiService = BMSPAApiService();
+      final success = await apiService.cancelAppointment(appointmentId);
       
       if (success) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Cita cancelada exitosamente')),
+          const SnackBar(
+            content: Text('Cita cancelada exitosamente'),
+            backgroundColor: Colors.green,
+          ),
         );
         // Recargar la lista
         setState(() {
@@ -566,12 +574,18 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> {
         });
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: ${appointmentsProvider.error}')),
+          const SnackBar(
+            content: Text('Error al cancelar la cita'),
+            backgroundColor: Colors.red,
+          ),
         );
       }
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error: $e')),
+        SnackBar(
+          content: Text('Error: $e'),
+          backgroundColor: Colors.red,
+        ),
       );
     }
   }

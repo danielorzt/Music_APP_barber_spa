@@ -39,5 +39,7 @@ dev_dependencies:
 flutter:
   uses-material-design: true
   assets:
+    - assets/Productos/
+    - assets/Servicios/
     - assets/services/
     - assets/videos/

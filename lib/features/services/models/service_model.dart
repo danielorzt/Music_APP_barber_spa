@@ -17,6 +17,10 @@ class ServiceModel {
     required this.duration,
   });
 
+  // Getters para mantener compatibilidad con código existente
+  String get nombre => name;
+  double get precio => price;
+
   factory ServiceModel.fromJson(Map<String, dynamic> json) {
     return ServiceModel(
       id: json['id']?.toString() ?? '',

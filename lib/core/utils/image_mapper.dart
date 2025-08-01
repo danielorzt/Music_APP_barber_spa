@@ -2,49 +2,123 @@ import 'package:flutter/material.dart';
 
 class ImageMapper {
   static const Map<String, String> _productImages = {
-    'shampoo': 'assets/services/shampoo.png',
-    'conditioner': 'assets/services/conditioner.png',
-    'gel': 'assets/services/gel.png',
-    'pomada': 'assets/services/pomada.png',
-    'cera': 'assets/services/cera.png',
-    'aceite': 'assets/services/aceite.png',
-    'mascarilla': 'assets/services/mascarilla.png',
-    'spray': 'assets/services/spray.png',
-    'navaja': 'assets/services/navaja.png',
-    'tijeras': 'assets/services/tijeras.png',
-    'peine': 'assets/services/peine.png',
-    'secador': 'assets/services/secador.png',
-    'plancha': 'assets/services/plancha.png',
-    'maquina': 'assets/services/maquina.png',
-    'toalla': 'assets/services/toalla.png',
-    'bata': 'assets/services/bata.png',
-    'guantes': 'assets/services/guantes.png',
-    'capa': 'assets/services/capa.png',
-    'silla': 'assets/services/silla.png',
-    'espejo': 'assets/services/espejo.png',
+    // Pomadas
+    'pomada': 'assets/Productos/PomadaClasica4oz-BaseAgua+Mediafijación.png',
+    'pomada clásica': 'assets/Productos/PomadaClasica4oz-BaseAgua+Mediafijación.png',
+    'pomada mate': 'assets/Productos/PomadaMate4oz-AcabadoSatinado+ExtraFijación.png',
+    'pomada original': 'assets/Productos/PomadaOriginal4oz-BaseAgua+ExtraFijación.png',
+    'pomada base aceite': 'assets/Productos/PomadaBaseAceite4oz-FormulaNoGrasosa+ControlaFrizz.png',
+    'pomada negra': 'assets/Productos/PomadaNegra4oz-118ml-OscureceCanas.png',
+    
+    // Bálsamos
+    'bálsamo': 'assets/Productos/BálsamoClásicodeCrecimientodeBarbayBigote5%Minoxidil-2oz-60ml.png', 
+    'bálsamo clásico': 'assets/Productos/BálsamoClásicodeCrecimientodeBarbayBigote5%Minoxidil-2oz-60ml.png',
+    'bálsamo negro': 'assets/Productos/BálsamoNegroparaBarba2.7oz-Cubrecanas+PigmentoMineral100%Natural.png',
+    
+    // Ceras
+    'cera': 'assets/Productos/CeraHíbridaparaCabelloyBarba4oz-AcabadoNatural+FijaciónMedia.png',
+    'cera híbrida': 'assets/Productos/CeraHíbridaparaCabelloyBarba4oz-AcabadoNatural+FijaciónMedia.png',
+    'cera de abeja': 'assets/Productos/CeradeAbejaRoyalBarber2oz-Ingredientes100%Naturales.png',
+    
+    // Geles
+    'gel': 'assets/Productos/GelClásicoFortificante6oz-PrevieneCaídadeCabello.png',
+    'gel clásico': 'assets/Productos/GelClásicoFortificante6oz-PrevieneCaídadeCabello.png',
+    'gel bálsamo': 'assets/Productos/GelBálsamodeCrecimiento2oz-60mlMinoxidil5%+Biotina+Queratina.png',
+    'gel pomada': 'assets/Productos/GelPomada4oz-CerasdePomadaenConsistenciaGel+BrilloSutil+FijacionNatural.png',
+    
+    // Aceites
+    'aceite': 'assets/Productos/AceiteparaBarbaBlackJack50ml-Bergamota+Jojoba+Suaviza.png',
+    'aceite barba': 'assets/Productos/AceiteparaBarbaBlackJack50ml-Bergamota+Jojoba+Suaviza.png',
+    
+    // Shampoos
+    'shampoo': 'assets/Productos/ShampooEstimulante8oz-230ml-AntiCaída+AlgasMarinas.png',
+    'shampoo estimulante': 'assets/Productos/ShampooEstimulante8oz-230ml-AntiCaída+AlgasMarinas.png',
+    'shampoo barba': 'assets/Productos/ShampoodeBarba8oz-AceitesEsenciales+Reducepicazónyresequedad.png',
+    
+    // Jabones
+    'jabón': 'assets/Productos/JabóndeCarbónActivado170gr-DetoxyLimpieza.png',
+    'jabón carbón': 'assets/Productos/JabóndeCarbónActivado170gr-DetoxyLimpieza.png',
+    'jabón afeitar': 'assets/Productos/JabónparaAfeitarconAroma3.53oz-Hidratante+AfeitadoSuave.png',
+    
+    // Cremas
+    'crema': 'assets/Productos/CremadeAfeitar8oz-Protegelapieldelairritaciónyescozor.png',
+    'crema afeitar': 'assets/Productos/CremadeAfeitar8oz-Protegelapieldelairritaciónyescozor.png',
+    
+    // Kits
+    'kit': 'assets/Productos/KitCuidadodeBarba.png',
+    'kit barba': 'assets/Productos/KitCuidadodeBarba.png',
+    'kit afeitado': 'assets/Productos/KitdeAfeitado.png',
+    
+    // Mascarillas y Tratamientos
+    'mascarilla': 'assets/Productos/MascarillaFacialWakeUpRevitalizante2.7oz.png',
+    'mascarilla facial': 'assets/Productos/MascarillaFacialWakeUpRevitalizante2.7oz.png',
+    'tratamiento': 'assets/Productos/TratamientoAntiEdad2oz-ÁcidoHialurónicoyExtractoPepino.png',
+    'exfoliador': 'assets/Productos/ExfoliadorFacialdeCascaradeNuez4oz-LimpiezaNatural.png',
   };
 
   static const Map<String, String> _serviceImages = {
-    'corte': 'assets/services/corte.png',
-    'barba': 'assets/services/barba.png',
-    'afeitado': 'assets/services/afeitado.png',
-    'masaje': 'assets/services/masaje.png',
-    'facial': 'assets/services/facial.png',
-    'manicure': 'assets/services/manicure.png',
-    'pedicure': 'assets/services/pedicure.png',
-    'tinte': 'assets/services/tinte.png',
-    'peinado': 'assets/services/peinado.png',
-    'tratamiento': 'assets/services/tratamiento.png',
-    'limpieza': 'assets/services/limpieza.png',
-    'hidratacion': 'assets/services/hidratacion.png',
-    'exfoliacion': 'assets/services/exfoliacion.png',
-    'mascarilla': 'assets/services/mascarilla.png',
-    'depilacion': 'assets/services/depilacion.png',
-    'cejas': 'assets/services/cejas.png',
-    'pestanas': 'assets/services/pestanas.png',
-    'maquillaje': 'assets/services/maquillaje.png',
-    'spa': 'assets/services/spa.png',
-    'relajacion': 'assets/services/relajacion.png',
+    // Servicios de Barbería
+    'corte': 'assets/Servicios/CorteCabello.jpg',
+    'corte cabello': 'assets/Servicios/CorteCabello.jpg',
+    'corte de cabello': 'assets/Servicios/CorteCabello.jpg',
+    'corte clásico': 'assets/Servicios/CorteCabello.jpg',
+    
+    // Servicios de Barba
+    'barba': 'assets/Servicios/Arreglo&DiseñoBarba.jpg',
+    'arreglo barba': 'assets/Servicios/Arreglo&DiseñoBarba.jpg',
+    'diseño barba': 'assets/Servicios/Arreglo&DiseñoBarba.jpg',
+    'afeitado': 'assets/Servicios/Arreglo&DiseñoBarba.jpg',
+    
+    // Servicios de Coloración
+    'coloración': 'assets/Servicios/Coloracion.jpg',
+    'tinte': 'assets/Servicios/Coloracion.jpg',
+    'color': 'assets/Servicios/Coloracion.jpg',
+    
+    // Servicios de Tratamiento Capilar
+    'tratamiento': 'assets/Servicios/TratamientoCapilar.jpg',
+    'tratamiento capilar': 'assets/Servicios/TratamientoCapilar.jpg',
+    
+    // Servicios Faciales
+    'facial': 'assets/Servicios/LimpiezaFacial.jpg',
+    'limpieza facial': 'assets/Servicios/LimpiezaFacial.jpg',
+    'rostro hombre': 'assets/Servicios/Rostro Hombre.jpg',
+    'rostro mujer': 'assets/Servicios/Rostro Mujer.jpg',
+    'microdermoabrasión': 'assets/Servicios/Microdermoabrasion.jpg',
+    'hidrodermoabrasión': 'assets/Servicios/Hidradermoabrasion.jpg',
+    'hollywood peel': 'assets/Servicios/HollywoodPeel.jpg',
+    'radiofrecuencia': 'assets/Servicios/Radiofrecuencia Facial.jpg',
+    
+    // Servicios de Depilación
+    'depilación': 'assets/Servicios/DepilacionDefinitiva.jpg',
+    'depilación definitiva': 'assets/Servicios/DepilacionDefinitiva.jpg',
+    
+    // Servicios de Cejas
+    'cejas': 'assets/Servicios/PerfiladoCejas.jpg',
+    'perfilado cejas': 'assets/Servicios/PerfiladoCejas.jpg',
+    'diseño cejas': 'assets/Servicios/Diseño&Delineado.png',
+    
+    // Masajes
+    'masaje': 'assets/Servicios/MasajeRelajante.jpg',
+    'masaje relajante': 'assets/Servicios/MasajeRelajante.jpg',
+    'maderoterapia': 'assets/Servicios/Maderoterapia.jpg',
+    
+    // Tratamientos Corporales
+    'criolipólisis': 'assets/Servicios/Criolipolisis.jpg',
+    'celulitis': 'assets/Servicios/EliminacionCelulitis.jpg',
+    'eliminación celulitis': 'assets/Servicios/EliminacionCelulitis.jpg',
+    'tatuajes': 'assets/Servicios/EliminacionTatuajes.jpg',
+    'eliminación tatuajes': 'assets/Servicios/EliminacionTatuajes.jpg',
+    'glúteos': 'assets/Servicios/LevantamientoGluteos.jpg',
+    'levantamiento glúteos': 'assets/Servicios/LevantamientoGluteos.jpg',
+    'lipo': 'assets/Servicios/LipoSinCirugia.jpg',
+    'liposucción': 'assets/Servicios/LipoSinCirugia.jpg',
+    'sculpsure': 'assets/Servicios/Sculpsure.jpg',
+    'hifu': 'assets/Servicios/Hifu.jpg',
+    'despigmentación': 'assets/Servicios/Despigmentacion.jpg',
+    
+    // Otros
+    'spa': 'assets/Servicios/MasajeRelajante.jpg',
+    'relajación': 'assets/Servicios/MasajeRelajante.jpg',
   };
 
   /// Mapea el nombre de un producto a una imagen local
@@ -63,8 +137,8 @@ class ImageMapper {
       }
     }
     
-    // Si no hay coincidencia, usar imagen por defecto
-    return 'assets/services/default_product.png';
+    // Si no hay coincidencia, usar imagen por defecto de Unsplash
+    return null;
   }
 
   /// Mapea el nombre de un servicio a una imagen local
@@ -83,8 +157,8 @@ class ImageMapper {
       }
     }
     
-    // Si no hay coincidencia, usar imagen por defecto
-    return 'assets/services/default_service.png';
+    // Si no hay coincidencia, usar imagen por defecto de Unsplash
+    return null;
   }
 
   /// Normaliza el nombre para búsquedas más flexibles
@@ -101,61 +175,106 @@ class ImageMapper {
         .trim();
   }
 
-  /// Obtiene una imagen de red con fallback a imagen local
-  static String getImageWithFallback(String? networkImage, String name, bool isService) {
-    if (networkImage != null && networkImage.isNotEmpty) {
-      return networkImage;
-    }
+  /// Obtiene URL de imagen de Unsplash basada en el nombre
+  static String getUnsplashImage(String name, {bool isService = false}) {
+    final cleanName = name.toLowerCase().replaceAll(RegExp(r'[^a-zA-Z\s]'), '').trim();
     
-    return isService 
-        ? getServiceImage(name) ?? 'assets/services/default_service.png'
-        : getProductImage(name) ?? 'assets/services/default_product.png';
+    if (isService) {
+      // URLs específicas para servicios
+      if (cleanName.contains('corte') || cleanName.contains('cabello')) {
+        return 'https://images.unsplash.com/photo-1503951914875-452162b0f3f1?w=300&h=300&fit=crop&auto=format&q=80';
+      } else if (cleanName.contains('barba') || cleanName.contains('afeitado')) {
+        return 'https://images.unsplash.com/photo-1621605815971-fbc98d665033?w=300&h=300&fit=crop&auto=format&q=80';
+      } else if (cleanName.contains('facial') || cleanName.contains('rostro')) {
+        return 'https://images.unsplash.com/photo-1570172619644-dfd03ed5d881?w=300&h=300&fit=crop&auto=format&q=80';
+      } else if (cleanName.contains('masaje')) {
+        return 'https://images.unsplash.com/photo-1544161515-4ab6ce6db874?w=300&h=300&fit=crop&auto=format&q=80';
+      } else if (cleanName.contains('cejas')) {
+        return 'https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?w=300&h=300&fit=crop&auto=format&q=80';
+      } else if (cleanName.contains('depilación')) {
+        return 'https://images.unsplash.com/photo-1559599238-1c0d892d8e0b?w=300&h=300&fit=crop&auto=format&q=80';
+      } else {
+        return 'https://images.unsplash.com/photo-1562322140-8baeececf3df?w=300&h=300&fit=crop&auto=format&q=80';
+      }
+    } else {
+      // URLs específicas para productos
+      if (cleanName.contains('pomada') || cleanName.contains('cera')) {
+        return 'https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?w=300&h=300&fit=crop&auto=format&q=80';
+      } else if (cleanName.contains('shampoo') || cleanName.contains('jabón')) {
+        return 'https://images.unsplash.com/photo-1571781926291-c477ebfd024b?w=300&h=300&fit=crop&auto=format&q=80';
+      } else if (cleanName.contains('aceite') || cleanName.contains('bálsamo')) {
+        return 'https://images.unsplash.com/photo-1608248543803-ba4f8c70ae0b?w=300&h=300&fit=crop&auto=format&q=80';
+      } else if (cleanName.contains('crema') || cleanName.contains('tratamiento')) {
+        return 'https://images.unsplash.com/photo-1596755389378-c31d21fd1273?w=300&h=300&fit=crop&auto=format&q=80';
+      } else {
+        return 'https://images.unsplash.com/photo-1612817159949-195b6eb9e31a?w=300&h=300&fit=crop&auto=format&q=80';
+      }
+    }
   }
 
-  /// Crea un widget de imagen con fallback
-  static Widget buildImageWidget(String? networkImage, String name, bool isService, {
+  /// Widget builder que maneja tanto imágenes locales como de red
+  static Widget buildImageWidget(
+    String? networkUrl,
+    String itemName, 
+    bool isService, {
     double? width,
     double? height,
     BoxFit fit = BoxFit.cover,
     BorderRadius? borderRadius,
   }) {
-    final imagePath = getImageWithFallback(networkImage, name, isService);
+    // Primero intentar imagen local
+    final localImage = isService ? getServiceImage(itemName) : getProductImage(itemName);
     
     Widget imageWidget;
     
-    if (imagePath.startsWith('http')) {
-      // Imagen de red
-      imageWidget = Image.network(
-        imagePath,
+    if (localImage != null) {
+      imageWidget = Image.asset(
+        localImage,
         width: width,
         height: height,
         fit: fit,
         errorBuilder: (context, error, stackTrace) {
-          // Fallback a imagen local si la de red falla
-          final fallbackPath = isService 
-              ? getServiceImage(name) ?? 'assets/services/default_service.png'
-              : getProductImage(name) ?? 'assets/services/default_product.png';
-          
-          return Image.asset(
-            fallbackPath,
+          // Si la imagen local falla, usar Unsplash
+          return Image.network(
+            getUnsplashImage(itemName, isService: isService),
             width: width,
             height: height,
             fit: fit,
             errorBuilder: (context, error, stackTrace) {
-              return _buildPlaceholder(width, height);
+              return _buildPlaceholder(width, height, isService);
+            },
+          );
+        },
+      );
+    } else if (networkUrl != null && networkUrl.isNotEmpty) {
+      // Si no hay imagen local, intentar imagen de red
+      imageWidget = Image.network(
+        networkUrl,
+        width: width,
+        height: height,
+        fit: fit,
+        errorBuilder: (context, error, stackTrace) {
+          // Si la imagen de red falla, usar Unsplash
+          return Image.network(
+            getUnsplashImage(itemName, isService: isService),
+            width: width,
+            height: height,
+            fit: fit,
+            errorBuilder: (context, error, stackTrace) {
+              return _buildPlaceholder(width, height, isService);
             },
           );
         },
       );
     } else {
-      // Imagen local
-      imageWidget = Image.asset(
-        imagePath,
+      // Como último recurso, usar imagen de Unsplash
+      imageWidget = Image.network(
+        getUnsplashImage(itemName, isService: isService),
         width: width,
         height: height,
         fit: fit,
         errorBuilder: (context, error, stackTrace) {
-          return _buildPlaceholder(width, height);
+          return _buildPlaceholder(width, height, isService);
         },
       );
     }
@@ -171,7 +290,7 @@ class ImageMapper {
   }
 
   /// Crea un placeholder cuando no hay imagen disponible
-  static Widget _buildPlaceholder(double? width, double? height) {
+  static Widget _buildPlaceholder(double? width, double? height, bool isService) {
     return Container(
       width: width,
       height: height,
@@ -180,7 +299,7 @@ class ImageMapper {
         borderRadius: BorderRadius.circular(8),
       ),
       child: Icon(
-        Icons.image,
+        isService ? Icons.spa : Icons.shopping_bag,
         color: Colors.grey[600],
         size: (width ?? 100) * 0.3,
       ),

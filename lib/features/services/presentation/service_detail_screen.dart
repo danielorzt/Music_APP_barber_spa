@@ -34,6 +34,35 @@ class _ServiceDetailScreenState extends State<ServiceDetailScreen>
     super.dispose();
   }
 
+  void _showLoginRequiredDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Iniciar Sesión Requerido'),
+        content: const Text('Para agendar una cita necesitas iniciar sesión en tu cuenta.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Cancelar'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.of(context).pop();
+              context.go('/login');
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFFDC3545),
+            ),
+            child: const Text(
+              'Iniciar Sesión',
+              style: TextStyle(color: Colors.white),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -461,26 +490,27 @@ class _ServiceDetailScreenState extends State<ServiceDetailScreen>
             flex: 2,
             child: Consumer<AuthProvider>(
               builder: (context, authProvider, child) {
-                return AuthRequiredButton(
-                  isAuthenticated: authProvider.isAuthenticated,
+                return ElevatedButton(
                   onPressed: () {
-                    context.push('/agendar', extra: widget.service);
+                    if (!authProvider.isAuthenticated) {
+                      _showLoginRequiredDialog();
+                      return;
+                    }
+                    context.push('/agendar?servicio_id=${widget.service.id}&servicio_nombre=${Uri.encodeComponent(widget.service.name)}&servicio_precio=${widget.service.price}');
                   },
-                  child: Container(
-                    width: double.infinity,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFFDC3545),
+                    foregroundColor: Colors.white,
                     padding: const EdgeInsets.symmetric(vertical: 16),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFDC3545),
+                    shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(8),
                     ),
-                    child: const Text(
-                      'Agendar Cita',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
-                      ),
+                  ),
+                  child: const Text(
+                    'Agendar Cita',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
                     ),
                   ),
                 );

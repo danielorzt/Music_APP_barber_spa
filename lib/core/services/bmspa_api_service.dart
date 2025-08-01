@@ -451,7 +451,14 @@ class BMSPAApiService {
 
       if (response.statusCode == 200) {
         final data = response.data['data'] ?? response.data;
-        if (data is List) {
+        
+        // Manejar tanto arrays como objetos con claves string
+        if (data is Map) {
+          // Si es un mapa, convertir sus valores a lista
+          final servicesList = data.values.toList();
+          return servicesList.cast<Map<String, dynamic>>();
+        } else if (data is List) {
+          // Si ya es una lista, proceder normalmente
           return data.cast<Map<String, dynamic>>();
         }
       }
@@ -509,7 +516,14 @@ class BMSPAApiService {
 
       if (response.statusCode == 200) {
         final data = response.data['data'] ?? response.data;
-        if (data is List) {
+        
+        // Manejar tanto arrays como objetos con claves string
+        if (data is Map) {
+          // Si es un mapa, convertir sus valores a lista
+          final productsList = data.values.toList();
+          return productsList.map((json) => Producto.fromJson(json as Map<String, dynamic>)).toList();
+        } else if (data is List) {
+          // Si ya es una lista, proceder normalmente
           return data.map((json) => Producto.fromJson(json as Map<String, dynamic>)).toList();
         }
       }
@@ -980,6 +994,60 @@ class BMSPAApiService {
     }
   }
 
+  /// Obtener personal por sucursal
+  Future<List<Map<String, dynamic>>> getPersonalPorSucursal(int sucursalId) async {
+    try {
+      print('📊 BMSPA API: Obteniendo personal de sucursal $sucursalId...');
+      
+      final response = await _dio.get(
+        '${DevConfig.getEndpoint('personal')!}?sucursal_id=$sucursalId',
+        options: await _getAuthOptions(),
+      );
+
+      if (response.statusCode == 200) {
+        final data = response.data['data'] ?? response.data;
+        if (data is List) {
+          return data.cast<Map<String, dynamic>>();
+        }
+      }
+      
+      return [];
+    } on DioException catch (e) {
+      print('❌ Error obteniendo personal de sucursal: ${e.type}');
+      return [];
+    } catch (e) {
+      print('❌ Error inesperado obteniendo personal de sucursal: $e');
+      return [];
+    }
+  }
+
+  /// Obtener horarios por sucursal
+  Future<List<Map<String, dynamic>>> getHorariosPorSucursal(int sucursalId) async {
+    try {
+      print('📊 BMSPA API: Obteniendo horarios de sucursal $sucursalId...');
+      
+      final response = await _dio.get(
+        '/api/horarios-sucursal?sucursal_id=$sucursalId',
+        options: await _getAuthOptions(),
+      );
+
+      if (response.statusCode == 200) {
+        final data = response.data['data'] ?? response.data;
+        if (data is List) {
+          return data.cast<Map<String, dynamic>>();
+        }
+      }
+      
+      return [];
+    } on DioException catch (e) {
+      print('❌ Error obteniendo horarios de sucursal: ${e.type}');
+      return [];
+    } catch (e) {
+      print('❌ Error inesperado obteniendo horarios de sucursal: $e');
+      return [];
+    }
+  }
+
   /// Listar categorías
   Future<List<Map<String, dynamic>>> getCategorias() async {
     try {
@@ -1024,7 +1092,14 @@ class BMSPAApiService {
 
       if (response.statusCode == 200) {
         final data = response.data['data'] ?? response.data;
-        if (data is List) {
+        
+        // Manejar tanto arrays como objetos con claves string
+        if (data is Map) {
+          // Si es un mapa, convertir sus valores a lista
+          final promotionsList = data.values.toList();
+          return promotionsList.cast<Map<String, dynamic>>();
+        } else if (data is List) {
+          // Si ya es una lista, proceder normalmente
           return data.cast<Map<String, dynamic>>();
         }
       }

@@ -5,6 +5,16 @@ class NewsApiService {
   static const String _baseUrl = 'https://newsapi.org/v2';
   static const String _apiKey = '156d06374aec42d7b3a6331b76d17a03'; // Tu API key real
   
+  // Método getNews - alias para getBarberSpaNews
+  Future<Map<String, dynamic>> getNews() async {
+    return await getBarberSpaNews();
+  }
+  
+  // Método getFeaturedNews - alias para getTopNews
+  Future<Map<String, dynamic>> getFeaturedNews() async {
+    return await getTopNews();
+  }
+  
   Future<Map<String, dynamic>> getBarberSpaNews() async {
     try {
       // Búsqueda específica para spa, barbería y salones de belleza

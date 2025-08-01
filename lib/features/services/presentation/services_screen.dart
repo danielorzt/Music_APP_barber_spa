@@ -428,8 +428,8 @@ class _ServicesScreenState extends State<ServicesScreen> {
                             ),
                             child: Text(
                               '${servicio.duracionEnMinutos} min',
-                              style: TextStyle(
-                                color: Colors.grey[700],
+                              style: const TextStyle(
+                                color: Color(0xFF616161),
                                 fontWeight: FontWeight.w500,
                                 fontSize: 14,
                               ),
@@ -441,57 +441,36 @@ class _ServicesScreenState extends State<ServicesScreen> {
                   ),
                 ),
                 
-                // Botón de agregar al carrito
-                Consumer<CartProvider>(
-                  builder: (context, cart, child) {
-                    final isInCart = cart.isInCart(servicio.id.toString(), 'service');
-                    return Container(
-                      margin: const EdgeInsets.only(left: 12),
-                      child: IconButton(
-                        onPressed: () {
-                          if (isInCart) {
-                            cart.removeItem(servicio.id.toString(), 'service');
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: const Text('Servicio removido del carrito'),
-                                backgroundColor: Colors.red[400],
-                                duration: const Duration(seconds: 1),
-                                behavior: SnackBarBehavior.floating,
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(10),
-                                ),
-                              ),
-                            );
-                          } else {
-                            cart.addItem(
-                              servicio.id.toString(),
-                              servicio.nombre,
-                              servicio.precio,
-                              'https://images.unsplash.com/photo-1503951914875-452162b0f3f1?w=300&h=200&fit=crop',
-                              'service',
-                            );
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: const Text('Servicio agregado al carrito'),
-                                backgroundColor: const Color(0xFF00D4AA),
-                                duration: const Duration(seconds: 1),
-                                behavior: SnackBarBehavior.floating,
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(10),
-                                ),
-                              ),
-                            );
-                          }
-                        },
-                        icon: Icon(
-                          isInCart ? Icons.remove_shopping_cart : Icons.add_shopping_cart,
-                          color: isInCart ? Colors.red[400] : const Color(0xFF00D4AA),
-                          size: 24,
-                        ),
-                        tooltip: isInCart ? 'Remover del carrito' : 'Agregar al carrito',
+                // Botón de agendar cita
+                Container(
+                  margin: const EdgeInsets.only(left: 12),
+                  child: ElevatedButton.icon(
+                    onPressed: () {
+                      context.push('/agendar?servicio_id=${servicio.id}&servicio_nombre=${Uri.encodeComponent(servicio.nombre)}&servicio_precio=${servicio.precio}');
+                    },
+                    icon: const Icon(
+                      Icons.calendar_today,
+                      size: 18,
+                      color: Colors.white,
+                    ),
+                    label: const Text(
+                      'Agendar',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w600,
+                        fontSize: 14,
                       ),
-                    );
-                  },
+                    ),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFFDC3545),
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      elevation: 2,
+                    ),
+                  ),
                 ),
               ],
             ),

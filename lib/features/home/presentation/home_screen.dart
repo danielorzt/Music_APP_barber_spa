@@ -12,6 +12,8 @@ import 'package:music_app/core/services/news_api_service.dart';
 import 'package:music_app/core/widgets/story_card.dart';
 import 'package:music_app/core/widgets/news_card.dart';
 import 'package:music_app/core/widgets/auth_guard.dart';
+import 'package:music_app/features/services/providers/services_provider.dart';
+import 'package:music_app/features/products/providers/products_provider.dart';
 
 // Widget helper para mostrar diálogo de autenticación requerida
 void _showAuthRequiredDialog(BuildContext context, String action) {
@@ -63,16 +65,10 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   final NewsApiService _newsService = NewsApiService();
   
   // Estados de carga
-  bool _isLoadingServices = false;
-  bool _isLoadingProducts = false;
-  bool _isLoadingPromotions = false;
   bool _isLoadingStories = false;
   bool _isLoadingNews = false;
   
   // Datos de la API
-  List<Map<String, dynamic>> _featuredServices = [];
-  List<Map<String, dynamic>> _popularProducts = [];
-  List<Map<String, dynamic>> _promotions = [];
   List<Map<String, dynamic>> _stories = [];
   List<Map<String, dynamic>> _trendingStories = [];
   List<Map<String, dynamic>> _news = [];
@@ -135,192 +131,9 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   /// Cargar datos de la pantalla de inicio
   Future<void> _loadHomeData() async {
     await Future.wait([
-      _loadFeaturedServices(),
-      _loadPopularProducts(),
-      _loadPromotions(),
       _loadStories(),
       _loadNews(),
     ]);
-  }
-
-  /// Cargar servicios destacados
-  Future<void> _loadFeaturedServices() async {
-    setState(() => _isLoadingServices = true);
-    
-    try {
-      final servicesData = await _apiService.getServicios();
-      if (servicesData.isNotEmpty) {
-        // Filtrar servicios destacados o tomar los primeros 4
-        final featuredServices = servicesData.where((service) {
-          // Buscar servicios que contengan palabras clave de destacados
-          final nombre = service['nombre']?.toString().toLowerCase() ?? '';
-          final descripcion = service['descripcion']?.toString().toLowerCase() ?? '';
-          
-          return nombre.contains('premium') || 
-                 nombre.contains('exclusivo') || 
-                 nombre.contains('especial') ||
-                 descripcion.contains('premium') ||
-                 descripcion.contains('exclusivo') ||
-                 descripcion.contains('especial');
-        }).toList();
-        
-        // Si no hay destacados, tomar los primeros 4
-        final servicesToShow = featuredServices.isNotEmpty 
-            ? featuredServices.take(4).toList()
-            : servicesData.take(4).toList();
-        
-        if (mounted) {
-          setState(() {
-            _featuredServices = servicesToShow;
-          });
-        }
-        print('✅ Home: ${_featuredServices.length} servicios destacados cargados');
-      }
-    } catch (e) {
-      print('❌ Error cargando servicios: $e');
-      // Fallback con datos mock
-      _featuredServices = [
-        {
-          'id': 1,
-          'nombre': 'Corte Clásico Premium',
-          'precio': 25.0,
-          'imagen': 'https://images.unsplash.com/photo-1503951914875-452162b0f3f1?w=300&h=200&fit=crop',
-        },
-        {
-          'id': 2,
-          'nombre': 'Corte + Barba Exclusivo',
-          'precio': 40.0,
-          'imagen': 'https://images.unsplash.com/photo-1585747860715-2ba37e788b70?w=300&h=200&fit=crop',
-        },
-        {
-          'id': 7,
-          'nombre': 'HIFU Facial Premium',
-          'precio': 200.0,
-          'imagen': 'https://images.unsplash.com/photo-1570172619644-dfd03ed5d881?w=300&h=200&fit=crop',
-        },
-        {
-          'id': 16,
-          'nombre': 'Arreglo y Diseño de Barba',
-          'precio': 20.0,
-          'imagen': 'https://images.unsplash.com/photo-1585747860715-2ba37e788b70?w=300&h=200&fit=crop',
-        },
-      ];
-    } finally {
-      if (mounted) {
-        setState(() => _isLoadingServices = false);
-      }
-    }
-  }
-
-  /// Cargar productos destacados
-  Future<void> _loadPopularProducts() async {
-    setState(() => _isLoadingProducts = true);
-    
-    try {
-      final productsData = await _apiService.getProductos();
-      if (productsData.isNotEmpty) {
-        // Convertir productos a Map y filtrar destacados
-        final productsAsMap = productsData.map((producto) => {
-          'id': producto.id,
-          'nombre': producto.nombre,
-          'precio': producto.precio,
-          'imagen': producto.urlImagen,
-        }).toList();
-        
-        // Filtrar productos destacados
-        final featuredProducts = productsAsMap.where((product) {
-          final nombre = product['nombre']?.toString().toLowerCase() ?? '';
-          return nombre.contains('premium') || 
-                 nombre.contains('royal') || 
-                 nombre.contains('exclusivo') ||
-                 nombre.contains('kit') ||
-                 nombre.contains('set');
-        }).toList();
-        
-        // Si no hay destacados, tomar los primeros 4
-        final productsToShow = featuredProducts.isNotEmpty 
-            ? featuredProducts.take(4).toList()
-            : productsAsMap.take(4).toList();
-        
-        if (mounted) {
-          setState(() {
-            _popularProducts = productsToShow;
-          });
-        }
-        print('✅ Home: ${_popularProducts.length} productos destacados cargados');
-      }
-    } catch (e) {
-      print('❌ Error cargando productos: $e');
-      // Fallback con datos mock
-      _popularProducts = [
-        {
-          'id': 1,
-          'nombre': 'Bálsamo Clásico Premium',
-          'precio': 29.35,
-          'imagen': 'https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?w=300&h=200&fit=crop',
-        },
-        {
-          'id': 6,
-          'nombre': 'Pomada Base Agua Royal Barber',
-          'precio': 26.41,
-          'imagen': 'https://images.unsplash.com/photo-1522335789203-aabd1fc54bc9?w=300&h=200&fit=crop',
-        },
-        {
-          'id': 26,
-          'nombre': 'Shampoo de Barba Premium',
-          'precio': 21.76,
-          'imagen': 'https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?w=300&h=200&fit=crop',
-        },
-        {
-          'id': 45,
-          'nombre': 'Kit Premium de 2 Meses',
-          'precio': 52.88,
-          'imagen': 'https://images.unsplash.com/photo-1522335789203-aabd1fc54bc9?w=300&h=200&fit=crop',
-        },
-      ];
-    } finally {
-      if (mounted) {
-        setState(() => _isLoadingProducts = false);
-      }
-    }
-  }
-
-  /// Cargar promociones
-  Future<void> _loadPromotions() async {
-    setState(() => _isLoadingPromotions = true);
-    
-    try {
-      final promotionsData = await _apiService.getPromociones();
-      if (promotionsData.isNotEmpty) {
-        if (mounted) {
-          setState(() {
-            _promotions = promotionsData;
-          });
-        }
-        print('✅ Home: ${_promotions.length} promociones cargadas');
-      }
-    } catch (e) {
-      print('❌ Error cargando promociones: $e');
-      // Fallback con datos mock
-      _promotions = [
-        {
-          'id': 1,
-          'titulo': 'Descuento 20%',
-          'descripcion': 'En todos los cortes de cabello',
-          'imagen': 'https://images.unsplash.com/photo-1503951914875-452162b0f3f1?w=400&h=200&fit=crop',
-        },
-        {
-          'id': 2,
-          'titulo': '2x1 en Productos',
-          'descripcion': 'Lleva 2 productos por el precio de 1',
-          'imagen': 'https://images.unsplash.com/photo-1582735689369-4fe89db7114c?w=400&h=200&fit=crop',
-        },
-      ];
-    } finally {
-      if (mounted) {
-        setState(() => _isLoadingPromotions = false);
-      }
-    }
   }
 
   /// Cargar historias de videos
@@ -354,13 +167,13 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     
     try {
       final newsResponse = await _newsService.getBarberSpaNews();
-      final featuredNewsResponse = await _newsService.getTopNews();
+      final featuredResponse = await _newsService.getTopNews();
       
-      if (newsResponse['status'] == 'ok' && featuredNewsResponse['status'] == 'ok') {
+      if (newsResponse['status'] == 'ok' && featuredResponse['status'] == 'ok') {
         if (mounted) {
           setState(() {
             _news = List<Map<String, dynamic>>.from(newsResponse['articles'] ?? []);
-            _featuredNews = List<Map<String, dynamic>>.from(featuredNewsResponse['articles'] ?? []);
+            _featuredNews = List<Map<String, dynamic>>.from(featuredResponse['articles'] ?? []);
           });
         }
       }
@@ -375,90 +188,22 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final authProvider = Provider.of<AuthProvider>(context);
-    
     return Scaffold(
-      backgroundColor: theme.colorScheme.background,
-      body: SafeArea(
+      body: RefreshIndicator(
+        onRefresh: _loadHomeData,
         child: SingleChildScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Header con saludo y notificaciones
               _buildHeader(),
-              
-              // Banner principal con carousel
-              _buildMainBanner(),
-              
-              const SizedBox(height: 24),
-              
-              // Sección de categorías rápidas
-              AnimatedBuilder(
-                animation: _fadeAnimation,
-                builder: (context, child) {
-                  return FadeTransition(
-                    opacity: _fadeAnimation,
-                    child: Transform.translate(
-                      offset: Offset(0, _slideAnimation.value),
-                      child: _buildQuickCategories(context),
-                    ),
-                  );
-                },
-              ),
-              
-              // Sección de historias virales
-              AnimatedBuilder(
-                animation: _fadeAnimation,
-                builder: (context, child) {
-                  return FadeTransition(
-                    opacity: _fadeAnimation,
-                    child: Transform.translate(
-                      offset: Offset(0, _slideAnimation.value * 1.2),
-                      child: _buildStoriesSection(context),
-                    ),
-                  );
-                },
-              ),
-              
-              // Sección de noticias destacadas
-              AnimatedBuilder(
-                animation: _fadeAnimation,
-                builder: (context, child) {
-                  return FadeTransition(
-                    opacity: _fadeAnimation,
-                    child: Transform.translate(
-                      offset: Offset(0, _slideAnimation.value * 1.4),
-                      child: _buildFeaturedNews(context),
-                    ),
-                  );
-                },
-              ),
-              
-              // Sección de servicios destacados
-              _buildFeaturedServices(context),
-              
-              // Sección de productos populares
-              _buildPopularProducts(context),
-              
-              // Banner de descuentos con animación de pulso
-              AnimatedBuilder(
-                animation: _pulseAnimation,
-                builder: (context, child) {
-                  return Transform.scale(
-                    scale: _pulseAnimation.value,
-                    child: _buildDiscountBanner(context),
-                  );
-                },
-              ),
-              
-              // Sección de noticias generales
-              _buildNewsSection(context),
-              
-              // Sección de promociones
-              _buildPromotions(context),
-              
-              const SizedBox(height: 20),
+              _buildBannerSection(),
+              _buildFeaturedServicesSection(),
+              _buildPopularProductsSection(),
+              _buildPromotionsSection(),
+              _buildQuickCategories(context),
+              _buildStoriesSection(),
+              _buildNewsSection(),
+              const SizedBox(height: 100), // Espacio para bottom navigation
             ],
           ),
         ),
@@ -467,21 +212,19 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   }
 
   Widget _buildHeader() {
-    final authProvider = Provider.of<AuthProvider>(context);
-    final theme = Theme.of(context);
-    final isDarkMode = theme.brightness == Brightness.dark;
-    
     return Container(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.fromLTRB(20, 60, 20, 20),
       decoration: BoxDecoration(
-        color: isDarkMode ? Colors.white10 : Colors.grey[50],
-        borderRadius: const BorderRadius.only(
-          bottomLeft: Radius.circular(30),
-          bottomRight: Radius.circular(30),
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [
+            const Color(0xFFDC3545),
+            const Color(0xFFDC3545).withOpacity(0.8),
+          ],
         ),
       ),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -489,92 +232,107 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    authProvider.isAuthenticated
-                        ? '¡Hola, ${authProvider.currentUser?['nombre'] ?? 'Usuario'}!'
-                        : '¡Bienvenido!',
-                    style: theme.textTheme.headlineSmall?.copyWith(
+                  const Text(
+                    'Barber Music Spa',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 24,
                       fontWeight: FontWeight.bold,
-                      color: isDarkMode ? Colors.white : Colors.black87,
                     ),
                   ),
+                  const SizedBox(height: 4),
                   Text(
-                    authProvider.isAuthenticated
-                        ? '¿Qué servicio necesitas hoy?'
-                        : 'Inicia sesión para continuar',
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      color: isDarkMode ? Colors.white70 : Colors.grey[600],
+                    'Tu estilo, nuestra pasión',
+                    style: TextStyle(
+                      color: Colors.white.withOpacity(0.9),
+                      fontSize: 14,
                     ),
                   ),
                 ],
               ),
-              if (authProvider.isAuthenticated)
-                CircleAvatar(
-                  radius: 25,
-                  backgroundColor: const Color(0xFFDC3545),
+              Consumer<AuthProvider>(
+                builder: (context, authProvider, child) {
+                  return GestureDetector(
+                    onTap: () {
+                      if (authProvider.isAuthenticated) {
+                        context.go('/profile');
+                      } else {
+                        context.go('/login');
+                      }
+                    },
+                    child: CircleAvatar(
+                      radius: 20,
+                      backgroundColor: Colors.white.withOpacity(0.2),
+                      child: Icon(
+                        authProvider.isAuthenticated ? Icons.person : Icons.login,
+                        color: Colors.white,
+                        size: 20,
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ],
+          ),
+          const SizedBox(height: 20),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.2),
+              borderRadius: BorderRadius.circular(25),
+            ),
+            child: Row(
+              children: [
+                Icon(
+                  Icons.search,
+                  color: Colors.white.withOpacity(0.8),
+                  size: 20,
+                ),
+                const SizedBox(width: 8),
+                Expanded(
                   child: Text(
-                    (authProvider.currentUser?['nombre'] ?? 'U')[0].toUpperCase(),
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 18,
+                    'Buscar servicios, productos...',
+                    style: TextStyle(
+                      color: Colors.white.withOpacity(0.8),
+                      fontSize: 14,
                     ),
                   ),
                 ),
-            ],
+              ],
+            ),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildMainBanner() {
+  Widget _buildBannerSection() {
     final banners = [
       {
-        'title': '¡Bienvenido al Mejor Spa!',
-        'subtitle': '20% OFF en tu primera visita',
-        'image': 'https://images.unsplash.com/photo-1540555700478-4be289fbecef?w=800&h=400&fit=crop',
-        'color': '0xFFE74C3C',
+        'title': 'Corte Premium',
+        'subtitle': 'Desde \$25',
+        'image': 'https://images.unsplash.com/photo-1503951914875-452162b0f3f1?w=400&h=200&fit=crop',
       },
       {
-        'title': 'Cortes Premium',
-        'subtitle': 'Estilo profesional garantizado',
-        'image': 'https://images.unsplash.com/photo-1503951914875-452162b0f3f1?w=800&h=400&fit=crop',
-        'color': '0xFF2E86AB',
-      },
-      {
-        'title': 'Tratamientos Exclusivos',
-        'subtitle': 'Cuidado experto para tu piel',
-        'image': 'https://images.unsplash.com/photo-1570172619644-dfd03ed5d881?w=800&h=400&fit=crop',
-        'color': '0xFF6A994E',
-      },
-      {
-        'title': 'Relajación Total',
-        'subtitle': 'Masajes terapéuticos únicos',
-        'image': 'https://images.unsplash.com/photo-1544161512-4ab64f436453?w=800&h=400&fit=crop',
-        'color': '0xFF9B59B6',
-      },
-      {
-        'title': 'Productos Premium',
-        'subtitle': 'Calidad internacional',
-        'image': 'https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?w=800&h=400&fit=crop',
-        'color': '0xFFF39C12',
+        'title': 'Tratamiento Facial',
+        'subtitle': 'Desde \$50',
+        'image': 'https://images.unsplash.com/photo-1570172619644-dfd03ed5d881?w=400&h=200&fit=crop',
       },
     ];
 
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16),
+      height: 200,
+      margin: const EdgeInsets.all(20),
       child: SimpleCarousel(
-        height: 200,
+        items: banners.map((banner) => _buildBannerCard(banner)).toList(),
         autoPlay: true,
         autoPlayInterval: const Duration(seconds: 3),
-        items: banners.map((banner) => _buildBannerItem(banner)).toList(),
       ),
     );
   }
 
-  Widget _buildBannerItem(Map<String, String> banner) {
-    final themeColor = Color(int.parse(banner['color']!));
+  Widget _buildBannerCard(Map<String, dynamic> banner) {
+    const themeColor = Color(0xFFDC3545);
     
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 4),
@@ -582,9 +340,9 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: themeColor.withOpacity(0.3),
-            blurRadius: 15,
-            offset: const Offset(0, 8),
+            color: Colors.black.withOpacity(0.1),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
           ),
         ],
       ),
@@ -702,7 +460,31 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     );
   }
 
-  Widget _buildFeaturedServices(BuildContext context) {
+  Widget _buildFeaturedServicesSection() {
+    // Datos mock para servicios destacados
+    final mockServices = [
+      {
+        'nombre': 'Corte Premium',
+        'precio': 25.0,
+        'imagen': 'https://images.unsplash.com/photo-1503951914875-452162b0f3f1?w=300&h=200&fit=crop',
+      },
+      {
+        'nombre': 'Arreglo de Barba',
+        'precio': 18.0,
+        'imagen': 'https://images.unsplash.com/photo-1621605815971-fbc98d665033?w=300&h=200&fit=crop',
+      },
+      {
+        'nombre': 'Tratamiento Facial',
+        'precio': 45.0,
+        'imagen': 'https://images.unsplash.com/photo-1570172619644-dfd03ed5d881?w=300&h=200&fit=crop',
+      },
+      {
+        'nombre': 'Masaje Relajante',
+        'precio': 35.0,
+        'imagen': 'https://images.unsplash.com/photo-1544161515-4ab6ce6db874?w=300&h=200&fit=crop',
+      },
+    ];
+
     return Container(
       padding: const EdgeInsets.all(20),
       child: Column(
@@ -731,28 +513,180 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
             ],
           ),
           const SizedBox(height: 16),
-          if (_isLoadingServices)
-            const Center(child: LoadingIndicator())
-          else
-            SizedBox(
-              height: 140,
-              child: ListView.builder(
-                scrollDirection: Axis.horizontal,
-                itemCount: _featuredServices.length,
-                itemBuilder: (context, index) {
-                  final service = _featuredServices[index];
-                  return _buildServiceCard(
-                    service['nombre'] ?? 'Servicio',
-                    service['imagen'] ?? 'https://images.unsplash.com/photo-1503951914875-452162b0f3f1?w=300&h=200&fit=crop',
-                    '\$${service['precio'] ?? 0}',
-                    () {
-                      // Navegar al detalle del servicio
-                      context.go('/servicios');
-                    },
-                  );
-                },
-              ),
+          SizedBox(
+            height: 140,
+            child: ListView.builder(
+              scrollDirection: Axis.horizontal,
+              itemCount: mockServices.length,
+              itemBuilder: (context, index) {
+                final service = mockServices[index];
+                return _buildServiceCard(
+                  service['nombre'] as String,
+                  service['imagen'] as String,
+                  '\$${service['precio']}',
+                  () {
+                    context.go('/services');
+                  },
+                );
+              },
             ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPopularProductsSection() {
+    // Datos mock para productos populares
+    final mockProducts = [
+      {
+        'nombre': 'Pomada Clásica',
+        'precio': 15.0,
+        'imagen': 'https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?w=300&h=200&fit=crop',
+      },
+      {
+        'nombre': 'Aceite para Barba',
+        'precio': 22.0,
+        'imagen': 'https://images.unsplash.com/photo-1608248543803-ba4f8c70ae0b?w=300&h=200&fit=crop',
+      },
+      {
+        'nombre': 'Shampoo Premium',
+        'precio': 18.0,
+        'imagen': 'https://images.unsplash.com/photo-1571781926291-c477ebfd024b?w=300&h=200&fit=crop',
+      },
+      {
+        'nombre': 'Cera Híbrida',
+        'precio': 25.0,
+        'imagen': 'https://images.unsplash.com/photo-1596755389378-c31d21fd1273?w=300&h=200&fit=crop',
+      },
+    ];
+
+    return Container(
+      padding: const EdgeInsets.all(20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text(
+                'Productos Populares',
+                style: TextStyle(
+                  fontSize: 22,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              TextButton(
+                onPressed: () => context.go('/products'),
+                child: const Text(
+                  'Ver todos',
+                  style: TextStyle(
+                    color: Color(0xFFDC3545),
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          SizedBox(
+            height: 220,
+            child: ListView.builder(
+              scrollDirection: Axis.horizontal,
+              itemCount: mockProducts.length,
+              itemBuilder: (context, index) {
+                final product = mockProducts[index];
+                return _buildProductCard(
+                  product['nombre'] as String,
+                  '\$${product['precio']}',
+                  product['imagen'] as String,
+                  () {
+                    context.go('/products');
+                  },
+                );
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPromotionsSection() {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Ofertas Especiales',
+            style: TextStyle(
+              fontSize: 22,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: 16),
+          Container(
+            height: 120,
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  const Color(0xFFDC3545),
+                  const Color(0xFFDC3545).withOpacity(0.8),
+                ],
+              ),
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: Stack(
+              children: [
+                Positioned(
+                  right: -20,
+                  top: -20,
+                  child: Container(
+                    width: 100,
+                    height: 100,
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.1),
+                      shape: BoxShape.circle,
+                    ),
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.all(20),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'Descuento 20%',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      const Text(
+                        'En todos los servicios premium',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 14,
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      ElevatedButton(
+                        onPressed: () => context.go('/services'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.white,
+                          foregroundColor: const Color(0xFFDC3545),
+                        ),
+                        child: const Text('Ver Ofertas'),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
         ],
       ),
     );
@@ -776,7 +710,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
               Expanded(
                 child: ClipRRect(
                   borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
-                  child: Image.network(
+                  child: imageUrl.isNotEmpty ? Image.network(
                     imageUrl,
                     width: double.infinity,
                     fit: BoxFit.cover,
@@ -786,6 +720,9 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                         child: const Icon(Icons.image_not_supported),
                       );
                     },
+                  ) : Container(
+                    color: Colors.grey[200],
+                    child: const Icon(Icons.image_not_supported),
                   ),
                 ),
               ),
@@ -822,62 +759,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     );
   }
 
-  Widget _buildPopularProducts(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              const Text(
-                'Productos Populares',
-                style: TextStyle(
-                  fontSize: 22,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              TextButton(
-                onPressed: () => context.go('/products'),
-                child: const Text(
-                  'Ver todos',
-                  style: TextStyle(
-                    color: Color(0xFFDC3545),
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          if (_isLoadingProducts)
-            const Center(child: LoadingIndicator())
-          else
-            SizedBox(
-              height: 220,
-              child: ListView.builder(
-                scrollDirection: Axis.horizontal,
-                itemCount: _popularProducts.length,
-                itemBuilder: (context, index) {
-                  final product = _popularProducts[index];
-                  return _buildProductCard(
-                    product['nombre'] ?? 'Producto',
-                    '\$${product['precio'] ?? 0}',
-                    product['imagen'] ?? 'https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?w=300&h=200&fit=crop',
-                    () {
-                      // Navegar al detalle del producto
-                      context.go('/productos');
-                    },
-                  );
-                },
-              ),
-            ),
-        ],
-      ),
-    );
-  }
-
   Widget _buildProductCard(String title, String price, String imageUrl, VoidCallback? onTap) {
     return Container(
       width: 160,
@@ -896,7 +777,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
               Expanded(
                 child: ClipRRect(
                   borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
-                  child: Image.network(
+                  child: imageUrl.isNotEmpty ? Image.network(
                     imageUrl,
                     width: double.infinity,
                     fit: BoxFit.cover,
@@ -906,6 +787,9 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                         child: const Icon(Icons.image_not_supported),
                       );
                     },
+                  ) : Container(
+                    color: Colors.grey[200],
+                    child: const Icon(Icons.image_not_supported),
                   ),
                 ),
               ),
@@ -1001,25 +885,18 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                       ),
                       child: Column(
                         children: [
-                          Container(
-                            padding: const EdgeInsets.all(12),
-                            decoration: BoxDecoration(
-                              color: category['color'] as Color,
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: Icon(
-                              category['icon'] as IconData,
-                              color: Colors.white,
-                              size: 24,
-                            ),
+                          Icon(
+                            category['icon'] as IconData,
+                            color: category['color'] as Color,
+                            size: 24,
                           ),
                           const SizedBox(height: 8),
                           Text(
                             category['title'] as String,
                             style: TextStyle(
-                              fontWeight: FontWeight.w600,
-                              fontSize: 12,
                               color: category['color'] as Color,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
                             ),
                             textAlign: TextAlign.center,
                           ),
@@ -1031,206 +908,91 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
               );
             }).toList(),
           ),
-          const SizedBox(height: 12),
-          // Botón de ofertas en una fila separada
-          Container(
-            margin: const EdgeInsets.symmetric(horizontal: 6),
-            child: InkWell(
-              onTap: () => context.go('/promotions'),
-              borderRadius: BorderRadius.circular(16),
-              child: Container(
-                width: double.infinity,
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFF39C12).withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(
-                    color: const Color(0xFFF39C12).withOpacity(0.3),
-                    width: 1,
-                  ),
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFF39C12),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: const Icon(
-                        Icons.local_offer,
-                        color: Colors.white,
-                        size: 20,
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    const Text(
-                      'Ofertas',
-                      style: TextStyle(
-                        fontWeight: FontWeight.w600,
-                        fontSize: 14,
-                        color: Color(0xFFF39C12),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
         ],
       ),
     );
   }
 
-  Widget _buildStoriesSection(BuildContext context) {
+  Widget _buildStoriesSection() {
+    // Datos mock para historias
+    final mockStories = [
+      {
+        'title': 'Técnicas de Corte',
+        'thumbnail': 'https://images.unsplash.com/photo-1503951914875-452162b0f3f1?w=200&h=200&fit=crop',
+        'duration': '2:30',
+      },
+      {
+        'title': 'Cuidado de Barba',
+        'thumbnail': 'https://images.unsplash.com/photo-1621605815971-fbc98d665033?w=200&h=200&fit=crop',
+        'duration': '1:45',
+      },
+      {
+        'title': 'Tratamientos Spa',
+        'thumbnail': 'https://images.unsplash.com/photo-1570172619644-dfd03ed5d881?w=200&h=200&fit=crop',
+        'duration': '3:15',
+      },
+    ];
+
     return Container(
-      margin: const EdgeInsets.symmetric(vertical: 20),
+      padding: const EdgeInsets.all(20),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                const Row(
-                  children: [
-                    Icon(
-                      Icons.video_library,
-                      color: Color(0xFFDC3545),
-                      size: 24,
-                    ),
-                    SizedBox(width: 8),
-                    Text(
-                      'Videos Trending',
-                      style: TextStyle(
-                        fontSize: 22,
-                        fontWeight: FontWeight.bold,
-                        color: Color(0xFF2C3E50),
-                      ),
-                    ),
-                  ],
-                ),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: Colors.amber,
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: const Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(Icons.trending_up, color: Colors.white, size: 14),
-                      SizedBox(width: 4),
-                      Text(
-                        'VIRAL',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 10,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 16),
-          if (_isLoadingStories)
-            const Center(child: LoadingIndicator())
-          else if (_trendingStories.isNotEmpty || _stories.isNotEmpty)
-            SizedBox(
-              height: 240,
-              child: ListView.builder(
-                scrollDirection: Axis.horizontal,
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                itemCount: (_trendingStories + _stories).length,
-                itemBuilder: (context, index) {
-                  final allStories = _trendingStories + _stories;
-                  return StoryCard(
-                    story: allStories[index],
-                    onTap: () {
-                      // TODO: Abrir reproductor de video
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text('Reproduciendo: ${allStories[index]['title']}'),
-                          backgroundColor: const Color(0xFFDC3545),
-                        ),
-                      );
-                    },
-                  );
-                },
-              ),
-            )
-          else
-            Container(
-              height: 120,
-              margin: const EdgeInsets.symmetric(horizontal: 20),
-              decoration: BoxDecoration(
-                color: Colors.grey[100],
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: const Center(
-                child: Text('No hay videos disponibles'),
-              ),
-            ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildFeaturedNews(BuildContext context) {
-    if (_isLoadingNews) {
-      return Container(
-        margin: const EdgeInsets.symmetric(vertical: 20),
-        child: const Center(child: LoadingIndicator()),
-      );
-    }
-
-    if (_featuredNews.isEmpty) return const SizedBox.shrink();
-
-    return Container(
-      margin: const EdgeInsets.symmetric(vertical: 20),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Padding(
-            padding: EdgeInsets.symmetric(horizontal: 20),
-            child: Row(
-              children: [
-                Icon(
-                  Icons.star,
-                  color: Colors.amber,
-                  size: 24,
-                ),
-                SizedBox(width: 8),
-                Text(
-                  'Noticias Destacadas',
-                  style: TextStyle(
-                    fontSize: 22,
-                    fontWeight: FontWeight.bold,
-                    color: Color(0xFF2C3E50),
-                  ),
-                ),
-              ],
+          const Text(
+            'Historias',
+            style: TextStyle(
+              fontSize: 22,
+              fontWeight: FontWeight.bold,
             ),
           ),
           const SizedBox(height: 16),
           SizedBox(
-            height: 250,
+            height: 100,
             child: ListView.builder(
               scrollDirection: Axis.horizontal,
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              itemCount: _featuredNews.length,
+              itemCount: mockStories.length,
               itemBuilder: (context, index) {
+                final story = mockStories[index];
                 return Container(
-                  width: 300,
-                  margin: const EdgeInsets.only(right: 16),
-                  child: NewsCard(
-                    article: _featuredNews[index],
-                    isFeatured: true,
+                  width: 80,
+                  margin: const EdgeInsets.only(right: 12),
+                  child: Column(
+                    children: [
+                      Container(
+                        width: 60,
+                        height: 60,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          border: Border.all(
+                            color: const Color(0xFFDC3545),
+                            width: 2,
+                          ),
+                        ),
+                        child: ClipOval(
+                          child: Image.network(
+                            story['thumbnail'] as String,
+                            fit: BoxFit.cover,
+                            errorBuilder: (context, error, stackTrace) {
+                              return Container(
+                                color: Colors.grey[300],
+                                child: const Icon(Icons.play_circle, color: Colors.grey),
+                              );
+                            },
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        story['title'] as String,
+                        style: const TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500,
+                        ),
+                        textAlign: TextAlign.center,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
                   ),
                 );
               },
@@ -1241,264 +1003,124 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     );
   }
 
-  Widget _buildNewsSection(BuildContext context) {
-    if (_isLoadingNews) {
-      return Container(
-        margin: const EdgeInsets.symmetric(vertical: 20),
-        child: const Center(child: LoadingIndicator()),
-      );
-    }
-
-    if (_news.isEmpty) return const SizedBox.shrink();
+  Widget _buildNewsSection() {
+    // Datos mock para noticias
+    final mockNews = [
+      {
+        'title': 'Tendencias de Corte 2025',
+        'description': 'Descubre los estilos más populares de este año',
+        'urlToImage': 'https://images.unsplash.com/photo-1503951914875-452162b0f3f1?w=300&h=200&fit=crop',
+        'publishedAt': '2025-01-15',
+      },
+      {
+        'title': 'Cuidado de Barba en Invierno',
+        'description': 'Tips para mantener tu barba saludable',
+        'urlToImage': 'https://images.unsplash.com/photo-1621605815971-fbc98d665033?w=300&h=200&fit=crop',
+        'publishedAt': '2025-01-10',
+      },
+      {
+        'title': 'Nuevos Tratamientos Spa',
+        'description': 'Relajación y bienestar para ti',
+        'urlToImage': 'https://images.unsplash.com/photo-1570172619644-dfd03ed5d881?w=300&h=200&fit=crop',
+        'publishedAt': '2025-01-08',
+      },
+    ];
 
     return Container(
-      margin: const EdgeInsets.symmetric(vertical: 20),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                const Row(
-                  children: [
-                    Icon(
-                      Icons.newspaper,
-                      color: Color(0xFFDC3545),
-                      size: 24,
-                    ),
-                    SizedBox(width: 8),
-                    Text(
-                      'Últimas Noticias',
-                      style: TextStyle(
-                        fontSize: 22,
-                        fontWeight: FontWeight.bold,
-                        color: Color(0xFF2C3E50),
-                      ),
-                    ),
-                  ],
-                ),
-                TextButton(
-                  onPressed: () {
-                    // TODO: Navegar a pantalla de noticias completa
-                  },
-                  child: const Text(
-                    'Ver todas',
-                    style: TextStyle(
-                      color: Color(0xFFDC3545),
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 16),
-          ..._news.take(3).map((article) => NewsCard(article: article)),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildDiscountBanner(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.all(20),
-      child: Stack(
-        children: [
-          Container(
-            height: 120,
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(16),
-              gradient: const LinearGradient(
-                begin: Alignment.centerLeft,
-                end: Alignment.centerRight,
-                colors: [
-                  Color(0xFFFF6B6B),
-                  Color(0xFFEE5A5A),
-                ],
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: const Color(0xFFFF6B6B).withOpacity(0.4),
-                  blurRadius: 15,
-                  offset: const Offset(0, 8),
-                ),
-              ],
-            ),
-            child: Padding(
-              padding: const EdgeInsets.all(20),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        const Text(
-                          '¡MEGA DESCUENTO!',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        const Text(
-                          'Hasta 50% OFF en servicios premium',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 14,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: const Text(
-                            'CÓDIGO: SPA50',
-                            style: TextStyle(
-                              color: Color(0xFFFF6B6B),
-                              fontSize: 12,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.2),
-                      borderRadius: BorderRadius.circular(50),
-                    ),
-                    child: const Icon(
-                      Icons.local_fire_department,
-                      color: Colors.white,
-                      size: 32,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-          Positioned(
-            top: -10,
-            right: -10,
-            child: Container(
-              padding: const EdgeInsets.all(8),
-              decoration: const BoxDecoration(
-                color: Colors.amber,
-                shape: BoxShape.circle,
-              ),
-              child: const Text(
-                '50%',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 12,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildPromotions(BuildContext context) {
-    final authProvider = Provider.of<AuthProvider>(context);
-    
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 20),
+      padding: const EdgeInsets.all(20),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Text(
-            'Promociones Especiales',
+            'Noticias',
             style: TextStyle(
               fontSize: 22,
               fontWeight: FontWeight.bold,
             ),
           ),
           const SizedBox(height: 16),
-          Card(
-            elevation: 4,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(16),
-            ),
-            child: Container(
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(16),
-                gradient: const LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [
-                    Color(0xFFF8F9FA),
-                    Color(0xFFE9ECEF),
-                  ],
-                ),
-              ),
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFDC3545),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: const Icon(
-                        Icons.local_offer,
-                        color: Colors.white,
-                        size: 28,
-                      ),
+          SizedBox(
+            height: 140,
+            child: ListView.builder(
+              scrollDirection: Axis.horizontal,
+              itemCount: mockNews.length,
+              itemBuilder: (context, index) {
+                final news = mockNews[index];
+                return Container(
+                  width: 280,
+                  margin: const EdgeInsets.only(right: 16),
+                  child: Card(
+                    elevation: 4,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
                     ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+                    child: InkWell(
+                      onTap: () {
+                        // Manejar tap en noticia
+                      },
+                      borderRadius: BorderRadius.circular(12),
+                      child: Row(
                         children: [
-                          Text(
-                            _promotions.isNotEmpty 
-                                ? _promotions.first['titulo'] ?? '¡Primera Cita Gratis!'
-                                : '¡Primera Cita Gratis!',
-                            style: const TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
+                          ClipRRect(
+                            borderRadius: const BorderRadius.horizontal(left: Radius.circular(12)),
+                            child: Image.network(
+                              news['urlToImage'] as String,
+                              width: 100,
+                              height: 140,
+                              fit: BoxFit.cover,
+                              errorBuilder: (context, error, stackTrace) {
+                                return Container(
+                                  width: 100,
+                                  height: 140,
+                                  color: Colors.grey[300],
+                                  child: const Icon(Icons.article, color: Colors.grey),
+                                );
+                              },
                             ),
                           ),
-                          const SizedBox(height: 4),
-                          Text(
-                            _promotions.isNotEmpty 
-                                ? _promotions.first['descripcion'] ?? 'Solo para nuevos clientes'
-                                : 'Solo para nuevos clientes',
-                            style: TextStyle(
-                              color: Colors.grey[600],
-                              fontSize: 14,
+                          Expanded(
+                            child: Padding(
+                              padding: const EdgeInsets.all(12),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    news['title'] as String,
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 14,
+                                    ),
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                  const SizedBox(height: 8),
+                                  Text(
+                                    news['description'] as String,
+                                    style: TextStyle(
+                                      color: Colors.grey[600],
+                                      fontSize: 12,
+                                    ),
+                                    maxLines: 3,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                  const Spacer(),
+                                  Text(
+                                    news['publishedAt'] as String,
+                                    style: TextStyle(
+                                      color: Colors.grey[500],
+                                      fontSize: 10,
+                                    ),
+                                  ),
+                                ],
+                              ),
                             ),
                           ),
                         ],
                       ),
                     ),
-                    AuthRequiredButton(
-                      onPressed: () => context.go('/agendar'),
-                      isAuthenticated: authProvider.isAuthenticated,
-                      onAuthRequired: () => _showAuthRequiredDialog(context, 'reservar una cita'),
-                      child: const Text(
-                        'Reservar',
-                        style: TextStyle(color: Colors.white),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
+                  ),
+                );
+              },
             ),
           ),
         ],
