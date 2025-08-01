@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:music_app/core/widgets/back_button_interceptor.dart';
+import 'package:music_app/core/services/notification_service.dart';
+import 'package:music_app/core/services/local_history_service.dart';
 
 class CheckoutScreen extends StatefulWidget {
   const CheckoutScreen({super.key});
@@ -253,26 +255,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
               });
             },
           ),
-          RadioListTile<String>(
-            title: Row(
-              children: [
-                const Icon(Icons.payment, color: Color(0xFFDC3545)),
-                const SizedBox(width: 8),
-                Text(
-                  'PayPal',
-                  style: TextStyle(color: theme.colorScheme.onSurface),
-                ),
-              ],
-            ),
-            value: 'paypal',
-            groupValue: _selectedPaymentMethod,
-            activeColor: const Color(0xFFDC3545),
-            onChanged: (value) {
-              setState(() {
-                _selectedPaymentMethod = value!;
-              });
-            },
-          ),
+
           
           if (_selectedPaymentMethod == 'tarjeta') ...[
             const SizedBox(height: 16),
@@ -356,28 +339,6 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                   ),
                 ),
               ],
-            ),
-          ] else if (_selectedPaymentMethod == 'paypal') ...[
-            const SizedBox(height: 16),
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: theme.colorScheme.surface,
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: theme.colorScheme.onSurface.withOpacity(0.2)),
-              ),
-              child: Row(
-                children: [
-                  const Icon(Icons.info, color: Color(0xFFDC3545)),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Text(
-                      'Serás redirigido a PayPal para completar el pago de forma segura.',
-                      style: TextStyle(color: theme.colorScheme.onSurface),
-                    ),
-                  ),
-                ],
-              ),
             ),
           ],
         ],
@@ -498,10 +459,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
   }
 
   Future<void> _processOrder() async {
-    if (!_formKey.currentState!.validate()) {
-      return;
-    }
-
+    // MOCK: No validar formulario, siempre procesar como exitoso
     setState(() {
       _isProcessing = true;
     });
@@ -510,7 +468,51 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
       // Simular procesamiento del pago
       await Future.delayed(const Duration(seconds: 2));
 
+      // Crear objeto de orden para guardar localmente
+      final orderData = {
+        'id': DateTime.now().millisecondsSinceEpoch.toString(),
+        'numero_orden': 'ORD-${DateTime.now().millisecondsSinceEpoch}',
+        'estado': 'COMPLETADA',
+        'subtotal': _subtotal,
+        'tax': _tax,
+        'shipping': _shipping,
+        'total': _total,
+        'metodo_pago': _selectedPaymentMethod,
+        'direccion_entrega': {
+          'nombre': _nombreController.text.isNotEmpty ? _nombreController.text : 'Cliente',
+          'direccion': _direccionController.text.isNotEmpty ? _direccionController.text : 'Dirección de entrega',
+          'ciudad': _ciudadController.text.isNotEmpty ? _ciudadController.text : 'Ciudad',
+          'codigo_postal': _codigoPostalController.text.isNotEmpty ? _codigoPostalController.text : '00000',
+          'telefono': _telefonoController.text.isNotEmpty ? _telefonoController.text : 'N/A',
+          'email': _emailController.text.isNotEmpty ? _emailController.text : 'cliente@email.com',
+        },
+        'items': [
+          {
+            'id': '1',
+            'nombre': 'Producto de Barbería',
+            'precio': 29.99,
+            'cantidad': 2,
+            'tipo': 'producto',
+          },
+          {
+            'id': '2',
+            'nombre': 'Servicio de Corte',
+            'precio': 25.0,
+            'cantidad': 1,
+            'tipo': 'servicio',
+          },
+        ],
+        'created_at': DateTime.now().toIso8601String(),
+      };
+
+      // Guardar orden localmente
+      await LocalHistoryService.saveOrder(orderData);
+
       if (mounted) {
+        // Mostrar notificación
+        final notificationService = NotificationService();
+        await notificationService.showPurchaseNotification();
+        
         // Mostrar diálogo de éxito
         showDialog(
           context: context,
@@ -536,7 +538,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  'Tu pedido ha sido procesado correctamente.',
+                  'Tu pedido ha sido procesado correctamente y aparecerá en tu historial de compras.',
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),

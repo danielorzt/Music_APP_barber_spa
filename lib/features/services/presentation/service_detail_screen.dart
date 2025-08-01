@@ -26,6 +26,15 @@ class _ServiceDetailScreenState extends State<ServiceDetailScreen>
   void initState() {
     super.initState();
     _tabController = TabController(length: 3, vsync: this);
+    
+    // Debug: Imprimir información del servicio
+    print('🔍 ServiceDetailScreen - Servicio recibido:');
+    print('  ID: ${widget.service.id}');
+    print('  Nombre: ${widget.service.name}');
+    print('  Descripción: ${widget.service.description}');
+    print('  Precio: ${widget.service.price}');
+    print('  Duración: ${widget.service.duration}');
+    print('  Imagen: ${widget.service.imagen}');
   }
 
   @override
@@ -65,70 +74,63 @@ class _ServiceDetailScreenState extends State<ServiceDetailScreen>
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: CustomScrollView(
-        slivers: [
-          // App Bar con imagen
-          SliverAppBar(
-            expandedHeight: 300,
-            pinned: true,
-            flexibleSpace: FlexibleSpaceBar(
-              background: Stack(
-                fit: StackFit.expand,
-                children: [
-                  Image.network(
-                    widget.service.imagen ?? 'https://images.unsplash.com/photo-1503951914875-452162b0f3f1?w=400&h=400&fit=crop',
-                    fit: BoxFit.cover,
-                    errorBuilder: (context, error, stackTrace) {
-                      return Container(
-                        color: Colors.grey[300],
-                        child: const Icon(
-                          Icons.spa,
-                          size: 80,
-                          color: Colors.grey,
-                        ),
-                      );
-                    },
-                  ),
-                  // Gradiente para mejor legibilidad
-                  Container(
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.topCenter,
-                        end: Alignment.bottomCenter,
-                        colors: [
-                          Colors.transparent,
-                          Colors.black.withOpacity(0.3),
-                        ],
-                      ),
-                    ),
-                  ),
-                ],
+    print('🔍 ServiceDetailScreen - Construyendo widget');
+    
+    // Verificar si el servicio tiene datos válidos
+    if (widget.service.name.isEmpty) {
+      print('❌ ServiceDetailScreen - Nombre del servicio está vacío');
+      return Scaffold(
+        appBar: AppBar(
+          title: const Text('Error'),
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back),
+            onPressed: () => context.pop(),
+          ),
+        ),
+        body: const Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.error_outline, size: 64, color: Colors.red),
+              SizedBox(height: 16),
+              Text(
+                'Error al cargar el servicio',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
               ),
-            ),
-            leading: IconButton(
-              icon: const Icon(Icons.arrow_back, color: Colors.white),
-              onPressed: () => context.pop(),
-            ),
-            actions: [
-              IconButton(
-                icon: const Icon(Icons.favorite_border, color: Colors.white),
-                onPressed: () {
-                  // TODO: Implementar favoritos
-                },
-              ),
-              IconButton(
-                icon: const Icon(Icons.share, color: Colors.white),
-                onPressed: () {
-                  // TODO: Implementar compartir
-                },
-              ),
+              SizedBox(height: 8),
+              Text('No se pudieron cargar los datos del servicio'),
             ],
           ),
+        ),
+      );
+    }
 
-          // Contenido del servicio
-          SliverToBoxAdapter(
-            child: Padding(
+    print('✅ ServiceDetailScreen - Construyendo pantalla normal');
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(widget.service.name),
+        backgroundColor: const Color(0xFFDC3545),
+        foregroundColor: Colors.white,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () => context.pop(),
+        ),
+      ),
+      body: SingleChildScrollView(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Imagen del servicio
+            Container(
+              height: 250,
+              width: double.infinity,
+              decoration: BoxDecoration(
+                color: Colors.grey[300],
+              ),
+              child: _buildServiceImage(),
+            ),
+            
+            Padding(
               padding: const EdgeInsets.all(16.0),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -187,19 +189,6 @@ class _ServiceDetailScreenState extends State<ServiceDetailScreen>
                           fontSize: 14,
                         ),
                       ),
-                      const Spacer(),
-                      TextButton.icon(
-                        onPressed: () {
-                          context.push(
-                            '/reviews/service/${widget.service.id}?name=${Uri.encodeComponent(widget.service.name)}&image=${Uri.encodeComponent(widget.service.imagen ?? 'https://images.unsplash.com/photo-1503951914875-452162b0f3f1?w=300&h=200&fit=crop')}',
-                          );
-                        },
-                        icon: const Icon(Icons.rate_review, size: 16),
-                        label: const Text('Ver Reseñas'),
-                        style: TextButton.styleFrom(
-                          foregroundColor: const Color(0xFF00D4AA),
-                        ),
-                      ),
                     ],
                   ),
                   const SizedBox(height: 16),
@@ -233,10 +222,57 @@ class _ServiceDetailScreenState extends State<ServiceDetailScreen>
                 ],
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
       bottomNavigationBar: _buildBottomBar(),
+    );
+  }
+
+  Widget _buildServiceImage() {
+    // Si hay imagen del servicio, usarla
+    if (widget.service.imagen != null && widget.service.imagen!.isNotEmpty) {
+      return Image.network(
+        widget.service.imagen!,
+        fit: BoxFit.cover,
+        errorBuilder: (context, error, stackTrace) {
+          return _buildDefaultServiceImage();
+        },
+      );
+    }
+    
+    // Si no hay imagen, usar imagen por defecto basada en el nombre del servicio
+    return _buildDefaultServiceImage();
+  }
+
+  Widget _buildDefaultServiceImage() {
+    // Mapear el nombre del servicio a una imagen por defecto
+    String defaultImageUrl = 'https://images.unsplash.com/photo-1503951914875-452162b0f3f1?w=400&h=400&fit=crop';
+    
+    final serviceName = widget.service.name.toLowerCase();
+    if (serviceName.contains('corte') || serviceName.contains('cabello')) {
+      defaultImageUrl = 'https://images.unsplash.com/photo-1503951914875-452162b0f3f1?w=400&h=400&fit=crop';
+    } else if (serviceName.contains('barba')) {
+      defaultImageUrl = 'https://images.unsplash.com/photo-1503951914875-452162b0f3f1?w=400&h=400&fit=crop';
+    } else if (serviceName.contains('spa') || serviceName.contains('masaje')) {
+      defaultImageUrl = 'https://images.unsplash.com/photo-1503951914875-452162b0f3f1?w=400&h=400&fit=crop';
+    } else if (serviceName.contains('facial')) {
+      defaultImageUrl = 'https://images.unsplash.com/photo-1503951914875-452162b0f3f1?w=400&h=400&fit=crop';
+    }
+    
+    return Image.network(
+      defaultImageUrl,
+      fit: BoxFit.cover,
+      errorBuilder: (context, error, stackTrace) {
+        return Container(
+          color: Colors.grey[300],
+          child: const Icon(
+            Icons.spa,
+            size: 80,
+            color: Colors.grey,
+          ),
+        );
+      },
     );
   }
 
@@ -254,7 +290,9 @@ class _ServiceDetailScreenState extends State<ServiceDetailScreen>
           ),
           const SizedBox(height: 8),
           Text(
-            widget.service.description,
+            widget.service.description.isNotEmpty 
+                ? widget.service.description 
+                : 'Descripción del servicio no disponible.',
             style: const TextStyle(
               fontSize: 16,
               height: 1.5,
@@ -275,6 +313,8 @@ class _ServiceDetailScreenState extends State<ServiceDetailScreen>
           _buildBenefitItem('✅ Productos premium'),
           _buildBenefitItem('✅ Ambiente relajante'),
           _buildBenefitItem('✅ Resultados garantizados'),
+          _buildBenefitItem('✅ Atención personalizada'),
+          _buildBenefitItem('✅ Técnicas modernas'),
         ],
       ),
     );
@@ -300,6 +340,8 @@ class _ServiceDetailScreenState extends State<ServiceDetailScreen>
           _buildIncludeItem('Productos de calidad', Icons.spa),
           _buildIncludeItem('Consejos de cuidado', Icons.tips_and_updates),
           _buildIncludeItem('Seguimiento post-servicio', Icons.phone),
+          _buildIncludeItem('Ambiente relajante', Icons.music_note),
+          _buildIncludeItem('Técnicas especializadas', Icons.psychology),
         ],
       ),
     );
@@ -323,6 +365,9 @@ class _ServiceDetailScreenState extends State<ServiceDetailScreen>
               TextButton(
                 onPressed: () {
                   // TODO: Implementar escribir reseña
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Función de reseñas próximamente')),
+                  );
                 },
                 child: const Text('Escribir reseña'),
               ),
@@ -348,6 +393,12 @@ class _ServiceDetailScreenState extends State<ServiceDetailScreen>
             5,
             'Muy recomendado, volveré sin duda.',
             '2025-01-05',
+          ),
+          _buildReviewItem(
+            'Ana S.',
+            5,
+            'Servicio de primera calidad, muy satisfecha.',
+            '2025-01-03',
           ),
         ],
       ),
@@ -488,32 +539,64 @@ class _ServiceDetailScreenState extends State<ServiceDetailScreen>
           // Botón agendar
           Expanded(
             flex: 2,
-            child: Consumer<AuthProvider>(
-              builder: (context, authProvider, child) {
-                return ElevatedButton(
-                  onPressed: () {
-                    if (!authProvider.isAuthenticated) {
-                      _showLoginRequiredDialog();
-                      return;
-                    }
-                    context.push('/agendar?servicio_id=${widget.service.id}&servicio_nombre=${Uri.encodeComponent(widget.service.name)}&servicio_precio=${widget.service.price}');
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFFDC3545),
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
+            child: Builder(
+              builder: (context) {
+                try {
+                  return Consumer<AuthProvider>(
+                    builder: (context, authProvider, child) {
+                      return ElevatedButton(
+                        onPressed: () {
+                          if (!authProvider.isAuthenticated) {
+                            _showLoginRequiredDialog();
+                            return;
+                          }
+                          context.push('/agendar?servicio_id=${widget.service.id}&servicio_nombre=${Uri.encodeComponent(widget.service.name)}&servicio_precio=${widget.service.price}');
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFFDC3545),
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                        ),
+                        child: const Text(
+                          'Agendar Cita',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      );
+                    },
+                  );
+                } catch (e) {
+                  // Fallback cuando no hay AuthProvider disponible
+                  return ElevatedButton(
+                    onPressed: () {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Función de agendamiento no disponible en modo de prueba'),
+                        ),
+                      );
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFFDC3545),
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
                     ),
-                  ),
-                  child: const Text(
-                    'Agendar Cita',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
+                    child: const Text(
+                      'Agendar Cita',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
-                  ),
-                );
+                  );
+                }
               },
             ),
           ),

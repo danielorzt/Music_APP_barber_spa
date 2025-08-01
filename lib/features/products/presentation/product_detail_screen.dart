@@ -4,8 +4,10 @@ import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:music_app/core/models/producto.dart';
 import 'package:music_app/features/products/providers/products_provider.dart';
+import 'package:music_app/features/cart/providers/cart_provider.dart';
 import '../../../core/widgets/auth_guard.dart';
 import '../../../features/auth/providers/auth_provider.dart';
+import '../../../core/utils/image_mapper.dart';
 
 class ProductDetailScreen extends StatefulWidget {
   final Producto product;
@@ -49,19 +51,13 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
               background: Stack(
                 fit: StackFit.expand,
                 children: [
-                  Image.network(
+                  ImageMapper.buildImageWidget(
                     widget.product.urlImagen,
+                    widget.product.nombre,
+                    false, // isService = false for products
+                    width: double.infinity,
+                    height: double.infinity,
                     fit: BoxFit.cover,
-                    errorBuilder: (context, error, stackTrace) {
-                      return Container(
-                        color: Colors.grey[300],
-                        child: const Icon(
-                          Icons.image_not_supported,
-                          size: 80,
-                          color: Colors.grey,
-                        ),
-                      );
-                    },
                   ),
                   // Gradiente para mejor legibilidad
                   Container(
@@ -465,19 +461,28 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
           
           // Botón agregar al carrito
           Expanded(
-            child: Consumer<AuthProvider>(
-              builder: (context, authProvider, child) {
+            child: Consumer2<AuthProvider, CartProvider>(
+              builder: (context, authProvider, cartProvider, child) {
                 return AuthRequiredButton(
                   isAuthenticated: authProvider.isAuthenticated,
                   onPressed: () {
+                    // Agregar producto al carrito
+                    cartProvider.addItem(
+                      widget.product.id.toString(),
+                      widget.product.nombre,
+                      widget.product.precio,
+                      widget.product.urlImagen,
+                      'product',
+                    );
+                    
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
                         content: Text('${widget.product.nombre} agregado al carrito'),
                         backgroundColor: const Color(0xFFDC3545),
                         action: SnackBarAction(
-                          label: 'Ver Carrito',
+                          label: 'Seguir Comprando',
                           textColor: Colors.white,
-                          onPressed: () => context.push('/cart'),
+                          onPressed: () => context.go('/products'),
                         ),
                       ),
                     );

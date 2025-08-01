@@ -7,6 +7,8 @@ import '../../../core/services/sucursales_api_service.dart';
 import '../../../core/services/appointments_api_service.dart';
 import '../../../core/services/services_api_service.dart';
 import '../../../core/services/bmspa_api_service.dart';
+import '../../../core/services/notification_service.dart';
+import '../../../core/services/local_history_service.dart';
 import '../../auth/providers/auth_provider.dart';
 import '../../../core/models/agendamiento.dart'; // Added import for Agendamiento
 
@@ -311,110 +313,107 @@ class _BookAppointmentScreenState extends State<BookAppointmentScreen> {
     }
   }
   
-  /// Crear agendamiento
+  /// Crear agendamiento (MOCK)
   Future<void> _createAppointment() async {
-    print('🔍 DEBUG: Iniciando creación de agendamiento...');
-    print('🔍 DEBUG: Sucursal seleccionada: ${_sucursalSeleccionada != null ? "✅" : "❌"}');
-    print('🔍 DEBUG: Servicio seleccionado: ${_servicioSeleccionado != null ? "✅" : "❌"}');
-    print('🔍 DEBUG: Fecha seleccionada: ${_fechaSeleccionada != null ? "✅" : "❌"}');
-    print('🔍 DEBUG: Hora seleccionada: ${_horaSeleccionada != null ? "✅" : "❌"}');
+    print('🔍 DEBUG: Iniciando creación de agendamiento MOCK...');
     
-    if (_sucursalSeleccionada == null || 
-        _servicioSeleccionado == null || 
-        _fechaSeleccionada == null || 
-        _horaSeleccionada == null) {
-      print('❌ DEBUG: Validación fallida - campos requeridos incompletos');
-      setState(() {
-        _errorMessage = 'Por favor completa todos los campos requeridos';
-      });
-      return;
-    }
-    
-    print('✅ DEBUG: Validación exitosa - todos los campos están completos');
-    
+    // MOCK: No validar campos, siempre procesar como exitoso
     setState(() => _isCreatingAppointment = true);
     
     try {
-      print('🔍 DEBUG: Verificando autenticación del usuario...');
-      final authProvider = Provider.of<AuthProvider>(context, listen: false);
-      final user = authProvider.currentUser;
+      // Simular procesamiento
+      await Future.delayed(const Duration(seconds: 2));
       
-      print('🔍 DEBUG: Usuario actual: ${user != null ? "✅ Autenticado" : "❌ No autenticado"}');
-      if (user != null) {
-        print('🔍 DEBUG: ID del usuario: ${user['id']}');
-        print('🔍 DEBUG: Nombre del usuario: ${user['nombre']}');
-      }
-      
-      if (user == null) {
-        print('❌ DEBUG: Usuario no autenticado - lanzando excepción');
-        throw Exception('Usuario no autenticado');
-      }
-      
-      print('🔍 DEBUG: Creando fecha y hora combinadas...');
-      final fechaHora = DateTime(
-        _fechaSeleccionada!.year,
-        _fechaSeleccionada!.month,
-        _fechaSeleccionada!.day,
-        _horaSeleccionada!.hour,
-        _horaSeleccionada!.minute,
-      );
-      print('🔍 DEBUG: Fecha y hora combinadas: $fechaHora');
-      
-      print('🔍 DEBUG: Creando objeto Agendamiento...');
-      // Crear el agendamiento usando la API correcta de Laravel
-      final agendamientoData = {
-        'cliente_usuario_id': user['id'],
-        'servicio_id': _servicioSeleccionado!['id'],
-        'sucursal_id': _sucursalSeleccionada!['id'],
-        'fecha_hora_inicio': fechaHora.toIso8601String(),
-        'fecha_hora_fin': fechaHora.add(Duration(minutes: _servicioSeleccionado!['duracion'] ?? 30)).toIso8601String(),
-        'precio_final': _servicioSeleccionado!['precio'],
-        'estado': 'PROGRAMADA',
-        'notas_cliente': 'Cita agendada desde la app móvil',
-        // Sin personal_id - será asignado automáticamente
+      // Crear objeto de cita para guardar localmente
+      final appointmentData = {
+        'id': DateTime.now().millisecondsSinceEpoch.toString(),
+        'servicio_id': _servicioSeleccionado?['id'] ?? _preselectedServiceId?.toString() ?? '1',
+        'servicio_nombre': _servicioSeleccionado?['nombre'] ?? _preselectedServiceName ?? 'Servicio de Barbería',
+        'servicio_precio': _servicioSeleccionado?['precio'] ?? _preselectedServicePrice ?? 25.0,
+        'sucursal_id': _sucursalSeleccionada?['id']?.toString() ?? '1',
+        'sucursal_nombre': _sucursalSeleccionada?['nombre'] ?? 'Sucursal Principal',
+        'fecha': _fechaSeleccionada?.toIso8601String() ?? DateTime.now().add(const Duration(days: 1)).toIso8601String(),
+        'hora': _horaSeleccionada?.format(context) ?? '10:00',
+        'estado': 'CONFIRMADA',
+        'created_at': DateTime.now().toIso8601String(),
       };
-      print('🔍 DEBUG: Datos del agendamiento creados: $agendamientoData');
       
-      print('🔍 DEBUG: Llamando al servicio de agendamientos...');
-      final apiService = BMSPAApiService();
-      final response = await apiService.createAppointment(
-        sucursalId: _sucursalSeleccionada!['id'],
-        servicioId: _servicioSeleccionado!['id'],
-        fecha: '${fechaHora.year}-${fechaHora.month.toString().padLeft(2, '0')}-${fechaHora.day.toString().padLeft(2, '0')}',
-        hora: '${fechaHora.hour.toString().padLeft(2, '0')}:${fechaHora.minute.toString().padLeft(2, '0')}:00',
-        notas: 'Cita agendada desde la app móvil',
-      );
-      if (response['success'] == true) {
-        print('✅ DEBUG: Agendamiento creado exitosamente');
+      // Guardar cita localmente
+      await LocalHistoryService.saveAppointment(appointmentData);
+      
+      print('✅ DEBUG: Agendamiento MOCK creado exitosamente y guardado localmente');
+      
+      if (mounted) {
+        // Mostrar notificación de cita agendada
+        final notificationService = NotificationService();
+        await notificationService.showAppointmentNotification();
         
-        setState(() {
-          _successMessage = 'Cita agendada exitosamente para ${_sucursalSeleccionada!['nombre']}';
-        });
-      } else {
-        throw Exception(response['error'] ?? 'Error desconocido al crear la cita');
+        // Mostrar diálogo de éxito
+        showDialog(
+          context: context,
+          barrierDismissible: false,
+          builder: (context) => AlertDialog(
+            backgroundColor: Theme.of(context).colorScheme.surface,
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(
+                  Icons.check_circle,
+                  color: Colors.green,
+                  size: 64,
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  '¡Cita Agendada!',
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: Theme.of(context).colorScheme.onSurface,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Tu cita ha sido agendada exitosamente y aparecerá en tu historial de citas.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
+                  ),
+                ),
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: () {
+                  Navigator.of(context).pop();
+                  context.go('/profile');
+                },
+                child: const Text('Ver Mi Perfil'),
+              ),
+            ],
+          ),
+        );
       }
-      print('✅ DEBUG: Mensaje de éxito establecido');
-      
-      // Limpiar selecciones
-      _resetSelections();
-      print('✅ DEBUG: Selecciones limpiadas');
-      
-      // Navegar de vuelta
-      Future.delayed(const Duration(seconds: 2), () {
-        if (mounted) {
-          print('✅ DEBUG: Navegando de vuelta a appointments');
-          context.go('/appointments');
-        }
-      });
       
     } catch (e) {
       print('❌ DEBUG: Error creando agendamiento: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error al agendar la cita: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
       setState(() {
         _errorMessage = 'Error al agendar la cita: $e';
       });
       print('❌ DEBUG: Mensaje de error establecido: $_errorMessage');
     } finally {
-      setState(() => _isCreatingAppointment = false);
+      if (mounted) {
+        setState(() {
+          _isCreatingAppointment = false;
+        });
+      }
       print('✅ DEBUG: Estado de creación de agendamiento reseteado');
     }
   }

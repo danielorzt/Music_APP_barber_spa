@@ -49,7 +49,6 @@ class AuthProvider extends ChangeNotifier {
         print('⚠️ API no disponible - usando modo offline');
       }
     }
-    notifyListeners();
   }
 
   /// Login con JWT

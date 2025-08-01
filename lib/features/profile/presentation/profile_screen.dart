@@ -5,6 +5,7 @@ import '../../auth/providers/auth_provider.dart';
 import '../../../core/providers/settings_provider.dart';
 import '../../../core/services/orders_api_service.dart';
 import '../../../core/services/appointments_api_service.dart';
+import '../../../core/services/local_history_service.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -33,21 +34,27 @@ class _ProfileScreenState extends State<ProfileScreen> {
     setState(() => _isLoadingHistory = true);
     
     try {
-      // Cargar historial de compras
-      final purchaseResult = await _ordersService.getPurchaseHistory();
-      if (mounted && purchaseResult['success']) {
-        setState(() {
-          _purchaseHistory = purchaseResult;
-        });
-      }
+      // Cargar historial combinado (local + API)
+      final combinedHistory = await LocalHistoryService.getCombinedHistory();
       
-      // Cargar historial de citas
-      final appointmentResult = await _appointmentsService.getMisAgendamientos();
       if (mounted) {
         setState(() {
+          // Combinar datos locales con datos de API
+          final localAppointments = combinedHistory['appointments'] as List<Map<String, dynamic>>;
+          final localOrders = combinedHistory['orders'] as List<Map<String, dynamic>>;
+          
+          // Historial de citas (local + API)
           _appointmentHistory = {
             'success': true,
-            'agendamientos': appointmentResult.map((a) => a.toJson()).toList(),
+            'agendamientos': localAppointments,
+            'has_local_data': combinedHistory['has_local_data'],
+          };
+          
+          // Historial de compras (local + API)
+          _purchaseHistory = {
+            'success': true,
+            'ordenes': localOrders,
+            'has_local_data': combinedHistory['has_local_data'],
           };
         });
       }
@@ -494,12 +501,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
               title: const Text('Cambiar información de perfil'),
               trailing: const Icon(Icons.arrow_forward_ios),
               onTap: () => context.push('/edit-profile'),
-            ),
-            ListTile(
-              leading: const Icon(Icons.lock),
-              title: const Text('Cambiar contraseña'),
-              trailing: const Icon(Icons.arrow_forward_ios),
-              onTap: () => context.push('/change-password'),
             ),
             ListTile(
               leading: const Icon(Icons.help),

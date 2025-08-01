@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import '../../auth/providers/auth_provider.dart';
 import '../../../core/providers/settings_provider.dart';
+import '../../../core/services/notification_service.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -152,33 +153,54 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ],
             ),
             const SizedBox(height: 16),
-            SwitchListTile(
-              secondary: const Icon(Icons.calendar_today),
-              title: const Text('Recordatorios de citas'),
-              subtitle: const Text('Recibe notificaciones antes de tus citas'),
-              value: settingsProvider.appointmentReminders,
-              onChanged: (bool value) {
-                settingsProvider.setAppointmentReminders(value);
+            FutureBuilder<bool>(
+              future: NotificationService().areNotificationsEnabled(),
+              builder: (context, snapshot) {
+                final notificationsEnabled = snapshot.data ?? true;
+                return SwitchListTile(
+                  secondary: const Icon(Icons.notifications_active),
+                  title: const Text('Notificaciones generales'),
+                  subtitle: const Text('Activar todas las notificaciones'),
+                  value: notificationsEnabled,
+                  onChanged: (bool value) async {
+                    await NotificationService().setNotificationsEnabled(value);
+                    setState(() {});
+                  },
+                );
               },
             ),
             const Divider(),
-            SwitchListTile(
-              secondary: const Icon(Icons.local_offer),
-              title: const Text('Ofertas y promociones'),
-              subtitle: const Text('Recibe notificaciones de descuentos'),
-              value: settingsProvider.promotionNotifications,
-              onChanged: (bool value) {
-                settingsProvider.setPromotionNotifications(value);
+            FutureBuilder<bool>(
+              future: NotificationService().areAppointmentNotificationsEnabled(),
+              builder: (context, snapshot) {
+                final appointmentNotifications = snapshot.data ?? true;
+                return SwitchListTile(
+                  secondary: const Icon(Icons.calendar_today),
+                  title: const Text('Notificaciones de citas'),
+                  subtitle: const Text('Recibe notificaciones cuando agendes citas'),
+                  value: appointmentNotifications,
+                  onChanged: (bool value) async {
+                    await NotificationService().setAppointmentNotificationsEnabled(value);
+                    setState(() {});
+                  },
+                );
               },
             ),
             const Divider(),
-            SwitchListTile(
-              secondary: const Icon(Icons.shopping_bag),
-              title: const Text('Actualizaciones de pedidos'),
-              subtitle: const Text('Recibe notificaciones sobre tus compras'),
-              value: settingsProvider.orderUpdates,
-              onChanged: (bool value) {
-                settingsProvider.setOrderUpdates(value);
+            FutureBuilder<bool>(
+              future: NotificationService().arePurchaseNotificationsEnabled(),
+              builder: (context, snapshot) {
+                final purchaseNotifications = snapshot.data ?? true;
+                return SwitchListTile(
+                  secondary: const Icon(Icons.shopping_bag),
+                  title: const Text('Notificaciones de compras'),
+                  subtitle: const Text('Recibe notificaciones cuando completes compras'),
+                  value: purchaseNotifications,
+                  onChanged: (bool value) async {
+                    await NotificationService().setPurchaseNotificationsEnabled(value);
+                    setState(() {});
+                  },
+                );
               },
             ),
           ],

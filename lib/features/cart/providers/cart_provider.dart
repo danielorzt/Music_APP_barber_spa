@@ -2,6 +2,8 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'dart:convert';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class CartItem {
   final String id;
@@ -43,8 +45,58 @@ class CartItem {
 
 class CartProvider with ChangeNotifier {
   final List<CartItem> _items = [];
+  static const String _cartKey = 'cart_items';
 
   List<CartItem> get items => List.unmodifiable(_items);
+
+  // Cargar carrito desde SharedPreferences
+  Future<void> loadCart() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final cartJson = prefs.getString(_cartKey);
+      
+      if (cartJson != null) {
+        final List<dynamic> cartList = jsonDecode(cartJson);
+        _items.clear();
+        
+        for (final item in cartList) {
+          _items.add(CartItem(
+            id: item['id'],
+            name: item['name'],
+            price: item['price'].toDouble(),
+            image: item['image'],
+            type: item['type'],
+            quantity: item['quantity'],
+          ));
+        }
+        
+        notifyListeners();
+        print('✅ Carrito cargado: ${_items.length} items');
+      }
+    } catch (e) {
+      print('❌ Error cargando carrito: $e');
+    }
+  }
+
+  // Guardar carrito en SharedPreferences
+  Future<void> _saveCart() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final cartList = _items.map((item) => {
+        'id': item.id,
+        'name': item.name,
+        'price': item.price,
+        'image': item.image,
+        'type': item.type,
+        'quantity': item.quantity,
+      }).toList();
+      
+      await prefs.setString(_cartKey, jsonEncode(cartList));
+      print('✅ Carrito guardado: ${_items.length} items');
+    } catch (e) {
+      print('❌ Error guardando carrito: $e');
+    }
+  }
 
   int get itemCount => _items.length;
 
@@ -90,6 +142,7 @@ class CartProvider with ChangeNotifier {
       ));
     }
     notifyListeners();
+    _saveCart(); // Guardar automáticamente
   }
 
   // Actualizar cantidad
@@ -103,6 +156,7 @@ class CartProvider with ChangeNotifier {
         _items[index].quantity = quantity;
       }
       notifyListeners();
+      _saveCart(); // Guardar automáticamente
     }
   }
 
@@ -113,6 +167,7 @@ class CartProvider with ChangeNotifier {
     if (index >= 0) {
       _items.removeAt(index);
       notifyListeners();
+      _saveCart(); // Guardar automáticamente
     }
   }
 
@@ -120,6 +175,7 @@ class CartProvider with ChangeNotifier {
   void clear() {
     _items.clear();
     notifyListeners();
+    _saveCart(); // Guardar automáticamente
   }
 
   // Verificar si un item está en el carrito

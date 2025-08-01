@@ -70,4 +70,45 @@ class ProductsProvider with ChangeNotifier {
     _error = null;
     notifyListeners();
   }
+
+  // Datos mock para presentación
+  List<Producto> _getMockProducts() {
+    return [
+      Producto(
+        id: 1,
+        nombre: 'Aceite para Barba Premium',
+        descripcion: 'Aceite hidratante para barba con aceites esenciales naturales',
+        precio: 25000.0,
+        urlImagen: 'https://images.unsplash.com/photo-1556228720-195a672e8a03?w=400',
+      ),
+      Producto(
+        id: 2,
+        nombre: 'Navaja de Afeitar Profesional',
+        descripcion: 'Navaja de acero inoxidable para un afeitado perfecto',
+        precio: 45000.0,
+        urlImagen: 'https://images.unsplash.com/photo-1596462502278-27bfdc403348?w=400',
+      ),
+      Producto(
+        id: 3,
+        nombre: 'Crema de Afeitar Suave',
+        descripcion: 'Crema hidratante para un afeitado suave y sin irritación',
+        precio: 18000.0,
+        urlImagen: 'https://images.unsplash.com/photo-1556228720-195a672e8a03?w=400',
+      ),
+      Producto(
+        id: 4,
+        nombre: 'Cepillo para Barba',
+        descripcion: 'Cepillo de cerdas naturales para dar forma a la barba',
+        precio: 22000.0,
+        urlImagen: 'https://images.unsplash.com/photo-1596462502278-27bfdc403348?w=400',
+      ),
+      Producto(
+        id: 5,
+        nombre: 'Aceite Esencial de Lavanda',
+        descripcion: 'Aceite esencial para relajación y aromaterapia',
+        precio: 35000.0,
+        urlImagen: 'https://images.unsplash.com/photo-1556228720-195a672e8a03?w=400',
+      ),
+    ];
+  }
 }

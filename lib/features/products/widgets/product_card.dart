@@ -56,53 +56,11 @@ class ProductCard extends StatelessWidget {
                     overflow: TextOverflow.ellipsis,
                   ),
                   const SizedBox(height: 4),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        price,
-                        style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                              color: Theme.of(context).colorScheme.secondary,
-                            ),
-                      ),
-                      Consumer<CartProvider>(
-                        builder: (context, cart, child) {
-                          final isInCart = cart.isInCart(productId, 'product');
-                          return IconButton(
-                            onPressed: () {
-                              if (isInCart) {
-                                cart.removeItem(productId, 'product');
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(
-                                    content: Text('Producto removido del carrito'),
-                                    duration: Duration(seconds: 1),
-                                  ),
-                                );
-                              } else {
-                                cart.addItem(
-                                  productId,
-                                  name,
-                                  double.parse(price.replaceAll('\$', '')),
-                                  imageUrl,
-                                  'product',
-                                );
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(
-                                    content: Text('Producto agregado al carrito'),
-                                    duration: Duration(seconds: 1),
-                                  ),
-                                );
-                              }
-                            },
-                            icon: Icon(
-                              isInCart ? Icons.remove_shopping_cart : Icons.add_shopping_cart,
-                              color: isInCart ? Colors.red : Colors.green,
-                            ),
-                            tooltip: isInCart ? 'Remover del carrito' : 'Agregar al carrito',
-                          );
-                        },
-                      ),
-                    ],
+                  Text(
+                    price,
+                    style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                          color: Theme.of(context).colorScheme.secondary,
+                        ),
                   ),
                 ],
               ),
