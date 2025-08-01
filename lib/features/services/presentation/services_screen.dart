@@ -42,6 +42,8 @@ class _ServicesScreenState extends State<ServicesScreen> {
   }
 
   Future<void> _loadServicios() async {
+    if (!mounted) return;
+    
     setState(() {
       _isLoading = true;
       _error = null;
@@ -49,15 +51,19 @@ class _ServicesScreenState extends State<ServicesScreen> {
 
     try {
       final servicios = await _catalogService.getServicios();
-      setState(() {
-        _servicios = servicios;
-        _isLoading = false;
-      });
+      if (mounted) {
+        setState(() {
+          _servicios = servicios;
+          _isLoading = false;
+        });
+      }
     } catch (e) {
-      setState(() {
-        _error = e.toString();
-        _isLoading = false;
-      });
+      if (mounted) {
+        setState(() {
+          _error = e.toString();
+          _isLoading = false;
+        });
+      }
     }
   }
 
@@ -393,37 +399,38 @@ class _ServicesScreenState extends State<ServicesScreen> {
                         overflow: TextOverflow.ellipsis,
                       ),
                       const SizedBox(height: 12),
-                      Row(
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 4,
                         children: [
                           Container(
                             padding: const EdgeInsets.symmetric(
-                              horizontal: 12,
-                              vertical: 6,
+                              horizontal: 8,
+                              vertical: 4,
                             ),
                             decoration: BoxDecoration(
                               gradient: const LinearGradient(
                                 colors: [Color(0xFF00D4AA), Color(0xFF00B894)],
                               ),
-                              borderRadius: BorderRadius.circular(20),
+                              borderRadius: BorderRadius.circular(16),
                             ),
                             child: Text(
                               '\$${servicio.precio.toStringAsFixed(2)}',
                               style: const TextStyle(
                                 color: Colors.white,
                                 fontWeight: FontWeight.bold,
-                                fontSize: 14,
+                                fontSize: 12,
                               ),
                             ),
                           ),
-                          const SizedBox(width: 12),
                           Container(
                             padding: const EdgeInsets.symmetric(
-                              horizontal: 12,
-                              vertical: 6,
+                              horizontal: 8,
+                              vertical: 4,
                             ),
                             decoration: BoxDecoration(
                               color: Colors.grey[100],
-                              borderRadius: BorderRadius.circular(20),
+                              borderRadius: BorderRadius.circular(16),
                               border: Border.all(color: Colors.grey[300]!),
                             ),
                             child: Text(
@@ -431,7 +438,7 @@ class _ServicesScreenState extends State<ServicesScreen> {
                               style: const TextStyle(
                                 color: Color(0xFF616161),
                                 fontWeight: FontWeight.w500,
-                                fontSize: 14,
+                                fontSize: 12,
                               ),
                             ),
                           ),

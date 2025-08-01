@@ -28,12 +28,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Future<void> _loadHistory() async {
+    if (!mounted) return;
+    
     setState(() => _isLoadingHistory = true);
     
     try {
       // Cargar historial de compras
       final purchaseResult = await _ordersService.getPurchaseHistory();
-      if (purchaseResult['success']) {
+      if (mounted && purchaseResult['success']) {
         setState(() {
           _purchaseHistory = purchaseResult;
         });
@@ -41,16 +43,20 @@ class _ProfileScreenState extends State<ProfileScreen> {
       
       // Cargar historial de citas
       final appointmentResult = await _appointmentsService.getMisAgendamientos();
-      setState(() {
-        _appointmentHistory = {
-          'success': true,
-          'agendamientos': appointmentResult.map((a) => a.toJson()).toList(),
-        };
-      });
+      if (mounted) {
+        setState(() {
+          _appointmentHistory = {
+            'success': true,
+            'agendamientos': appointmentResult.map((a) => a.toJson()).toList(),
+          };
+        });
+      }
     } catch (e) {
       print('❌ Error cargando historial: $e');
     } finally {
-      setState(() => _isLoadingHistory = false);
+      if (mounted) {
+        setState(() => _isLoadingHistory = false);
+      }
     }
   }
 

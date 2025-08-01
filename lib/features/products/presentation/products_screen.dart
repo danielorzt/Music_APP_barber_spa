@@ -38,6 +38,8 @@ class _ProductsScreenState extends State<ProductsScreen> {
   }
 
   Future<void> _loadProductos() async {
+    if (!mounted) return;
+    
     setState(() {
       _isLoading = true;
       _error = null;
@@ -45,15 +47,19 @@ class _ProductsScreenState extends State<ProductsScreen> {
 
     try {
       final productos = await _catalogService.getProductos();
-      setState(() {
-        _productos = productos;
-        _isLoading = false;
-      });
+      if (mounted) {
+        setState(() {
+          _productos = productos;
+          _isLoading = false;
+        });
+      }
     } catch (e) {
-      setState(() {
-        _error = e.toString();
-        _isLoading = false;
-      });
+      if (mounted) {
+        setState(() {
+          _error = e.toString();
+          _isLoading = false;
+        });
+      }
     }
   }
 

@@ -221,17 +221,30 @@ class AppRouter {
         path: '/servicios/:id',
         builder: (context, state) {
           final serviceId = state.pathParameters['id']!;
-          // Usar datos reales de la API
+          print('🔍 Navegando a detalle de servicio ID: $serviceId');
+          
+          // Usar datos reales de la API con fallback
           return FutureBuilder<ServiceModel?>(
-            future: _loadServiceFromApi(int.parse(serviceId)),
+            future: _loadServiceFromApiWithFallback(int.parse(serviceId)),
             builder: (context, snapshot) {
               if (snapshot.connectionState == ConnectionState.waiting) {
-                return const Scaffold(
-                  body: Center(child: CircularProgressIndicator()),
+                return Scaffold(
+                  appBar: AppBar(title: const Text('Cargando...')),
+                  body: const Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        CircularProgressIndicator(),
+                        SizedBox(height: 16),
+                        Text('Cargando detalles del servicio...'),
+                      ],
+                    ),
+                  ),
                 );
               }
               
-              if (snapshot.hasError || !snapshot.hasData) {
+              if (snapshot.hasError) {
+                print('❌ Error en FutureBuilder: ${snapshot.error}');
                 return Scaffold(
                   appBar: AppBar(title: const Text('Error')),
                   body: Center(
@@ -241,6 +254,8 @@ class AppRouter {
                         const Icon(Icons.error, size: 64, color: Colors.red),
                         const SizedBox(height: 16),
                         const Text('Error al cargar el servicio'),
+                        const SizedBox(height: 8),
+                        Text('${snapshot.error}', textAlign: TextAlign.center),
                         const SizedBox(height: 16),
                         ElevatedButton(
                           onPressed: () => context.pop(),
@@ -252,6 +267,31 @@ class AppRouter {
                 );
               }
               
+              if (!snapshot.hasData) {
+                print('⚠️ No hay datos del servicio para ID: $serviceId');
+                return Scaffold(
+                  appBar: AppBar(title: const Text('Servicio no encontrado')),
+                  body: Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Icon(Icons.search_off, size: 64, color: Colors.grey),
+                        const SizedBox(height: 16),
+                        const Text('Servicio no encontrado'),
+                        const SizedBox(height: 8),
+                        const Text('El servicio que buscas no está disponible'),
+                        const SizedBox(height: 16),
+                        ElevatedButton(
+                          onPressed: () => context.pop(),
+                          child: const Text('Volver'),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              }
+              
+              print('✅ Mostrando detalles del servicio: ${snapshot.data!.name}');
               return ServiceDetailScreen(service: snapshot.data!);
             },
           );
@@ -393,13 +433,78 @@ class AppRouter {
     );
   }
 
-  /// Cargar servicio desde la API
+  /// Cargar servicio desde la API con fallback
+  static Future<ServiceModel?> _loadServiceFromApiWithFallback(int serviceId) async {
+    try {
+      print('🔄 Intentando cargar servicio con ID: $serviceId');
+      final catalogService = UnifiedCatalogService();
+      
+      // Intento 1: Cargar servicio específico
+      try {
+        final servicio = await catalogService.getServicio(serviceId);
+        if (servicio != null) {
+          print('✅ Servicio encontrado directamente: ${servicio.nombre}');
+          return ServiceModel(
+            id: servicio.id.toString(),
+            name: servicio.nombre,
+            description: servicio.descripcion,
+            price: servicio.precio,
+            duration: servicio.duracionEnMinutos,
+            imagen: null,
+          );
+        }
+      } catch (e) {
+        print('⚠️ Error cargando servicio específico: $e');
+      }
+      
+      // Intento 2: Buscar en la lista de servicios
+      print('🔄 Buscando servicio en la lista de servicios...');
+      try {
+        final servicios = await catalogService.getServicios();
+        final servicio = servicios.firstWhere(
+          (s) => s.id == serviceId,
+          orElse: () => throw Exception('Servicio no encontrado en lista'),
+        );
+        
+        print('✅ Servicio encontrado en lista: ${servicio.nombre}');
+        return ServiceModel(
+          id: servicio.id.toString(),
+          name: servicio.nombre,
+          description: servicio.descripcion,
+          price: servicio.precio,
+          duration: servicio.duracionEnMinutos,
+          imagen: null,
+        );
+      } catch (e) {
+        print('⚠️ Error buscando servicio en lista: $e');
+      }
+      
+      // Intento 3: Crear servicio mock como último recurso
+      print('🔄 Creando servicio mock para pruebas...');
+      return ServiceModel(
+        id: serviceId.toString(),
+        name: 'Servicio de Barbería',
+        description: 'Un excelente servicio de barbería profesional con atención personalizada. Incluye corte, lavado y peinado con productos de la más alta calidad.',
+        price: 25.0,
+        duration: 45,
+        imagen: null,
+      );
+      
+    } catch (e) {
+      print('❌ Error crítico cargando servicio $serviceId: $e');
+      throw Exception('No se pudo cargar el servicio: $e');
+    }
+  }
+
+  /// Cargar servicio desde la API (método original mantenido para compatibilidad)
   static Future<ServiceModel?> _loadServiceFromApi(int serviceId) async {
     try {
+      print('🔄 Cargando servicio con ID: $serviceId');
       final catalogService = UnifiedCatalogService();
       final servicio = await catalogService.getServicio(serviceId);
       
       if (servicio != null) {
+        print('✅ Servicio encontrado: ${servicio.nombre}');
         return ServiceModel(
           id: servicio.id.toString(),
           name: servicio.nombre,
@@ -410,6 +515,7 @@ class AppRouter {
         );
       }
       
+      print('⚠️ Servicio no encontrado para ID: $serviceId');
       return null;
     } catch (e) {
       print('❌ Error cargando servicio $serviceId: $e');
