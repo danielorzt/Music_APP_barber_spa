@@ -155,4 +155,19 @@ class NotificationService {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool('purchase_notifications_enabled', enabled);
   }
+
+  // Método para notificaciones de actualización de perfil
+  Future<void> showProfileUpdateNotification(String title, String body) async {
+    // Verificar si las notificaciones generales están habilitadas
+    final notificationsEnabled = await areNotificationsEnabled();
+    if (!notificationsEnabled) {
+      print('🔕 Notificación de perfil deshabilitada por el usuario');
+      return;
+    }
+    
+    await _showLocalNotification(
+      title: title,
+      body: body,
+    );
+  }
 } 

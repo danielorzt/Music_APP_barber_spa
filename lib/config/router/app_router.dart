@@ -30,6 +30,7 @@ import '../../features/profile/presentation/history_screen.dart';
 import '../../features/profile/presentation/payment_methods_screen.dart';
 import '../../features/profile/presentation/help_support_screen.dart';
 import '../../features/profile/presentation/settings_screen.dart';
+import '../../features/profile/presentation/edit_profile_screen.dart';
 
 // Screens - Test
 import '../../features/test/presentation/connection_test_screen.dart';
@@ -392,7 +393,7 @@ class AppRouter {
       GoRoute(
         path: '/edit-profile',
         builder: (context, state) => AuthGuard(
-          child: const PlaceholderScreen(title: 'Editar Perfil'),
+          child: const EditProfileScreen(),
         ),
       ),
       GoRoute(
