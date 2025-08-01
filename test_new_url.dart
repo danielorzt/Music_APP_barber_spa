@@ -4,7 +4,7 @@ import 'dart:convert';
 void main() async {
   print('🔍 Probando nueva URL de ngrok...\n');
   
-  final newUrl = 'https://8985f960eef9.ngrok-free.app/api';
+  final newUrl = 'https://bc3996b129b5.ngrok-free.app/api';
   
   print('📡 Probando conectividad básica...');
   try {

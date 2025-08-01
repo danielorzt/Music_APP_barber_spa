@@ -68,6 +68,12 @@ class UnifiedCatalogService {
         
         final result = productos.map((json) => Producto.fromJson(json)).toList();
         print('✅ Productos obtenidos: ${result.length}');
+        
+        // Verificar que los productos tengan nombres reales
+        for (final producto in result) {
+          print('📦 Producto: ${producto.nombre} - Precio: \$${producto.precio}');
+        }
+        
         return result;
       }
       
@@ -270,7 +276,7 @@ class UnifiedCatalogService {
         final data = response.data['data'] ?? response.data;
         if (data is List) {
           print('✅ Categorías obtenidas: ${data.length}');
-          return data.cast<Map<String, dynamic>>();
+          return data.map((item) => Map<String, dynamic>.from(item)).toList();
         }
       }
       
@@ -302,7 +308,7 @@ class UnifiedCatalogService {
         final data = response.data['data'] ?? response.data;
         if (data is List) {
           print('✅ Sucursales obtenidas: ${data.length}');
-          return data.cast<Map<String, dynamic>>();
+          return data.map((item) => Map<String, dynamic>.from(item)).toList();
         }
       }
       
@@ -334,7 +340,7 @@ class UnifiedCatalogService {
         final data = response.data['data'] ?? response.data;
         if (data is List) {
           print('✅ Personal obtenido: ${data.length}');
-          return data.cast<Map<String, dynamic>>();
+          return data.map((item) => Map<String, dynamic>.from(item)).toList();
         }
       }
       
@@ -366,7 +372,7 @@ class UnifiedCatalogService {
         final data = response.data['data'] ?? response.data;
         if (data is List) {
           print('✅ Promociones obtenidas: ${data.length}');
-          return data.cast<Map<String, dynamic>>();
+          return data.map((item) => Map<String, dynamic>.from(item)).toList();
         }
       }
       

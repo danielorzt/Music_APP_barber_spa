@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:music_app/features/cart/providers/cart_provider.dart';
+import 'package:music_app/core/utils/image_mapper.dart';
 
 class ProductCard extends StatelessWidget {
   final String name;
@@ -33,14 +34,13 @@ class ProductCard extends StatelessWidget {
             Expanded(
               child: ClipRRect(
                 borderRadius: const BorderRadius.vertical(top: Radius.circular(10)),
-                child: Image.network(
+                child: ImageMapper.buildImageWidget(
                   imageUrl,
+                  name,
+                  false, // isService = false for products
+                  width: double.infinity,
+                  height: double.infinity,
                   fit: BoxFit.cover,
-                  loadingBuilder: (context, child, loadingProgress) {
-                    if (loadingProgress == null) return child;
-                    return const Center(child: CircularProgressIndicator());
-                  },
-                  errorBuilder: (context, error, stackTrace) => const Icon(Icons.error),
                 ),
               ),
             ),

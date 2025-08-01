@@ -340,20 +340,36 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
                                 ? null
                                 : () async {
                                     if (_formKey.currentState!.validate()) {
-                                      final success = await authProvider.login(
+                                      bool success;
+                                      
+                                      // Intentar login normal primero
+                                      success = await authProvider.login(
                                         email: _emailController.text,
                                         password: _passwordController.text,
                                       );
                                       
+                                      // Si falla y es por conectividad, intentar login mock
+                                      if (!success && !authProvider.isApiAvailable) {
+                                        print('🔄 Intentando login con datos mock...');
+                                        success = await authProvider.loginWithMockData(
+                                          email: _emailController.text,
+                                          password: _passwordController.text,
+                                        );
+                                      }
+                                      
                                       if (success && mounted) {
                                         // Mostrar éxito con animación
+                                        String message = authProvider.isApiAvailable 
+                                            ? 'Inicio de sesión exitoso'
+                                            : 'Modo offline - Datos de prueba';
+                                        
                                         ScaffoldMessenger.of(context).showSnackBar(
                                           SnackBar(
                                             content: Row(
                                               children: [
                                                 const Icon(Icons.check_circle, color: Colors.white),
                                                 const SizedBox(width: 10),
-                                                const Text('Inicio de sesión exitoso'),
+                                                Expanded(child: Text(message)),
                                               ],
                                             ),
                                             backgroundColor: Colors.green,

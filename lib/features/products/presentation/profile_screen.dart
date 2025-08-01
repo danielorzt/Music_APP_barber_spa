@@ -343,7 +343,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         if (result == true && context.mounted) {
                           await authProvider.logout();
                           // Limpiar el carrito al cerrar sesión
-                          cartProvider.clearCart();
+                          cartProvider.clear();
                           // Redireccionar al inicio
                           Navigator.pushNamedAndRemoveUntil(
                             context,

@@ -4,7 +4,7 @@ import 'dart:io';
 void main() async {
   print('🔍 Debug API Response...\n');
   
-  const baseUrl = 'https://8985f960eef9.ngrok-free.app/api';
+  const baseUrl = 'https://bc3996b129b5.ngrok-free.app/api';
   
   // 1. Login
   print('1️⃣ Login...');

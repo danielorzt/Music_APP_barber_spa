@@ -9,11 +9,13 @@ class AuthProvider extends ChangeNotifier {
   bool _isAuthenticated = false;
   Map<String, dynamic>? _currentUser;
   String? _error;
+  bool _isApiAvailable = true; // Nuevo flag para verificar disponibilidad de API
 
   bool get isLoading => _isLoading;
   bool get isAuthenticated => _isAuthenticated;
   Map<String, dynamic>? get currentUser => _currentUser;
   String? get error => _error;
+  bool get isApiAvailable => _isApiAvailable;
 
   AuthProvider() {
     _checkAuthStatus();
@@ -29,34 +31,25 @@ class AuthProvider extends ChangeNotifier {
         _currentUser = user;
         _isAuthenticated = true;
         _error = null;
+        _isApiAvailable = true;
         print('✅ Usuario autenticado: ${user['nombre']}');
       } else {
-        // Para desarrollo, usar un usuario de prueba por defecto
-        _setDemoUser();
-        print('🔍 Usando usuario de demostración');
+        _isAuthenticated = false;
+        _currentUser = null;
+        print('🔍 No hay usuario autenticado');
       }
     } catch (e) {
       print('❌ Error verificando autenticación: $e');
-      // Para desarrollo, usar un usuario de prueba por defecto
-      _setDemoUser();
+      _isAuthenticated = false;
+      _currentUser = null;
+      
+      // Si el error es de conectividad, marcar API como no disponible
+      if (e.toString().contains('404') || e.toString().contains('connection')) {
+        _isApiAvailable = false;
+        print('⚠️ API no disponible - usando modo offline');
+      }
     }
     notifyListeners();
-  }
-
-  /// Establecer usuario de demostración para desarrollo
-  void _setDemoUser() {
-    _currentUser = {
-      'id': 1,
-      'nombre': 'Alejandra Vázquez',
-      'email': 'alejandra.vazquez@gmail.com',
-      'telefono': '3101234567',
-      'rol': 'CLIENTE',
-      'created_at': DateTime.now().toIso8601String(),
-      'updated_at': DateTime.now().toIso8601String(),
-    };
-    _isAuthenticated = true;
-    _error = null;
-    print('✅ Usuario de demostración establecido: ${_currentUser!['nombre']}');
   }
 
   /// Login con JWT
@@ -73,23 +66,33 @@ class AuthProvider extends ChangeNotifier {
         _isAuthenticated = true;
         _currentUser = result['user'];
         _error = null;
+        _isApiAvailable = true;
         print('✅ Login exitoso: ${result['user']?['nombre']}');
         notifyListeners();
         return true;
       } else {
-        // Para desarrollo, si el login falla, usar usuario de prueba
-        print('⚠️ Login falló, usando usuario de demostración para desarrollo');
-        _setDemoUser();
+        _error = result['error'] ?? 'Error de autenticación';
+        _isAuthenticated = false;
+        _currentUser = null;
+        print('❌ Login fallido: $_error');
         notifyListeners();
-        return true; // Retornar true para que la app funcione en desarrollo
+        return false;
       }
     } catch (e) {
-      _error = 'Error inesperado: $e';
-      print('❌ Error en login: $_error');
-      // Para desarrollo, usar usuario de prueba
-      _setDemoUser();
+      print('❌ Error en login: $e');
+      
+      // Manejar errores de conectividad
+      if (e.toString().contains('404') || e.toString().contains('connection')) {
+        _error = 'Servidor no disponible. Verifica tu conexión a internet.';
+        _isApiAvailable = false;
+      } else {
+        _error = 'Error inesperado: $e';
+      }
+      
+      _isAuthenticated = false;
+      _currentUser = null;
       notifyListeners();
-      return true; // Retornar true para que la app funcione en desarrollo
+      return false;
     } finally {
       _setLoading(false);
     }
@@ -120,24 +123,80 @@ class AuthProvider extends ChangeNotifier {
         _isAuthenticated = true;
         _currentUser = result['user'];
         _error = null;
+        _isApiAvailable = true;
         print('✅ Registro exitoso: ${result['user']?['nombre']}');
         print('🔐 Usuario autenticado automáticamente después del registro');
         notifyListeners();
         return true;
       } else {
-        // Para desarrollo, si el registro falla, usar usuario de prueba
-        print('⚠️ Registro falló, usando usuario de demostración para desarrollo');
-        _setDemoUser();
+        _error = result['error'] ?? 'Error en el registro';
+        _isAuthenticated = false;
+        _currentUser = null;
+        print('❌ Registro fallido: $_error');
         notifyListeners();
-        return true; // Retornar true para que la app funcione en desarrollo
+        return false;
+      }
+    } catch (e) {
+      print('❌ Error en registro: $e');
+      
+      // Manejar errores de conectividad
+      if (e.toString().contains('404') || e.toString().contains('connection')) {
+        _error = 'Servidor no disponible. Verifica tu conexión a internet.';
+        _isApiAvailable = false;
+      } else {
+        _error = 'Error inesperado: $e';
+      }
+      
+      _isAuthenticated = false;
+      _currentUser = null;
+      notifyListeners();
+      return false;
+    } finally {
+      _setLoading(false);
+    }
+  }
+
+  /// Login temporal con datos mock cuando la API no está disponible
+  Future<bool> loginWithMockData({required String email, required String password}) async {
+    _setLoading(true);
+    _error = null;
+
+    try {
+      print('🔐 AuthProvider: Login con datos mock...');
+      
+      // Simular delay de red
+      await Future.delayed(const Duration(seconds: 1));
+      
+      // Verificar credenciales mock
+      if (email == 'estebanpinzon015@hotmail.com' && password == 'Daniel123') {
+        _isAuthenticated = true;
+        _currentUser = {
+          'id': 1,
+          'nombre': 'Esteban Pinzón',
+          'email': email,
+          'rol': 'CLIENTE',
+          'telefono': '3001234567',
+        };
+        _error = null;
+        _isApiAvailable = false; // API no disponible, usando mock
+        print('✅ Login mock exitoso: ${_currentUser!['nombre']}');
+        notifyListeners();
+        return true;
+      } else {
+        _error = 'Credenciales incorrectas';
+        _isAuthenticated = false;
+        _currentUser = null;
+        print('❌ Login mock fallido: $_error');
+        notifyListeners();
+        return false;
       }
     } catch (e) {
       _error = 'Error inesperado: $e';
-      print('❌ Error en registro: $_error');
-      // Para desarrollo, usar usuario de prueba
-      _setDemoUser();
+      _isAuthenticated = false;
+      _currentUser = null;
+      print('❌ Error en login mock: $_error');
       notifyListeners();
-      return true; // Retornar true para que la app funcione en desarrollo
+      return false;
     } finally {
       _setLoading(false);
     }
@@ -150,7 +209,10 @@ class AuthProvider extends ChangeNotifier {
     try {
       print('🚪 AuthProvider: Cerrando sesión...');
       
-      await _authService.logout();
+      // Solo intentar logout en la API si está disponible
+      if (_isApiAvailable) {
+        await _authService.logout();
+      }
       
       _isAuthenticated = false;
       _currentUser = null;
@@ -196,4 +258,21 @@ class AuthProvider extends ChangeNotifier {
 
   /// Verificar si el usuario es admin
   bool get isAdmin => hasRole('ADMIN_GENERAL') || hasRole('ADMIN_SUCURSAL');
+
+  /// Verificar conectividad de API
+  Future<bool> checkApiConnectivity() async {
+    try {
+      print('🔍 Verificando conectividad de API...');
+      final user = await _authService.getCurrentUser();
+      _isApiAvailable = user != null;
+      print('✅ API disponible: $_isApiAvailable');
+      notifyListeners();
+      return _isApiAvailable;
+    } catch (e) {
+      print('❌ API no disponible: $e');
+      _isApiAvailable = false;
+      notifyListeners();
+      return false;
+    }
+  }
 }

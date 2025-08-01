@@ -42,6 +42,9 @@ import '../../features/auth/providers/auth_provider.dart';
 import '../../features/services/models/service_model.dart';
 import '../../core/models/producto.dart';
 
+// Services
+import '../../core/services/unified_catalog_service.dart';
+
 // Widgets
 import '../../core/widgets/auth_guard.dart';
 
@@ -218,16 +221,40 @@ class AppRouter {
         path: '/servicios/:id',
         builder: (context, state) {
           final serviceId = state.pathParameters['id']!;
-          // Crear un ServiceModel mock basado en el ID
-          final service = ServiceModel(
-            id: serviceId,
-            name: 'Servicio $serviceId',
-            description: 'Descripción del servicio $serviceId',
-            price: 25.0 + (int.parse(serviceId) * 5.0),
-            duration: 30 + (int.parse(serviceId) * 10),
-            imagen: 'https://images.unsplash.com/photo-1503951914875-452162b0f3f1?w=400&h=400&fit=crop',
+          // Usar datos reales de la API
+          return FutureBuilder<ServiceModel?>(
+            future: _loadServiceFromApi(int.parse(serviceId)),
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return const Scaffold(
+                  body: Center(child: CircularProgressIndicator()),
+                );
+              }
+              
+              if (snapshot.hasError || !snapshot.hasData) {
+                return Scaffold(
+                  appBar: AppBar(title: const Text('Error')),
+                  body: Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Icon(Icons.error, size: 64, color: Colors.red),
+                        const SizedBox(height: 16),
+                        const Text('Error al cargar el servicio'),
+                        const SizedBox(height: 16),
+                        ElevatedButton(
+                          onPressed: () => context.pop(),
+                          child: const Text('Volver'),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              }
+              
+              return ServiceDetailScreen(service: snapshot.data!);
+            },
           );
-          return ServiceDetailScreen(service: service);
         },
       ),
       
@@ -240,15 +267,40 @@ class AppRouter {
         path: '/productos/:id',
         builder: (context, state) {
           final productId = state.pathParameters['id']!;
-          // Crear un Producto mock basado en el ID
-          final product = Producto(
-            id: int.parse(productId),
-            nombre: 'Producto $productId',
-            descripcion: 'Descripción del producto $productId',
-            precio: 15.0 + (int.parse(productId) * 2.0),
-            urlImagen: 'https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?w=400&h=400&fit=crop',
+          // Usar datos reales de la API
+          return FutureBuilder<Producto?>(
+            future: _loadProductFromApi(int.parse(productId)),
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return const Scaffold(
+                  body: Center(child: CircularProgressIndicator()),
+                );
+              }
+              
+              if (snapshot.hasError || !snapshot.hasData) {
+                return Scaffold(
+                  appBar: AppBar(title: const Text('Error')),
+                  body: Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Icon(Icons.error, size: 64, color: Colors.red),
+                        const SizedBox(height: 16),
+                        const Text('Error al cargar el producto'),
+                        const SizedBox(height: 16),
+                        ElevatedButton(
+                          onPressed: () => context.pop(),
+                          child: const Text('Volver'),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              }
+              
+              return ProductDetailScreen(product: snapshot.data!);
+            },
           );
-          return ProductDetailScreen(product: product);
         },
       ),
       
@@ -339,5 +391,46 @@ class AppRouter {
         ],
       ),
     );
+  }
+
+  /// Cargar servicio desde la API
+  static Future<ServiceModel?> _loadServiceFromApi(int serviceId) async {
+    try {
+      final catalogService = UnifiedCatalogService();
+      final servicio = await catalogService.getServicio(serviceId);
+      
+      if (servicio != null) {
+        return ServiceModel(
+          id: servicio.id.toString(),
+          name: servicio.nombre,
+          description: servicio.descripcion,
+          price: servicio.precio,
+          duration: servicio.duracionEnMinutos,
+          imagen: null, // Por ahora sin imagen, se puede mapear después
+        );
+      }
+      
+      return null;
+    } catch (e) {
+      print('❌ Error cargando servicio $serviceId: $e');
+      return null;
+    }
+  }
+
+  /// Cargar producto desde la API
+  static Future<Producto?> _loadProductFromApi(int productId) async {
+    try {
+      final catalogService = UnifiedCatalogService();
+      final producto = await catalogService.getProducto(productId);
+      
+      if (producto != null) {
+        return producto;
+      }
+      
+      return null;
+    } catch (e) {
+      print('❌ Error cargando producto $productId: $e');
+      return null;
+    }
   }
 }

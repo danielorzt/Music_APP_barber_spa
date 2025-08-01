@@ -7,10 +7,10 @@ class ApiConfig {
   
   // Base URLs - Múltiples opciones para diferentes entornos
   static const String baseUrlProduction = 'https://api.barbermusicaspa.com/api';
-  static const String baseUrlDevelopment = 'https://8985f960eef9.ngrok-free.app/api'; // URL de ngrok actualizada
+  static const String baseUrlDevelopment = 'https://bc3996b129b5.ngrok-free.app/api'; // URL de ngrok actualizada
   static const String baseUrlLocalhost = 'http://localhost:8000/api';
   static const String baseUrlEmulator = 'http://10.0.2.2:8000/api';
-  static const String baseUrlNetwork = 'https://8985f960eef9.ngrok-free.app/api'; // URL de ngrok actualizada
+  static const String baseUrlNetwork = 'https://bc3996b129b5.ngrok-free.app/api'; // URL de ngrok actualizada
   
   // URL base activa según el entorno
   static String get baseUrl {

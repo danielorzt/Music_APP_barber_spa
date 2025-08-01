@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import 'package:music_app/core/models/servicio.dart';
 import 'package:music_app/core/services/unified_catalog_service.dart';
 import 'package:music_app/features/cart/providers/cart_provider.dart';
+import 'package:music_app/core/utils/image_mapper.dart';
 
 class ServicesScreen extends StatefulWidget {
   const ServicesScreen({super.key});
@@ -338,16 +339,11 @@ class _ServicesScreenState extends State<ServicesScreen> {
             padding: const EdgeInsets.all(20.0),
             child: Row(
               children: [
-                // Icono del servicio
+                // Imagen del servicio
                 Container(
                   width: 70,
                   height: 70,
                   decoration: BoxDecoration(
-                    gradient: const LinearGradient(
-                      colors: [Color(0xFF00D4AA), Color(0xFF00B894)],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                    ),
                     borderRadius: BorderRadius.circular(16),
                     boxShadow: [
                       BoxShadow(
@@ -358,10 +354,16 @@ class _ServicesScreenState extends State<ServicesScreen> {
                       ),
                     ],
                   ),
-                  child: const Icon(
-                    Icons.content_cut,
-                    color: Colors.white,
-                    size: 32,
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(16),
+                    child: ImageMapper.buildImageWidget(
+                      null, // No network image for now
+                      servicio.nombre,
+                      true, // isService = true
+                      width: 70,
+                      height: 70,
+                      fit: BoxFit.cover,
+                    ),
                   ),
                 ),
                 const SizedBox(width: 20),

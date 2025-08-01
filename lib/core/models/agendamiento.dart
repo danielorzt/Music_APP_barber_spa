@@ -68,7 +68,7 @@ class Agendamiento extends Equatable {
     return Agendamiento(
       id: json['id'] as int,
       fechaHora: DateTime.parse(json['fecha_hora'] ?? json['fechaHora'] as String),
-      usuarioId: json['usuario_id'] ?? json['usuarioId'] as int,
+      usuarioId: json['usuario_id'] ?? json['usuarioId'] ?? json['cliente_usuario_id'] as int,
       servicioId: json['servicio_id'] ?? json['servicioId'] as int,
       sucursalId: json['sucursal_id'] ?? json['sucursalId'] as int,
       estado: json['estado'] as String,
@@ -98,7 +98,7 @@ class Agendamiento extends Equatable {
     return {
       'id': id,
       'fecha_hora': fechaHora.toIso8601String(),
-      'usuario_id': usuarioId,
+      'cliente_usuario_id': usuarioId, // Cambiar a cliente_usuario_id para la API
       'servicio_id': servicioId,
       'sucursal_id': sucursalId,
       'estado': estado,

@@ -4,7 +4,7 @@ import 'api_config.dart';
 /// Configuración específica para desarrollo con el servidor BMSPA
 class DevConfig {
   // Configuración del servidor de desarrollo
-  static const String serverUrl = 'https://8985f960eef9.ngrok-free.app';
+  static const String serverUrl = 'https://bc3996b129b5.ngrok-free.app';
   static const String apiBaseUrl = '$serverUrl/api';
   
   // Endpoints específicos de BMSPA - Actualizados según la API proporcionada
@@ -61,19 +61,25 @@ class DevConfig {
     'favorito': '/Client_favoritos/favoritos/{id}',
   };
   
-  // Credenciales de prueba
+  // Credenciales de prueba basadas en DATOS.SQL
   static Map<String, Map<String, String>> get testUsers => {
     'cliente1': {
-      'email': 'test.${DateTime.now().millisecondsSinceEpoch}@example.com',
-      'password': 'password123',
-      'nombre': 'Usuario Test',
-      'telefono': '3101234567'
+      'email': 'anagarcia123@gmail.com',
+      'password': 'passwordAna1',
+      'nombre': 'Ana García',
+      'telefono': '5512345678'
     },
-    'admin': {
-      'email': 'admin@barbermusicaspa.com',
-      'password': 'password',
-      'nombre': 'Administrador',
-      'telefono': '3001234567'
+    'cliente2': {
+      'email': 'carlosmrtz45@hotmail.com',
+      'password': 'passwordCar2',
+      'nombre': 'Carlos Martínez',
+      'telefono': '3321098765'
+    },
+    'cliente3': {
+      'email': 'sofialpz789@gmail.com',
+      'password': 'passwordSof3',
+      'nombre': 'Sofía López',
+      'telefono': '9987654321'
     }
   };
   

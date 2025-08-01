@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import '../../../core/widgets/loading_indicator.dart';
 import '../../../core/services/sucursales_api_service.dart';
 import '../../../core/services/appointments_api_service.dart';
+import '../../../core/services/services_api_service.dart';
 import '../../auth/providers/auth_provider.dart';
 import '../../../core/models/agendamiento.dart'; // Added import for Agendamiento
 
@@ -73,7 +74,53 @@ class _BookAppointmentScreenState extends State<BookAppointmentScreen> {
     setState(() => _isLoadingServicios = true);
     
     try {
-      // Usar datos mock por ahora
+      final servicesApiService = ServicesApiService();
+      final serviciosData = await servicesApiService.getServicios();
+      
+      if (serviciosData.isNotEmpty) {
+        setState(() {
+          _servicios = serviciosData;
+        });
+        print('✅ BookAppointment: ${_servicios.length} servicios cargados desde API');
+      } else {
+        // Fallback a datos mock si la API no devuelve datos
+        setState(() {
+          _servicios = [
+            {
+              'id': 1,
+              'nombre': 'Corte Clásico',
+              'duracion': 30,
+              'precio': 25.0,
+              'descripcion': 'Corte de cabello tradicional con acabado profesional',
+            },
+            {
+              'id': 2,
+              'nombre': 'Corte + Barba',
+              'duracion': 45,
+              'precio': 40.0,
+              'descripcion': 'Paquete completo de corte y arreglo de barba',
+            },
+            {
+              'id': 3,
+              'nombre': 'Afeitado Tradicional',
+              'duracion': 20,
+              'precio': 18.0,
+              'descripcion': 'Afeitado con navaja y productos premium',
+            },
+            {
+              'id': 4,
+              'nombre': 'Masaje Relajante',
+              'duracion': 60,
+              'precio': 45.0,
+              'descripcion': 'Masaje terapéutico para aliviar tensiones',
+            },
+          ];
+        });
+        print('⚠️ BookAppointment: Usando datos mock - API no devolvió datos');
+      }
+    } catch (e) {
+      print('❌ Error cargando servicios: $e');
+      // Usar datos mock como fallback
       setState(() {
         _servicios = [
           {
@@ -106,9 +153,6 @@ class _BookAppointmentScreenState extends State<BookAppointmentScreen> {
           },
         ];
       });
-      print('✅ BookAppointment: ${_servicios.length} servicios cargados');
-    } catch (e) {
-      print('❌ Error cargando servicios: $e');
       setState(() {
         _errorMessage = 'Error cargando servicios: $e';
       });
@@ -122,7 +166,7 @@ class _BookAppointmentScreenState extends State<BookAppointmentScreen> {
     setState(() => _isLoadingPersonal = true);
     
     try {
-      final personalData = await _sucursalesService.getPersonalSucursal(sucursalId);
+              final personalData = await _sucursalesService.getPersonalPorSucursal(sucursalId);
       setState(() {
         _personal = personalData;
       });
@@ -142,7 +186,7 @@ class _BookAppointmentScreenState extends State<BookAppointmentScreen> {
     setState(() => _isLoadingHorarios = true);
     
     try {
-      final horariosData = await _sucursalesService.getHorariosSucursal(sucursalId);
+              final horariosData = await _sucursalesService.getHorariosPorSucursal(sucursalId);
       setState(() {
         _horarios = horariosData;
       });
@@ -159,26 +203,44 @@ class _BookAppointmentScreenState extends State<BookAppointmentScreen> {
   
   /// Crear agendamiento
   Future<void> _createAppointment() async {
+    print('🔍 DEBUG: Iniciando creación de agendamiento...');
+    print('🔍 DEBUG: Sucursal seleccionada: ${_sucursalSeleccionada != null ? "✅" : "❌"}');
+    print('🔍 DEBUG: Servicio seleccionado: ${_servicioSeleccionado != null ? "✅" : "❌"}');
+    print('🔍 DEBUG: Fecha seleccionada: ${_fechaSeleccionada != null ? "✅" : "❌"}');
+    print('🔍 DEBUG: Hora seleccionada: ${_horaSeleccionada != null ? "✅" : "❌"}');
+    
     if (_sucursalSeleccionada == null || 
         _servicioSeleccionado == null || 
         _fechaSeleccionada == null || 
         _horaSeleccionada == null) {
+      print('❌ DEBUG: Validación fallida - campos requeridos incompletos');
       setState(() {
         _errorMessage = 'Por favor completa todos los campos requeridos';
       });
       return;
     }
     
+    print('✅ DEBUG: Validación exitosa - todos los campos están completos');
+    
     setState(() => _isCreatingAppointment = true);
     
     try {
+      print('🔍 DEBUG: Verificando autenticación del usuario...');
       final authProvider = Provider.of<AuthProvider>(context, listen: false);
       final user = authProvider.currentUser;
       
+      print('🔍 DEBUG: Usuario actual: ${user != null ? "✅ Autenticado" : "❌ No autenticado"}');
+      if (user != null) {
+        print('🔍 DEBUG: ID del usuario: ${user['id']}');
+        print('🔍 DEBUG: Nombre del usuario: ${user['nombre']}');
+      }
+      
       if (user == null) {
+        print('❌ DEBUG: Usuario no autenticado - lanzando excepción');
         throw Exception('Usuario no autenticado');
       }
       
+      print('🔍 DEBUG: Creando fecha y hora combinadas...');
       final fechaHora = DateTime(
         _fechaSeleccionada!.year,
         _fechaSeleccionada!.month,
@@ -186,7 +248,9 @@ class _BookAppointmentScreenState extends State<BookAppointmentScreen> {
         _horaSeleccionada!.hour,
         _horaSeleccionada!.minute,
       );
+      print('🔍 DEBUG: Fecha y hora combinadas: $fechaHora');
       
+      print('🔍 DEBUG: Creando objeto Agendamiento...');
       // Crear objeto Agendamiento en lugar de Map
       final agendamiento = Agendamiento(
         id: 0, // Se asignará desde el servidor
@@ -198,30 +262,38 @@ class _BookAppointmentScreenState extends State<BookAppointmentScreen> {
         personalId: _personalSeleccionado?['id'],
         notas: 'Cita agendada desde la app móvil',
       );
+      print('🔍 DEBUG: Objeto Agendamiento creado: ${agendamiento.toJson()}');
       
+      print('🔍 DEBUG: Llamando al servicio de agendamientos...');
       final agendamientoCreado = await _appointmentsService.crearAgendamiento(agendamiento);
+      print('✅ DEBUG: Agendamiento creado exitosamente: ${agendamientoCreado.id}');
       
       setState(() {
         _successMessage = 'Cita agendada exitosamente para ${_sucursalSeleccionada!['nombre']}';
       });
+      print('✅ DEBUG: Mensaje de éxito establecido');
       
       // Limpiar selecciones
       _resetSelections();
+      print('✅ DEBUG: Selecciones limpiadas');
       
       // Navegar de vuelta
       Future.delayed(const Duration(seconds: 2), () {
         if (mounted) {
+          print('✅ DEBUG: Navegando de vuelta a appointments');
           context.go('/appointments');
         }
       });
       
     } catch (e) {
-      print('❌ Error creando agendamiento: $e');
+      print('❌ DEBUG: Error creando agendamiento: $e');
       setState(() {
         _errorMessage = 'Error al agendar la cita: $e';
       });
+      print('❌ DEBUG: Mensaje de error establecido: $_errorMessage');
     } finally {
       setState(() => _isCreatingAppointment = false);
+      print('✅ DEBUG: Estado de creación de agendamiento reseteado');
     }
   }
   
@@ -706,16 +778,30 @@ class _BookAppointmentScreenState extends State<BookAppointmentScreen> {
   }
 
   bool _canConfirmAppointment() {
-    return _sucursalSeleccionada != null && 
+    final canConfirm = _sucursalSeleccionada != null && 
            _servicioSeleccionado != null && 
            _fechaSeleccionada != null && 
            _horaSeleccionada != null;
+    
+    print('🔍 Validación de confirmación:');
+    print('  - Sucursal: ${_sucursalSeleccionada != null ? "✅" : "❌"}');
+    print('  - Servicio: ${_servicioSeleccionado != null ? "✅" : "❌"}');
+    print('  - Fecha: ${_fechaSeleccionada != null ? "✅" : "❌"}');
+    print('  - Hora: ${_horaSeleccionada != null ? "✅" : "❌"}');
+    print('  - Puede confirmar: ${canConfirm ? "✅" : "❌"}');
+    
+    return canConfirm;
   }
 
   Future<void> _selectDate() async {
     final now = DateTime.now();
     final firstDate = DateTime(now.year, now.month, now.day);
     final lastDate = DateTime(now.year + 1, now.month, now.day);
+    
+    print('📅 Seleccionando fecha...');
+    print('📅 Fecha actual: $now');
+    print('📅 Fecha inicial: $firstDate');
+    print('📅 Fecha final: $lastDate');
     
     final picked = await showDatePicker(
       context: context,
@@ -725,22 +811,32 @@ class _BookAppointmentScreenState extends State<BookAppointmentScreen> {
     );
     
     if (picked != null) {
+      print('✅ Fecha seleccionada: $picked');
       setState(() {
         _fechaSeleccionada = picked;
       });
+      print('✅ _fechaSeleccionada actualizada: $_fechaSeleccionada');
+    } else {
+      print('❌ No se seleccionó fecha');
     }
   }
 
   Future<void> _selectTime() async {
+    print('🕐 Seleccionando hora...');
+    
     final picked = await showTimePicker(
       context: context,
       initialTime: TimeOfDay.now(),
     );
     
     if (picked != null) {
+      print('✅ Hora seleccionada: ${picked.hour}:${picked.minute}');
       setState(() {
         _horaSeleccionada = picked;
       });
+      print('✅ _horaSeleccionada actualizada: $_horaSeleccionada');
+    } else {
+      print('❌ No se seleccionó hora');
     }
   }
 }

@@ -9,23 +9,23 @@ Actualizar todas las URLs de la API en la aplicación Flutter para usar la nueva
 ### 🔗 Nueva URL de ngrok
 
 ```
-https://8985f960eef9.ngrok-free.app
+https://bc3996b129b5.ngrok-free.app
 ```
 
 ### 📝 Archivos Actualizados
 
 #### 1. **lib/core/config/api_config.dart**
 
-- ✅ `baseUrlDevelopment`: `https://8985f960eef9.ngrok-free.app/api`
-- ✅ `baseUrlNetwork`: `https://8985f960eef9.ngrok-free.app/api`
+- ✅ `baseUrlDevelopment`: `https://bc3996b129b5.ngrok-free.app/api`
+- ✅ `baseUrlNetwork`: `https://bc3996b129b5.ngrok-free.app/api`
 
 #### 2. **lib/core/config/dev_config.dart**
 
-- ✅ `serverUrl`: `https://8985f960eef9.ngrok-free.app`
+- ✅ `serverUrl`: `https://bc3996b129b5.ngrok-free.app`
 
 #### 3. **lib/core/constants/api_endpoints.dart**
 
-- ✅ `baseUrl`: `https://8985f960eef9.ngrok-free.app/api`
+- ✅ `baseUrl`: `https://bc3996b129b5.ngrok-free.app/api`
 
 #### 4. **Archivos de prueba**
 
@@ -39,11 +39,11 @@ La aplicación ahora está configurada para usar la nueva URL de ngrok en todos 
 
 ```dart
 // Configuración principal
-static const String baseUrlDevelopment = 'https://8985f960eef9.ngrok-free.app/api';
-static const String baseUrlNetwork = 'https://8985f960eef9.ngrok-free.app/api';
+static const String baseUrlDevelopment = 'https://bc3996b129b5.ngrok-free.app/api';
+static const String baseUrlNetwork = 'https://bc3996b129b5.ngrok-free.app/api';
 
 // Configuración de desarrollo
-static const String serverUrl = 'https://8985f960eef9.ngrok-free.app';
+static const String serverUrl = 'https://bc3996b129b5.ngrok-free.app';
 ```
 
 ### ✅ Estado de la Actualización
@@ -68,8 +68,9 @@ Session Status                online
 Account                       Daniel Esteban Ortiz (Plan: Free)
 Version                       3.25.0
 Region                        United States (us)
+Latency                       109ms
 Web Interface                 http://127.0.0.1:4040
-Forwarding                    https://8985f960eef9.ngrok-free.app -> http://localhost:8000
+Forwarding                    https://bc3996b129b5.ngrok-free.app -> http://localhost:8000
 ```
 
 ---

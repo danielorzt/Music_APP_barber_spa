@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
 import '../../auth/providers/auth_provider.dart';
-import '../../../core/theme/theme_provider.dart';
+import '../../../core/providers/settings_provider.dart';
 import '../../../core/services/orders_api_service.dart';
 import '../../../core/services/appointments_api_service.dart';
 
@@ -57,7 +57,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   @override
   Widget build(BuildContext context) {
     final authProvider = Provider.of<AuthProvider>(context);
-    final themeProvider = Provider.of<ThemeProvider>(context);
+    final settingsProvider = Provider.of<SettingsProvider>(context);
     
     if (authProvider.currentUser == null) {
       return Scaffold(
@@ -129,7 +129,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             const SizedBox(height: 24),
             
             // Configuración de tema
-            _buildThemeSection(themeProvider),
+            _buildThemeSection(settingsProvider),
             
             const SizedBox(height: 24),
             
@@ -211,7 +211,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  Widget _buildThemeSection(ThemeProvider themeProvider) {
+  Widget _buildThemeSection(SettingsProvider settingsProvider) {
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -232,12 +232,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   child: ListTile(
                     leading: const Icon(Icons.light_mode),
                     title: const Text('Claro'),
-                    trailing: Radio<ThemeMode>(
-                      value: ThemeMode.light,
-                      groupValue: themeProvider.themeMode,
-                      onChanged: (ThemeMode? value) {
+                    trailing: Radio<AppThemeMode>(
+                      value: AppThemeMode.light,
+                      groupValue: settingsProvider.themeMode,
+                      onChanged: (AppThemeMode? value) {
                         if (value != null) {
-                          themeProvider.setThemeMode(value);
+                          settingsProvider.setThemeMode(value);
                         }
                       },
                     ),
@@ -247,12 +247,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   child: ListTile(
                     leading: const Icon(Icons.dark_mode),
                     title: const Text('Oscuro'),
-                    trailing: Radio<ThemeMode>(
-                      value: ThemeMode.dark,
-                      groupValue: themeProvider.themeMode,
-                      onChanged: (ThemeMode? value) {
+                    trailing: Radio<AppThemeMode>(
+                      value: AppThemeMode.dark,
+                      groupValue: settingsProvider.themeMode,
+                      onChanged: (AppThemeMode? value) {
                         if (value != null) {
-                          themeProvider.setThemeMode(value);
+                          settingsProvider.setThemeMode(value);
                         }
                       },
                     ),
@@ -262,12 +262,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   child: ListTile(
                     leading: const Icon(Icons.settings_system_daydream),
                     title: const Text('Sistema'),
-                    trailing: Radio<ThemeMode>(
-                      value: ThemeMode.system,
-                      groupValue: themeProvider.themeMode,
-                      onChanged: (ThemeMode? value) {
+                    trailing: Radio<AppThemeMode>(
+                      value: AppThemeMode.system,
+                      groupValue: settingsProvider.themeMode,
+                      onChanged: (AppThemeMode? value) {
                         if (value != null) {
-                          themeProvider.setThemeMode(value);
+                          settingsProvider.setThemeMode(value);
                         }
                       },
                     ),
