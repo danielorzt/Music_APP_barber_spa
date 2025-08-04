@@ -260,9 +260,12 @@ class AuthApiService {
     try {
       final token = await _getToken('jwt_token');
       if (token == null) {
+        print('🔍 No hay token JWT almacenado');
         return null;
       }
 
+      print('🔍 Intentando obtener usuario actual con token...');
+      
       final response = await _dio.get(
         DevConfig.getEndpoint('currentUser')!,
         options: Options(
@@ -270,14 +273,45 @@ class AuthApiService {
             'Authorization': 'Bearer $token',
             'Accept': 'application/json',
           },
+          validateStatus: (status) {
+            return status! <= 500; // Aceptar códigos 2xx, 3xx, 4xx, 5xx
+          },
         ),
       );
 
+      print('✅ Respuesta del servidor: ${response.statusCode}');
+      print('📄 Datos: ${response.data}');
+
       if (response.statusCode == 200) {
+        print('✅ Usuario obtenido exitosamente');
         return response.data;
+      } else if (response.statusCode == 401) {
+        print('❌ Token inválido o expirado');
+        // Limpiar token inválido
+        await _clearTokens();
+        return null;
+      } else {
+        print('❌ Error del servidor: ${response.statusCode}');
+        return null;
       }
     } catch (e) {
       print('❌ Error obteniendo usuario: $e');
+      
+      // Si hay error de conectividad, intentar usar datos locales
+      if (e.toString().contains('connection') || e.toString().contains('timeout')) {
+        print('🌐 Intentando usar datos locales...');
+        try {
+          final prefs = await SharedPreferences.getInstance();
+          final userData = prefs.getString('user_data');
+          if (userData != null) {
+            final user = jsonDecode(userData);
+            print('✅ Usando datos locales del usuario');
+            return user;
+          }
+        } catch (localError) {
+          print('❌ Error leyendo datos locales: $localError');
+        }
+      }
     }
     return null;
   }

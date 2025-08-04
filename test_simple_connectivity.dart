@@ -8,15 +8,15 @@ void main() async {
   
   // Información de la nueva configuración
   print('\n📋 CONFIGURACIÓN ACTUAL:');
-  print('IP Local: 192.168.39.148:8000');
-  print('URL Base: http://192.168.39.148:8000/api');
+  print('URL Ngrok: https://13b3b2a25fe8.ngrok-free.app');
+  print('URL Base: https://13b3b2a25fe8.ngrok-free.app/api');
   
   // Probar conectividad básica
   print('\n🌐 PROBANDO CONECTIVIDAD...');
   
   try {
     // Test 1: Health check básico
-    final healthUrl = 'http://192.168.39.148:8000/api/health';
+    final healthUrl = 'https://13b3b2a25fe8.ngrok-free.app/api/health';
     print('\n1️⃣ Probando health check: $healthUrl');
     
     final client = HttpClient();
@@ -33,7 +33,7 @@ void main() async {
   
   // Test 2: Endpoint de servicios
   try {
-    final serviciosUrl = 'http://192.168.39.148:8000/api/Catalog_servicios/servicios';
+    final serviciosUrl = 'https://13b3b2a25fe8.ngrok-free.app/api/Catalog_servicios/servicios';
     print('\n2️⃣ Probando endpoint de servicios: $serviciosUrl');
     
     final client = HttpClient();
@@ -55,7 +55,7 @@ void main() async {
   
   // Test 3: Endpoint de productos
   try {
-    final productosUrl = 'http://192.168.39.148:8000/api/Catalog_productos/productos';
+    final productosUrl = 'https://13b3b2a25fe8.ngrok-free.app/api/Catalog_productos/productos';
     print('\n3️⃣ Probando endpoint de productos: $productosUrl');
     
     final client = HttpClient();
@@ -77,7 +77,7 @@ void main() async {
   
   // Test 4: Login de prueba
   try {
-    final loginUrl = 'http://192.168.39.148:8000/api/Client_usuarios/auth/login';
+    final loginUrl = 'https://13b3b2a25fe8.ngrok-free.app/api/Client_usuarios/auth/login';
     print('\n4️⃣ Probando login de prueba: $loginUrl');
     
     final loginData = {

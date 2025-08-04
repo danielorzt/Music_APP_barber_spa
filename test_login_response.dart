@@ -4,7 +4,7 @@ import 'dart:io';
 void main() async {
   print('🔍 === TESTING LOGIN RESPONSE STRUCTURE ===\\n');
   
-  const String loginUrl = 'http://192.168.39.148:8000/api/Client_usuarios/auth/login';
+  const String loginUrl = 'https://13b3b2a25fe8.ngrok-free.app/api/Client_usuarios/auth/login';
   
   print('📍 Testing login endpoint: $loginUrl\\n');
   

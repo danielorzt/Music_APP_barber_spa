@@ -4,7 +4,7 @@ import 'dart:io';
 void main() async {
   print('🔍 === TESTING AVAILABLE ENDPOINTS ===\n');
 
-  const String baseUrl = 'http://192.168.39.148:8000/api';
+  const String baseUrl = 'https://13b3b2a25fe8.ngrok-free.app/api';
   
   // Lista de endpoints a probar
   final endpoints = [

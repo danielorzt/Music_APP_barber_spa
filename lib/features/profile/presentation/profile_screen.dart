@@ -30,6 +30,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
     super.initState();
     _loadHistory();
     _loadLocalProfileData();
+    _checkAuthStatus();
+  }
+
+  Future<void> _checkAuthStatus() async {
+    // Verificar el estado de autenticación cuando se carga la pantalla
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    await authProvider.checkAuthStatus();
   }
 
   Future<void> _loadHistory() async {
@@ -92,6 +99,35 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Widget build(BuildContext context) {
     final authProvider = Provider.of<AuthProvider>(context);
     final settingsProvider = Provider.of<SettingsProvider>(context);
+    
+    // Mostrar indicador de carga mientras se verifica la autenticación
+    if (authProvider.isLoading) {
+      return Scaffold(
+        appBar: AppBar(
+          title: const Text('Mi Perfil'),
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+        ),
+        body: const Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              CircularProgressIndicator(
+                valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFDC3545)),
+              ),
+              SizedBox(height: 16),
+              Text(
+                'Verificando sesión...',
+                style: TextStyle(
+                  fontSize: 16,
+                  color: Colors.grey,
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
     
     if (authProvider.currentUser == null) {
       return Scaffold(
@@ -184,6 +220,44 @@ class _ProfileScreenState extends State<ProfileScreen> {
             
             // Enlaces de ayuda
             _buildHelpLinks(),
+            
+            const SizedBox(height: 24),
+            
+            // Debug info (solo en desarrollo)
+            if (authProvider.error != null) _buildDebugInfo(authProvider),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDebugInfo(AuthProvider authProvider) {
+    return Card(
+      color: Colors.orange.shade50,
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                const Icon(Icons.bug_report, color: Colors.orange),
+                const SizedBox(width: 8),
+                const Text(
+                  'Información de Debug',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.orange,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Text('Error: ${authProvider.error}'),
+            Text('API Disponible: ${authProvider.isApiAvailable}'),
+            Text('Autenticado: ${authProvider.isAuthenticated}'),
+            Text('Usuario: ${authProvider.currentUser?['nombre'] ?? 'N/A'}'),
           ],
         ),
       ),

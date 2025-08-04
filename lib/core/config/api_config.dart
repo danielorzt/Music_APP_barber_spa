@@ -7,10 +7,10 @@ class ApiConfig {
   
   // Base URLs - Múltiples opciones para diferentes entornos
   static const String baseUrlProduction = 'https://api.barbermusicaspa.com/api';
-  static const String baseUrlDevelopment = 'http://192.168.39.148:8000/api'; // Nueva IP local
+  static const String baseUrlDevelopment = 'https://13b3b2a25fe8.ngrok-free.app/api'; // URL de ngrok
   static const String baseUrlLocalhost = 'http://localhost:8000/api';
   static const String baseUrlEmulator = 'http://10.0.2.2:8000/api';
-  static const String baseUrlNetwork = 'http://192.168.39.148:8000/api'; // Nueva IP local
+  static const String baseUrlNetwork = 'http://192.168.39.148:8000/api'; // IP local alternativa
   
   // URL base activa según el entorno
   static String get baseUrl {

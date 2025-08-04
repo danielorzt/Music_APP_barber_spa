@@ -23,6 +23,8 @@ class AuthProvider extends ChangeNotifier {
 
   /// Verificar estado de autenticación al iniciar
   Future<void> _checkAuthStatus() async {
+    _setLoading(true);
+    
     try {
       print('🔍 AuthProvider: Verificando estado de autenticación...');
       
@@ -36,6 +38,7 @@ class AuthProvider extends ChangeNotifier {
       } else {
         _isAuthenticated = false;
         _currentUser = null;
+        _error = null;
         print('🔍 No hay usuario autenticado');
       }
     } catch (e) {
@@ -48,6 +51,10 @@ class AuthProvider extends ChangeNotifier {
         _isApiAvailable = false;
         print('⚠️ API no disponible - usando modo offline');
       }
+    } finally {
+      _setLoading(false);
+      // Importante: Notificar a los listeners después de verificar el estado
+      notifyListeners();
     }
   }
 
@@ -234,6 +241,11 @@ class AuthProvider extends ChangeNotifier {
   void clearError() {
     _error = null;
     notifyListeners();
+  }
+
+  /// Verificar manualmente el estado de autenticación
+  Future<void> checkAuthStatus() async {
+    await _checkAuthStatus();
   }
 
   /// Establecer estado de carga
